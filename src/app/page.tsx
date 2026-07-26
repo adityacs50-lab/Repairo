@@ -49,24 +49,6 @@ const pillars = [
 export default function HomePage() {
   return (
     <div className="unkey-canvas min-h-screen">
-      <div className="grad-mesh" aria-hidden>
-        <motion.div
-          className="grad-orb grad-orb-scooter"
-          animate={{ x: [0, 30, 0], y: [0, 18, 0] }}
-          transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="grad-orb grad-orb-reef"
-          animate={{ x: [0, -24, 0], y: [0, 22, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="grad-orb grad-orb-aqua"
-          animate={{ scale: [1, 1.08, 1] }}
-          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-
       <motion.div
         className="cloud-drift pointer-events-none absolute inset-x-0 top-0 h-[70vh]"
         aria-hidden
@@ -82,10 +64,10 @@ export default function HomePage() {
           <PixelCluster className="right-8 top-40 hidden sm:grid" />
 
           <HeroEnter>
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-accent-bright">
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-dim">
               now in early access
             </p>
-            <h1 className="grad-text mt-5 max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.25rem]">
+            <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight text-fg sm:text-6xl lg:text-[4.25rem]">
               repairo
             </h1>
           </HeroEnter>
@@ -116,7 +98,7 @@ export default function HomePage() {
           <HeroVisual />
         </section>
 
-        <section className="section-wash border-t border-line px-5 py-20 sm:px-8">
+        <section className="border-t border-line px-5 py-20 sm:px-8">
           <div className="mx-auto max-w-6xl">
             <Reveal>
               <h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -130,10 +112,8 @@ export default function HomePage() {
             <Stagger className="mt-12 grid gap-8 sm:grid-cols-3">
               {trySteps.map((step) => (
                 <StaggerItem key={step.n}>
-                  <article className="grad-border border border-line/80 bg-bg-panel/40 p-5 backdrop-blur-sm">
-                    <p className="font-mono text-xs text-accent-bright">
-                      {step.n}
-                    </p>
+                  <article>
+                    <p className="font-mono text-xs text-muted-dim">{step.n}</p>
                     <h3 className="mt-3 text-lg font-medium">{step.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted">
                       {step.copy}
@@ -147,7 +127,7 @@ export default function HomePage() {
 
         <section
           id="how"
-          className="border-t border-line bg-bg-elevated/80 px-5 py-20 sm:px-8"
+          className="border-t border-line bg-bg/80 px-5 py-20 sm:px-8"
         >
           <div className="mx-auto max-w-6xl">
             <Reveal>
@@ -159,7 +139,6 @@ export default function HomePage() {
               {pillars.map((item) => (
                 <StaggerItem key={item.title}>
                   <article className="h-full bg-bg px-6 py-8 transition duration-300 hover:bg-bg-panel sm:px-8">
-                    <div className="grad-bar mb-5 w-10" />
                     <h3 className="text-lg font-medium text-fg">{item.title}</h3>
                     <p className="mt-3 text-sm leading-relaxed text-muted">
                       {item.copy}
@@ -173,17 +152,9 @@ export default function HomePage() {
 
         <section
           id="repair"
-          className="relative border-t border-line px-5 py-20 sm:px-8"
+          className="border-t border-line px-5 py-20 sm:px-8"
         >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-40"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(54,209,220,0.12) 0%, rgba(91,134,229,0.16) 100%)",
-            }}
-            aria-hidden
-          />
-          <div className="relative mx-auto max-w-6xl">
+          <div className="mx-auto max-w-6xl">
             <Reveal>
               <h2 className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
                 Built for the next OpenAPI break — not the postmortem.

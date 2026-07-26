@@ -8,17 +8,15 @@ export function HeroVisual() {
 
   return (
     <motion.div
-      className="grad-border relative mt-16 w-full max-w-3xl border border-line/70 bg-bg-panel/70 backdrop-blur-md"
+      className="relative mt-16 w-full max-w-3xl border border-line bg-bg-panel/80"
       initial={reduce ? false : { opacity: 0, y: 36 }}
       whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="grad-bar" />
       <div className="flex items-center gap-2 border-b border-line px-4 py-3">
         <motion.span
-          className="h-2.5 w-2.5"
-          style={{ background: "var(--grad-scooter)" }}
+          className="h-2.5 w-2.5 bg-line-strong"
           animate={reduce ? undefined : { opacity: [0.4, 1, 0.4] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
@@ -31,7 +29,7 @@ export function HeroVisual() {
       <div className="grid gap-0 md:grid-cols-3">
         {[
           { title: "Detect", meta: "11 breaking", tone: "text-warn" },
-          { title: "Impact", meta: "2 files mapped", tone: "text-accent-bright" },
+          { title: "Impact", meta: "2 files mapped", tone: "text-fg" },
           { title: "Safe PR", meta: "score 87", tone: "text-safe" },
         ].map((card, i) => (
           <motion.div
