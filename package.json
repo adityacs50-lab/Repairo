@@ -1,0 +1,35 @@
+{
+  "name": "repairo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "demo:engine": "npx tsx src/lib/engine/run-demo.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.1",
+    "drizzle-orm": "^0.45.2",
+    "framer-motion": "^12.42.2",
+    "next": "16.2.11",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "stripe": "^22.3.2",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.11",
+    "tailwindcss": "^4",
+    "tsx": "^4.19.3",
+    "typescript": "^5"
+  }
+}

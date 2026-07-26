@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: Payments API
+  version: 2.0.0
+  description: Checkout and refunds for merchant integrations — breaking release
+servers:
+  - url: https://api.acme-payments.com/v2
+paths:
+  /charges:
+    post:
+      operationId: createCharge
+      summary: Create a payment charge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChargeRequest"
+      responses:
+        "201":
+          description: Charge created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Charge"
+  /charges/{chargeId}:
+    get:
+      operationId: getCharge
+      summary: Retrieve a charge
+      parameters:
+        - name: chargeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Charge details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Charge"
+  /refunds:
+    post:
+      operationId: createRefund
+      summary: Refund a charge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRefundRequest"
+      responses:
+        "201":
+          description: Refund created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Refund"
+components:
+  schemas:
+    CreateChargeRequest:
+      type: object
+      required:
+        - amount
+        - currency
+        - customerId
+        - idempotencyKey
+      properties:
+        amount:
+          type: integer
+          description: Amount in minor units
+        currency:
+          type: string
+          enum: [usd, eur, gbp, inr]
+        customerId:
+          type: string
+        idempotencyKey:
+          type: string
+          description: Required unique key to prevent duplicate charges
+        description:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    Charge:
+      type: object
+      required:
+        - id
+        - amount
+        - currency
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [processing, succeeded, declined, canceled]
+        customerId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateRefundRequest:
+      type: object
+      required:
+        - chargeId
+        - amount
+        - reason
+      properties:
+        chargeId:
+          type: string
+        amount:
+          type: integer
+        reason:
+          type: string
+          enum: [requested_by_customer, duplicate, fraudulent]
+    Refund:
+      type: object
+      required:
+        - id
+        - chargeId
+        - amount
+        - status
+        - reason
+      properties:
+        id:
+          type: string
+        chargeId:
+          type: string
+        amount:
+          type: integer
+        status:
+          type: string
+          enum: [processing, succeeded, failed]
+        reason:
+          type: string

@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #000000;
+  --bg-elevated: #0a0a0a;
+  --bg-panel: #111111;
+  --fg: #ffffff;
+  --muted: #a1a1aa;
+  --muted-dim: #71717a;
+  --line: #27272a;
+  --line-strong: #3f3f46;
+  --accent: #3b82f6;
+  --accent-bright: #60a5fa;
+  --warn: #f97316;
+  --safe: #22c55e;
+  --header: #ffffff;
+  --header-fg: #000000;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-panel: var(--bg-panel);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-muted-dim: var(--muted-dim);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+  --color-warn: var(--warn);
+  --color-safe: var(--safe);
+  --color-header: var(--header);
+  --color-header-fg: var(--header-fg);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--fg);
+  background: var(--bg);
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Unkey-style grain + soft cloud forms */
+.unkey-canvas {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #000;
+}
+
+.unkey-canvas::before {
+  content: "";
+  position: absolute;
+  inset: -10% -5% auto -5%;
+  height: 92vh;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 40%, rgba(255, 255, 255, 0.14), transparent 72%),
+    radial-gradient(ellipse 65% 50% at 82% 22%, rgba(255, 255, 255, 0.11), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 48% 58%, rgba(255, 255, 255, 0.06), transparent 72%);
+  filter: contrast(1.25) brightness(0.85);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.unkey-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.65'/%3E%3C/svg%3E");
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pixel {
+  display: block;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #000;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border: 1px solid #fff;
+  border-radius: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: #e4e4e7;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: #fff;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee 32s linear infinite;
+}
+
+.cloud-drift {
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 40%, rgba(255, 255, 255, 0.08), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 75% 30%, rgba(255, 255, 255, 0.06), transparent 70%);
+  filter: blur(2px);
+  z-index: 0;
+  mix-blend-mode: screen;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise-in 0.65s ease-out both;
+}
+
+.animate-rise-delay-1 {
+  animation: rise-in 0.65s ease-out 0.1s both;
+}
+
+.animate-rise-delay-2 {
+  animation: rise-in 0.65s ease-out 0.2s both;
+}
+
+.animate-rise-delay-3 {
+  animation: rise-in 0.65s ease-out 0.3s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .cloud-drift,
+  .animate-rise,
+  .animate-rise-delay-1,
+  .animate-rise-delay-2,
+  .animate-rise-delay-3 {
+    animation: none !important;
+  }
+}
