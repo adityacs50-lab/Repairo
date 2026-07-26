@@ -8,7 +8,7 @@ export function HeroVisual() {
 
   return (
     <motion.div
-      className="relative mt-16 w-full max-w-3xl border border-line bg-bg-panel/80"
+      className="grad-border relative mt-16 w-full max-w-3xl border border-line bg-bg-panel/85 backdrop-blur-sm"
       initial={reduce ? false : { opacity: 0, y: 36 }}
       whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}

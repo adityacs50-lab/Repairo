@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HeroVisual } from "@/components/HeroVisual";
+import { MotionGradients } from "@/components/MotionGradients";
 import {
   HeroEnter,
   PixelCluster,
@@ -49,12 +50,7 @@ const pillars = [
 export default function HomePage() {
   return (
     <div className="unkey-canvas min-h-screen">
-      <motion.div
-        className="cloud-drift pointer-events-none absolute inset-x-0 top-0 h-[70vh]"
-        aria-hidden
-        animate={{ x: [0, 18, 0], y: [0, -10, 0] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <MotionGradients />
 
       <SiteHeader active="home" />
 
@@ -67,7 +63,7 @@ export default function HomePage() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-dim">
               now in early access
             </p>
-            <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight text-fg sm:text-6xl lg:text-[4.25rem]">
+            <h1 className="grad-text mt-5 max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.25rem]">
               repairo
             </h1>
           </HeroEnter>
@@ -102,7 +98,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-6xl">
             <Reveal>
               <h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-                From LinkedIn to a live PR on your repo.
+                From sign-in to a live PR on your repo.
               </h2>
               <p className="mt-4 max-w-xl text-muted">
                 No sales call required. Connect GitHub, run one repair, see the
