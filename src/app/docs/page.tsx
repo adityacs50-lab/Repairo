@@ -13,12 +13,24 @@ export default function DocsPage() {
     <ContentPage
       eyebrow="Documentation"
       title="How Repairo works"
-      description="Connect GitHub, point at before/after OpenAPI, map TypeScript consumers, open a reviewable PR."
+      description="Connect GitHub, track OpenAPI before → after, map TypeScript impact, open a Dependabot-style repair PR."
       activeHref="/docs"
       cta={{ href: "/app", label: "Try on your GitHub repo" }}
     >
       <Section title="Quick start" id="quick-start">
-        <ol className="list-decimal space-y-2 pl-5">
+        <p>
+          Repairo is the application layer between API contracts and customer
+          codebases — the{" "}
+          <a
+            href="https://www.ycombinator.com/rfs"
+            target="_blank"
+            rel="noreferrer"
+            className="text-fg underline"
+          >
+            self-maintaining APIs
+          </a>{" "}
+          loop: detect → impact → apply as a PR.
+        </p>
           <li>
             Sign in at <Link href="/app" className="text-fg underline">/app</Link>{" "}
             with GitHub (<code className="text-fg">repo</code> +{" "}

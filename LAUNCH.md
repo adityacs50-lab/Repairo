@@ -37,14 +37,18 @@ Fixture fallback: `/demo` (no GitHub needed for investors).
 ## 4. LinkedIn post (copy/paste)
 
 ```
-I built Repairo — self-maintaining API integrations.
+I built Repairo — self-maintaining APIs (Dependabot for OpenAPI).
 
-When an OpenAPI contract changes, Repairo:
-1. Diffs the before/after specs
-2. Finds impacted consumer code
-3. Opens a safe pull request on your GitHub
+API vendors ship breaking changes. Changelogs don’t get read. Downtime follows.
 
-You can try it on your own repo in a few minutes:
+Repairo connects the contract to your codebase:
+1. Diffs OpenAPI before → after
+2. Scans TypeScript for impacted usages
+3. Opens a repair PR you review and merge
+
+Providers shouldn’t just announce changes — they should apply them.
+
+Try it on your own repo:
 
 👉 [YOUR_DOMAIN]
 → Connect GitHub
@@ -55,7 +59,7 @@ No sales call. Review the PR before merge.
 
 Early access — looking for design partners who ship API consumers in TypeScript.
 
-#buildinpublic #apis #devtools #github
+#buildinpublic #apis #devtools #github #yc
 ```
 
 Screenshot tips for the post:

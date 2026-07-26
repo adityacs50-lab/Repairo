@@ -38,8 +38,8 @@ export function SiteFooter() {
         <div>
           <p className="text-xl font-semibold lowercase tracking-tight">repairo</p>
           <p className="mt-3 max-w-xs text-sm text-muted">
-            Self-maintaining API integrations — detect, impact, repair on your
-            GitHub.
+            Self-maintaining APIs — Dependabot for OpenAPI. Detect, impact,
+            apply on your GitHub.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/docs" className="text-sm text-muted hover:text-fg">

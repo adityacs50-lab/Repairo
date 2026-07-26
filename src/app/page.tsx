@@ -18,32 +18,32 @@ const trySteps = [
   {
     n: "01",
     title: "Connect GitHub",
-    copy: "Sign in once. Repairo only uses access to read specs and open PRs you approve.",
+    copy: "Teams already trust tools with codebase access. Sign in once — we only read specs and open PRs you approve.",
   },
   {
     n: "02",
-    title: "Point at your OpenAPI",
-    copy: "Pick before/after paths or two refs (e.g. v1 tag → main) plus consumer TypeScript files.",
+    title: "Track the API contract",
+    copy: "Point at before/after OpenAPI paths or two refs. When the producer changes, Repairo sees the diff.",
   },
   {
     n: "03",
-    title: "Open a real PR",
-    copy: "Review the blast radius, then push a branch and PR straight to your repository.",
+    title: "Apply the fix as a PR",
+    copy: "Scan consumer TypeScript, map impact, open a deterministic repair PR — Dependabot-style, for APIs.",
   },
 ];
 
 const pillars = [
   {
     title: "Detect drift",
-    copy: "Diff OpenAPI the moment a producer releases — breaking, additive, and safe changes classified automatically.",
+    copy: "Breaking changes ship with little warning. Changelogs don’t get read. Diff OpenAPI the moment a producer releases.",
   },
   {
     title: "Map impact",
-    copy: "Trace call sites, types, and status checks across consumer services before customers hit the bug.",
+    copy: "Scan customer codebases for affected usages — call sites, types, status checks — before downtime shows up.",
   },
   {
-    title: "Safe PRs",
-    copy: "Deterministic transforms only — URL bumps, required fields, enum renames — with a safety score.",
+    title: "Apply the change",
+    copy: "Providers shouldn’t just announce updates. Repairo opens a safe PR with the fix — review, then merge.",
   },
 ];
 
@@ -61,16 +61,17 @@ export default function HomePage() {
 
           <HeroEnter>
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-dim">
-              now in early access
+              self-maintaining apis · early access
             </p>
             <h1 className="grad-text mt-5 max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.25rem]">
               repairo
             </h1>
           </HeroEnter>
           <HeroEnter delay={0.1}>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
-              Self-maintaining API integrations. Diff OpenAPI, find what breaks,
-              open a safe pull request on your GitHub — in minutes.
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted sm:text-xl">
+              Dependabot for APIs. When an OpenAPI contract breaks, scan your
+              codebase, identify impacted TypeScript, and open a PR with the
+              fix — so vendors don’t just announce changes, they apply them.
             </p>
           </HeroEnter>
           <HeroEnter delay={0.2}>
@@ -92,6 +93,24 @@ export default function HomePage() {
           </HeroEnter>
 
           <HeroVisual />
+        </section>
+
+        <section className="border-t border-line px-5 py-20 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <Reveal>
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+                API communication is broken.
+              </h2>
+              <p className="mt-4 max-w-2xl text-muted">
+                Breaking changes ship quietly. Useful features go unnoticed.
+                External API and package changes still cause real outages —
+                including a large share of downtime at hyperscale platforms.
+                Agentic coding made codebase access normal. What’s missing is
+                the application layer that connects API contracts to customer
+                repos.
+              </p>
+            </Reveal>
+          </div>
         </section>
 
         <section className="border-t border-line px-5 py-20 sm:px-8">
@@ -128,7 +147,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-6xl">
             <Reveal>
               <h2 className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-                Detect. Impact. Repair. One control plane.
+                Detect. Impact. Apply. Like Dependabot — for APIs.
               </h2>
             </Reveal>
             <Stagger className="mt-14 grid gap-px bg-line sm:grid-cols-3">
@@ -175,8 +194,13 @@ export default function HomePage() {
           <div className="mx-auto max-w-6xl">
             <Reveal>
               <h2 className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-                Built for the next OpenAPI break — not the postmortem.
+                When Stripe ships a break, your consumers shouldn’t find out in
+                production.
               </h2>
+              <p className="mt-4 max-w-xl text-muted">
+                Neutral third-party repair across vendors you track via OpenAPI —
+                open the PR, review the blast radius, merge on your terms.
+              </p>
               <div className="mt-10 flex flex-wrap gap-3">
                 <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Link href="/app" className="btn-primary">

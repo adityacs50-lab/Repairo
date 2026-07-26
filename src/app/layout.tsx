@@ -17,15 +17,15 @@ const siteUrl = process.env.APP_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Repairo — Self-maintaining API integrations",
+    default: "Repairo — Self-maintaining APIs",
     template: "%s · Repairo",
   },
   description:
-    "Diff OpenAPI changes, find impacted consumer code, and open safe GitHub pull requests. Try it on your repo.",
+    "Dependabot for APIs. Diff OpenAPI, scan consumer codebases, open safe GitHub PRs when contracts break.",
   openGraph: {
-    title: "Repairo — Self-maintaining API integrations",
+    title: "Repairo — Self-maintaining APIs",
     description:
-      "Connect GitHub. Diff your OpenAPI. Open a real repair PR in minutes.",
+      "When an API breaks, identify impacted TypeScript and open a repair PR — providers announce, Repairo applies.",
     type: "website",
     url: siteUrl,
     siteName: "Repairo",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Repairo",
     description:
-      "Self-maintaining API integrations — try a repair on your GitHub repo.",
+      "Self-maintaining APIs — Dependabot for OpenAPI contracts on your GitHub.",
   },
 };
 

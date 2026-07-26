@@ -1,6 +1,8 @@
 # Repairo
 
-Self-maintaining API integrations — detect OpenAPI drift, map consumer impact, open safe GitHub PRs.
+**Self-maintaining APIs** — Dependabot for OpenAPI. Detect contract drift, map consumer impact, open safe GitHub PRs.
+
+Aligned with YC’s [Self-Maintaining APIs](https://www.ycombinator.com/rfs) RFS: API providers shouldn’t just announce changes — they should apply them in customer codebases.
 
 ## Product
 
