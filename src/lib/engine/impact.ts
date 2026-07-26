@@ -54,10 +54,18 @@ export function findImpactedCode(
   for (const change of changes) {
     for (const file of files) {
       if (change.kind === "server-url-changed" && change.before) {
+        const urlSymbols = [
+          change.before,
+          "BASE_URL",
+          "API_BASE",
+          "API_URL",
+          "BaseURL",
+          "api.acme-payments.com",
+        ];
         impacts.push(
           ...findSymbolHits(
             file,
-            [change.before, "BASE_URL", "api.acme-payments.com"],
+            urlSymbols,
             change.id,
             "Consumer still points at the previous API base URL",
             "high",
@@ -68,8 +76,20 @@ export function findImpactedCode(
       if (change.kind === "field-required" && change.field) {
         const related =
           change.operation === "post" && change.path.includes("refund")
-            ? ["createRefund", "CreateRefundInput", "refundOrder"]
-            : ["createCharge", "CreateChargeInput", "completeCheckout"];
+            ? [
+                "createRefund",
+                "create_refund",
+                "CreateRefundInput",
+                "refundOrder",
+                "RefundParams",
+              ]
+            : [
+                "createCharge",
+                "create_charge",
+                "CreateChargeInput",
+                "completeCheckout",
+                "ChargeParams",
+              ];
 
         impacts.push(
           ...findSymbolHits(
@@ -83,8 +103,14 @@ export function findImpactedCode(
 
         if (!file.content.includes(change.field)) {
           const lines = linesOf(file.content);
-          const interfaceLine = lines.findIndex((l) =>
-            l.includes("interface Create") || l.includes("CreateChargeInput") || l.includes("CreateRefundInput"),
+          const interfaceLine = lines.findIndex(
+            (l) =>
+              l.includes("interface Create") ||
+              l.includes("CreateChargeInput") ||
+              l.includes("CreateRefundInput") ||
+              l.includes("class ") ||
+              l.includes("TypedDict") ||
+              l.includes("struct "),
           );
           if (interfaceLine >= 0) {
             impacts.push({
@@ -112,6 +138,7 @@ export function findImpactedCode(
               "ChargeStatus",
               "isChargePending",
               "isChargeSuccessful",
+              "STATUS_",
             ],
             change.id,
             `Code references removed enum value "${change.before}"`,

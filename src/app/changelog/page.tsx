@@ -9,6 +9,15 @@ export const metadata: Metadata = {
 const entries = [
   {
     date: "2026-07-26",
+    title: "Vendor poll cron + multi-language patches + agent marketplace",
+    items: [
+      "Secured /api/cron/poll-vendors + optional VENDOR_POLL_MS in-process poller",
+      "Python/Go-aware URL and enum string repairs",
+      "Public /agents and /agents/[vendor] install pages",
+    ],
+  },
+  {
+    date: "2026-07-26",
     title: "Vendor agents + repo discovery",
     items: [
       "Catalog agents (Stripe, GitHub REST, Petstore) with remote OpenAPI fetch",

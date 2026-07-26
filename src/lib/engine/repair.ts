@@ -67,10 +67,13 @@ function makePatch(before: string, after: string, path: string): string {
 function applySafeTransforms(
   content: string,
   changes: ApiChange[],
+  filePath = "",
 ): { content: string; fixes: SuggestedFix[]; pathHints: string[] } {
   let next = content;
   const fixes: SuggestedFix[] = [];
   const pathHints: string[] = [];
+  const isPy = /\.py$/i.test(filePath);
+  const isGo = /\.go$/i.test(filePath);
 
   for (const change of changes) {
     if (change.kind === "server-url-changed" && change.before && change.after) {
@@ -80,20 +83,91 @@ function applySafeTransforms(
         fixes.push({
           changeId: change.id,
           file: "",
-          description: "Update API base URL to v2",
+          description: "Update API base URL",
           before: beforeSnippet,
           after: change.after,
           safe: true,
-          safetyNotes: ["Deterministic string replacement of known base URL"],
+          safetyNotes: [
+            "Deterministic string replacement of known base URL",
+            isPy || isGo
+              ? `Applied in ${isPy ? "Python" : "Go"} source`
+              : "Applied in TypeScript/JS source",
+          ],
         });
         pathHints.push("BASE_URL");
+      }
+
+      // Python / Go common constant names
+      if (isPy || isGo) {
+        const constNames = isPy
+          ? ["BASE_URL", "API_BASE", "API_URL", "STRIPE_API_BASE"]
+          : ["BaseURL", "APIBase", "apiBase"];
+        for (const name of constNames) {
+          const pyRe = new RegExp(
+            `(${name}\\s*=\\s*[\"'])([^\"']+)([\"'])`,
+          );
+          const goRe = new RegExp(
+            `(${name}\\s*=\\s*[\"'])([^\"']+)([\"'])`,
+          );
+          const re = isPy ? pyRe : goRe;
+          if (re.test(next) && change.after) {
+            const before = next;
+            next = next.replace(re, `$1${change.after}$3`);
+            if (next !== before) {
+              fixes.push({
+                changeId: change.id,
+                file: "",
+                description: `Update ${name} constant to new API URL`,
+                before: name,
+                after: change.after,
+                safe: true,
+                safetyNotes: ["Constant reassignment only"],
+              });
+              pathHints.push(name);
+            }
+          }
+        }
       }
     }
 
     if (
       change.kind === "enum-value-removed" &&
       change.field === "status" &&
-      change.before === "pending"
+      change.before &&
+      change.after
+    ) {
+      const needles = [`"${change.before}"`, `'${change.before}'`];
+      for (const needle of needles) {
+        if (next.includes(needle)) {
+          const replacement = needle.startsWith('"')
+            ? `"${change.after}"`
+            : `'${change.after}'`;
+          next = replaceAll(next, needle, replacement);
+          fixes.push({
+            changeId: change.id,
+            file: "",
+            description: `Rename status enum "${change.before}" → "${change.after}"`,
+            before: needle,
+            after: replacement,
+            safe: true,
+            safetyNotes: [
+              "Mapped removed enum to documented replacement value",
+              isPy || isGo
+                ? "Language-agnostic string literal update"
+                : "TypeScript string literal update",
+            ],
+          });
+          pathHints.push(change.before);
+        }
+      }
+    }
+
+    // Legacy Payments-demo TS transforms (fixture) when pending→processing
+    if (
+      change.kind === "enum-value-removed" &&
+      change.field === "status" &&
+      change.before === "pending" &&
+      !change.after
     ) {
       if (next.includes('"pending"') || next.includes("'pending'")) {
         const before = next;
@@ -259,7 +333,7 @@ export function generateFixes(
       continue;
     }
 
-    const result = applySafeTransforms(file.content, changes);
+    const result = applySafeTransforms(file.content, changes, file.path);
     const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
     fixes.push(...fileFixes);
     updatedFiles.push({ path: file.path, content: result.content });

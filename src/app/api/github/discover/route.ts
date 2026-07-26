@@ -47,7 +47,12 @@ export async function POST(request: NextRequest) {
       suggested: {
         openapiPath: discovered.specs[0]?.path ?? null,
         consumerPaths: discovered.consumers
-          .filter((c) => c.kind === "consumer-ts" || c.kind === "consumer-js")
+          .filter(
+            (c) =>
+              c.kind === "consumer-ts" ||
+              c.kind === "consumer-js" ||
+              c.kind === "consumer-py",
+          )
           .slice(0, 8)
           .map((c) => c.path),
         pythonConsumers: discovered.consumers

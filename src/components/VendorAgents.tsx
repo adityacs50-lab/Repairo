@@ -22,11 +22,16 @@ type Vendor = {
 type Props = {
   repos: Repo[];
   onInstalled?: () => void;
+  initialVendorId?: string;
 };
 
-export function VendorAgents({ repos, onInstalled }: Props) {
+export function VendorAgents({
+  repos,
+  onInstalled,
+  initialVendorId,
+}: Props) {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [vendorId, setVendorId] = useState("stripe");
+  const [vendorId, setVendorId] = useState(initialVendorId || "stripe");
   const [repoFullName, setRepoFullName] = useState(repos[0]?.fullName ?? "");
   const [consumerPaths, setConsumerPaths] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -36,14 +41,20 @@ export function VendorAgents({ repos, onInstalled }: Props) {
   const [discoveredNote, setDiscoveredNote] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialVendorId) setVendorId(initialVendorId);
+  }, [initialVendorId]);
+
+  useEffect(() => {
     fetch("/api/catalog")
       .then((r) => r.json())
       .then((d: { vendors?: Vendor[] }) => {
         setVendors(d.vendors ?? []);
-        if (d.vendors?.[0] && !vendorId) setVendorId(d.vendors[0].id);
+        if (d.vendors?.[0] && !initialVendorId && vendorId === "stripe") {
+          /* keep default */
+        }
       })
       .catch(() => setError("Could not load vendor catalog"));
-  }, [vendorId]);
+  }, [initialVendorId, vendorId]);
 
   useEffect(() => {
     if (!repos[0]) return;

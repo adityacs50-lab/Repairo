@@ -95,6 +95,22 @@ Plans: **Free** = 1 integration, 15 runs/mo, 3 seats · **Pro** = 50 / 500 / 15.
 
 ---
 
+## C3. Vendor OpenAPI polling (cron)
+
+So agents check remote specs without clicking **Run now**:
+
+1. Set `CRON_SECRET` on Railway (long random string)
+2. Call hourly (GitHub Actions, cron-job.org, or Railway cron):
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://YOUR-VERCEL-DOMAIN/api/cron/poll-vendors"
+```
+
+Or set `VENDOR_POLL_MS=3600000` on Railway for an in-process hourly poller (no external cron).
+
+---
+
 ## D. Smoke test
 
 1. `https://YOUR-VERCEL-DOMAIN/api/health` — should proxy Railway and return `ok`

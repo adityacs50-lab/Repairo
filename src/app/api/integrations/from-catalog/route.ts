@@ -80,8 +80,13 @@ export async function POST(request: NextRequest) {
       );
       const discovered = discoverFromPaths(paths);
       const suggested = discovered.consumers
-        .filter((c) => c.kind === "consumer-ts" || c.kind === "consumer-js")
-        .slice(0, 8)
+        .filter(
+          (c) =>
+            c.kind === "consumer-ts" ||
+            c.kind === "consumer-js" ||
+            c.kind === "consumer-py",
+        )
+        .slice(0, 10)
         .map((c) => c.path);
       if (!consumerPaths.length) consumerPaths = suggested;
     }

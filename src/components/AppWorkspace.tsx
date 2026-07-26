@@ -106,6 +106,27 @@ export function AppWorkspace() {
     subscriptionStatus: string;
     paymentIssue: boolean;
   } | null>(null);
+  const [agentVendor, setAgentVendor] = useState<string | undefined>();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (
+      tabParam === "try" ||
+      tabParam === "agents" ||
+      tabParam === "overview" ||
+      tabParam === "integrations" ||
+      tabParam === "runs" ||
+      tabParam === "settings"
+    ) {
+      setTab(tabParam);
+    }
+    const vendor = params.get("vendor");
+    if (vendor) {
+      setAgentVendor(vendor);
+      setTab("agents");
+    }
+  }, []);
 
   const refreshAll = useCallback(async () => {
     const [intRes, runsRes, wsRes] = await Promise.all([
@@ -500,6 +521,7 @@ export function AppWorkspace() {
       {tab === "agents" && (
         <VendorAgents
           repos={repos}
+          initialVendorId={agentVendor}
           onInstalled={() => {
             void refreshAll();
             setTab("integrations");

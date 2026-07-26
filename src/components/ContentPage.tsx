@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 
 const defaultNav = [
   { href: "/docs", label: "Docs" },
+  { href: "/agents", label: "Agents" },
   { href: "/changelog", label: "Changelog" },
   { href: "/security", label: "Security" },
   { href: "/use-cases", label: "Use cases" },
