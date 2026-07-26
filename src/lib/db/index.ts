@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { mkdirSync } from "fs";
+import { mkdirSync, accessSync, constants } from "fs";
 import { dirname, join } from "path";
 import * as schema from "./schema";
 
@@ -8,18 +8,27 @@ const globalForDb = globalThis as unknown as {
   __repairoDb?: ReturnType<typeof createDb>;
 };
 
-function dbPath() {
-  return process.env.DATABASE_PATH || join(process.cwd(), "data", "repairo.db");
+function resolveDbPath() {
+  const preferred =
+    process.env.DATABASE_PATH?.trim() ||
+    join(process.cwd(), "data", "repairo.db");
+  try {
+    mkdirSync(dirname(preferred), { recursive: true });
+    accessSync(dirname(preferred), constants.W_OK);
+    return preferred;
+  } catch {
+    const fallback = join("/tmp", "repairo.db");
+    mkdirSync(dirname(fallback), { recursive: true });
+    return fallback;
+  }
 }
 
 function createDb() {
-  const path = dbPath();
-  mkdirSync(dirname(path), { recursive: true });
+  const path = resolveDbPath();
   const sqlite = new Database(path);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
 
-  // Bootstrap schema (no separate migrate step required for v1)
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY NOT NULL,
@@ -99,6 +108,19 @@ export function getDb() {
     globalForDb.__repairoDb = createDb();
   }
   return globalForDb.__repairoDb;
+}
+
+export function dbProbe() {
+  try {
+    const path = resolveDbPath();
+    getDb();
+    return { ok: true as const, path };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "db failed",
+    };
+  }
 }
 
 export type Db = ReturnType<typeof getDb>;

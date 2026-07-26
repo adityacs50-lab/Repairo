@@ -11,25 +11,37 @@ import { upsertGithubUser } from "@/lib/db/users";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function fail(appUrl: string, code: string, detail?: string) {
+  const q = new URLSearchParams({ error: code });
+  if (detail) q.set("detail", detail.slice(0, 120));
+  return NextResponse.redirect(`${appUrl}/app?${q.toString()}`);
+}
+
 export async function GET(request: NextRequest) {
   const config = getGitHubOAuthConfig();
   if (!config) {
-    return NextResponse.redirect(
-      `${getFallbackAppUrl()}/app?error=oauth_not_configured`,
+    return fail(
+      process.env.APP_URL?.replace(/\/$/, "") || "http://localhost:3000",
+      "oauth_not_configured",
     );
   }
 
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
+  const ghError = request.nextUrl.searchParams.get("error");
+  const ghDesc = request.nextUrl.searchParams.get("error_description");
+
+  if (ghError) {
+    return fail(config.appUrl, "oauth_failed", ghDesc || ghError);
+  }
+
   const storedState = request.cookies.get("repairo_oauth_state")?.value;
   const stateOk =
     verifyOAuthState(state, config.sessionSecret) ||
     (Boolean(state) && Boolean(storedState) && state === storedState);
 
   if (!code || !state || !stateOk) {
-    return NextResponse.redirect(
-      `${config.appUrl}/app?error=invalid_oauth_state`,
-    );
+    return fail(config.appUrl, "invalid_oauth_state");
   }
 
   try {
@@ -56,10 +68,12 @@ export async function GET(request: NextRequest) {
     };
 
     if (!tokenJson.access_token) {
-      throw new Error(
+      return fail(
+        config.appUrl,
+        "oauth_failed",
         tokenJson.error_description ||
           tokenJson.error ||
-          "Token exchange failed",
+          "Token exchange failed — re-check Client Secret on Railway",
       );
     }
 
@@ -72,7 +86,7 @@ export async function GET(request: NextRequest) {
       },
     });
     if (!userRes.ok) {
-      throw new Error("Failed to load GitHub user");
+      return fail(config.appUrl, "oauth_failed", "Could not load GitHub profile");
     }
     const ghUser = (await userRes.json()) as {
       id: number;
@@ -104,16 +118,10 @@ export async function GET(request: NextRequest) {
     response.cookies.delete("repairo_oauth_state");
     return response;
   } catch (err) {
-    const detail =
-      err instanceof Error ? err.message.slice(0, 80) : "oauth_failed";
-    const q = new URLSearchParams({
-      error: "oauth_failed",
-      detail,
-    });
-    return NextResponse.redirect(`${config.appUrl}/app?${q.toString()}`);
+    return fail(
+      config.appUrl,
+      "oauth_failed",
+      err instanceof Error ? err.message : "Unexpected sign-in error",
+    );
   }
-}
-
-function getFallbackAppUrl() {
-  return process.env.APP_URL?.replace(/\/$/, "") || "http://localhost:3000";
 }
