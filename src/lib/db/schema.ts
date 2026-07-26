@@ -89,6 +89,14 @@ export const integrations = sqliteTable("integrations", {
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
   webhookId: integer("webhook_id"),
   webhookSecret: text("webhook_secret").notNull(),
+  /** repo = paths in GitHub; remote = vendor catalog OpenAPI URL */
+  specSource: text("spec_source", { enum: ["repo", "remote"] })
+    .notNull()
+    .default("repo"),
+  vendorId: text("vendor_id"),
+  vendorSpecUrl: text("vendor_spec_url"),
+  /** Last-seen vendor OpenAPI body (baseline "before" for remote agents) */
+  baselineSpec: text("baseline_spec"),
   lastCheckedAt: integer("last_checked_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()

@@ -54,6 +54,22 @@ export default function DocsPage() {
         </p>
       </Section>
 
+      <Section title="Vendor agents (Dependabot for APIs)" id="vendors">
+        <p>
+          Install a catalog agent (Stripe, GitHub REST, Petstore demo) that
+          fetches the vendor OpenAPI remotely, discovers client files in your
+          repo, and opens repair PRs when the contract moves. In the app:{" "}
+          <strong className="text-fg">Vendor agents</strong> tab → Install.
+        </p>
+        <BulletList
+          items={[
+            "Remote OpenAPI URL + stored baseline (incremental polls)",
+            "Scan repo for openapi.yaml and *client* / sdk TypeScript (also discovers Python clients)",
+            "Safe transforms still strongest on TypeScript; Python gets URL-like string patches when applicable",
+          ]}
+        />
+      </Section>
+
       <Section title="OpenAPI diffing" id="diffing">
         <p>
           Repairo parses before and after OpenAPI documents, then classifies

@@ -125,6 +125,32 @@ export async function getRepo(
   return gh<GitHubRepo>(token, `/repos/${owner}/${repo}`);
 }
 
+export async function getRecursiveTreePaths(
+  token: string,
+  owner: string,
+  repo: string,
+  ref?: string,
+): Promise<string[]> {
+  const repoMeta = await getRepo(token, owner, repo);
+  const sha = await getRefSha(
+    token,
+    owner,
+    repo,
+    ref || repoMeta.default_branch,
+  );
+  const tree = await gh<{
+    truncated: boolean;
+    tree: Array<{ path?: string; type?: string }>;
+  }>(token, `/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`);
+
+  const paths = tree.tree
+    .filter((n) => n.type === "blob" && n.path)
+    .map((n) => n.path!)
+    .slice(0, 10_000);
+
+  return paths;
+}
+
 export async function getRefSha(
   token: string,
   owner: string,

@@ -52,20 +52,35 @@ export async function runIntegrationJob(options: {
     const integration = options.integration;
     const repoMeta = await getRepo(token, integration.owner, integration.repo);
 
-    const before = await getFileContent(
-      token,
-      integration.owner,
-      integration.repo,
-      integration.beforePath,
-      integration.beforeRef || repoMeta.default_branch,
-    );
-    const after = await getFileContent(
-      token,
-      integration.owner,
-      integration.repo,
-      integration.afterPath,
-      integration.afterRef || repoMeta.default_branch,
-    );
+    let beforeSpec: string;
+    let afterSpec: string;
+
+    if (integration.specSource === "remote" && integration.vendorId) {
+      const { resolveVendorSpecs } = await import("@/lib/catalog/fetch-spec");
+      const remote = await resolveVendorSpecs({
+        vendorId: integration.vendorId,
+        baselineSpec: integration.baselineSpec,
+      });
+      beforeSpec = remote.before;
+      afterSpec = remote.after;
+    } else {
+      const before = await getFileContent(
+        token,
+        integration.owner,
+        integration.repo,
+        integration.beforePath,
+        integration.beforeRef || repoMeta.default_branch,
+      );
+      const after = await getFileContent(
+        token,
+        integration.owner,
+        integration.repo,
+        integration.afterPath,
+        integration.afterRef || repoMeta.default_branch,
+      );
+      beforeSpec = before.content;
+      afterSpec = after.content;
+    }
 
     const consumerFiles = [];
     for (const path of integration.consumerPaths) {
@@ -80,20 +95,30 @@ export async function runIntegrationJob(options: {
     }
 
     const result = runRepair({
-      beforeSpec: before.content,
-      afterSpec: after.content,
+      beforeSpec,
+      afterSpec,
       consumerFiles,
     });
 
-    updateIntegration(integration.id, { lastCheckedAt: new Date() });
-
     if (!result.pullRequest.files.length) {
+      if (integration.specSource === "remote") {
+        updateIntegration(integration.id, {
+          lastCheckedAt: new Date(),
+          baselineSpec: afterSpec,
+        });
+      } else {
+        updateIntegration(integration.id, { lastCheckedAt: new Date() });
+      }
       db.update(repairRuns)
         .set({
           status: "skipped",
           summaryJson: {
             ...result.summary,
-            reason: "No file changes produced",
+            reason:
+              beforeSpec === afterSpec
+                ? "Vendor OpenAPI unchanged vs baseline"
+                : "No file changes produced",
+            vendorId: integration.vendorId,
           },
           finishedAt: new Date(),
         })
@@ -114,6 +139,7 @@ export async function runIntegrationJob(options: {
       result.pullRequest.branch,
     );
     if (existing) {
+      updateIntegration(integration.id, { lastCheckedAt: new Date() });
       db.update(repairRuns)
         .set({
           status: "skipped",
@@ -142,6 +168,15 @@ export async function runIntegrationJob(options: {
       baseBranch: integration.baseBranch || repoMeta.default_branch,
       result,
     });
+
+    if (integration.specSource === "remote") {
+      updateIntegration(integration.id, {
+        lastCheckedAt: new Date(),
+        baselineSpec: afterSpec,
+      });
+    } else {
+      updateIntegration(integration.id, { lastCheckedAt: new Date() });
+    }
 
     db.update(repairRuns)
       .set({

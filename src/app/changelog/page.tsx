@@ -9,6 +9,16 @@ export const metadata: Metadata = {
 const entries = [
   {
     date: "2026-07-26",
+    title: "Vendor agents + repo discovery",
+    items: [
+      "Catalog agents (Stripe, GitHub REST, Petstore) with remote OpenAPI fetch",
+      "Scan repo for OpenAPI + client files (TS/JS + Python discovery)",
+      "Install agent → watched integration with baseline polling",
+      "Quick Repair “Scan repo” autofill",
+    ],
+  },
+  {
+    date: "2026-07-26",
     title: "SaaS billing essentials",
     items: [
       "Free / Pro plan limits (integrations, monthly runs, seats)",

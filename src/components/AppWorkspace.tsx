@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { HeroEnter, PixelCluster } from "@/components/Motion";
 import { QuickRepair } from "@/components/QuickRepair";
+import { VendorAgents } from "@/components/VendorAgents";
 
 type AuthUser = {
   id: string;
@@ -34,6 +35,8 @@ type Integration = {
   enabled: boolean;
   webhookId: number | null;
   lastCheckedAt: string | null;
+  specSource?: "repo" | "remote";
+  vendorId?: string | null;
 };
 
 type Run = {
@@ -57,7 +60,7 @@ type Repo = {
   defaultBranch: string;
 };
 
-type Tab = "try" | "overview" | "integrations" | "runs" | "settings";
+type Tab = "try" | "agents" | "overview" | "integrations" | "runs" | "settings";
 
 const emptyForm = {
   name: "",
@@ -463,6 +466,7 @@ export function AppWorkspace() {
         {(
           [
             ["try", "Try your repo"],
+            ["agents", "Vendor agents"],
             ["overview", "Overview"],
             ["integrations", "Watch"],
             ["runs", "Runs"],
@@ -489,6 +493,17 @@ export function AppWorkspace() {
             setMessage("Pull request opened on your GitHub repo.");
             void refreshAll();
             setTab("runs");
+          }}
+        />
+      )}
+
+      {tab === "agents" && (
+        <VendorAgents
+          repos={repos}
+          onInstalled={() => {
+            void refreshAll();
+            setTab("integrations");
+            setMessage("Vendor agent installed. Click Run now to open a PR.");
           }}
         />
       )}
@@ -725,7 +740,10 @@ export function AppWorkspace() {
                   <div>
                     <h3 className="font-medium">{item.name}</h3>
                     <p className="mt-1 font-mono text-xs text-muted-dim">
-                      {item.fullName} · webhook{" "}
+                      {item.fullName}
+                      {item.vendorId ? ` · vendor:${item.vendorId}` : ""}
+                      {item.specSource === "remote" ? " · remote OpenAPI" : ""} ·
+                      webhook{" "}
                       {item.webhookId ? `#${item.webhookId}` : "not set"} ·{" "}
                       {item.enabled ? "enabled" : "paused"}
                     </p>

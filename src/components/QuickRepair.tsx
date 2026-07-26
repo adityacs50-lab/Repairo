@@ -34,6 +34,7 @@ export function QuickRepair({ repos, onDone }: Props) {
   const [result, setResult] = useState<RepairRunResult | null>(null);
   const [prUrl, setPrUrl] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
     if (!repos[0]) return;
@@ -44,6 +45,46 @@ export function QuickRepair({ repos, onDone }: Props) {
   }, [repos]);
 
   const selected = repos.find((r) => r.fullName === repoFullName) ?? repos[0];
+
+  async function scanRepo() {
+    if (!selected) return;
+    setScanning(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/github/discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner: selected.owner,
+          repo: selected.name,
+          ref: baseBranch || selected.defaultBranch,
+        }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        suggested?: {
+          openapiPath?: string | null;
+          consumerPaths?: string[];
+        };
+      };
+      if (!res.ok) throw new Error(data.error ?? "Scan failed");
+      if (data.suggested?.openapiPath) {
+        setBeforePath(data.suggested.openapiPath);
+        setAfterPath(data.suggested.openapiPath);
+      }
+      if (data.suggested?.consumerPaths?.length) {
+        setConsumerPaths(data.suggested.consumerPaths.join("\n"));
+      } else {
+        throw new Error(
+          "No OpenAPI or client-like TypeScript files found. Enter paths manually.",
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  }
 
   const steps = [
     "Loading specs from GitHub",
@@ -153,8 +194,8 @@ export function QuickRepair({ repos, onDone }: Props) {
           Repair a real repo in one run
         </h2>
         <p className="mt-2 text-sm text-muted">
-          Point at before/after OpenAPI paths (or the same path on two refs),
-          list consumer TypeScript files, then open a PR on GitHub.
+          Scan the repo for OpenAPI + client files, or enter paths manually —
+          then open a PR on GitHub.
         </p>
       </div>
 
@@ -190,6 +231,15 @@ export function QuickRepair({ repos, onDone }: Props) {
               ))}
             </select>
           </label>
+
+          <button
+            type="button"
+            onClick={scanRepo}
+            disabled={scanning}
+            className="btn-ghost !py-2 !text-sm disabled:opacity-50"
+          >
+            {scanning ? "Scanning repo…" : "Scan repo for OpenAPI + clients"}
+          </button>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1 text-sm">

@@ -23,6 +23,19 @@ function resolveDbPath() {
   }
 }
 
+function ensureColumn(
+  sqlite: InstanceType<typeof Database>,
+  table: string,
+  column: string,
+  ddl: string,
+) {
+  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+  }>;
+  if (cols.some((c) => c.name === column)) return;
+  sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+}
+
 function createDb() {
   const path = resolveDbPath();
   const sqlite = new Database(path);
@@ -73,6 +86,10 @@ function createDb() {
       enabled INTEGER NOT NULL DEFAULT 1,
       webhook_id INTEGER,
       webhook_secret TEXT NOT NULL,
+      spec_source TEXT NOT NULL DEFAULT 'repo',
+      vendor_id TEXT,
+      vendor_spec_url TEXT,
+      baseline_spec TEXT,
       last_checked_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
@@ -116,6 +133,11 @@ function createDb() {
       created_at INTEGER NOT NULL
     );
   `);
+
+  ensureColumn(sqlite, "integrations", "spec_source", "TEXT NOT NULL DEFAULT 'repo'");
+  ensureColumn(sqlite, "integrations", "vendor_id", "TEXT");
+  ensureColumn(sqlite, "integrations", "vendor_spec_url", "TEXT");
+  ensureColumn(sqlite, "integrations", "baseline_spec", "TEXT");
 
   return drizzle(sqlite, { schema });
 }

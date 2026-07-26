@@ -165,6 +165,10 @@ export function createIntegration(input: {
   consumerPaths: string[];
   consumerRef: string;
   baseBranch: string;
+  specSource?: "repo" | "remote";
+  vendorId?: string | null;
+  vendorSpecUrl?: string | null;
+  baselineSpec?: string | null;
 }): Integration {
   const now = new Date();
   const row = getDb()
@@ -184,6 +188,10 @@ export function createIntegration(input: {
       baseBranch: input.baseBranch,
       enabled: true,
       webhookSecret: randomBytes(24).toString("hex"),
+      specSource: input.specSource ?? "repo",
+      vendorId: input.vendorId ?? null,
+      vendorSpecUrl: input.vendorSpecUrl ?? null,
+      baselineSpec: input.baselineSpec ?? null,
       createdAt: now,
       updatedAt: now,
     })
@@ -193,7 +201,11 @@ export function createIntegration(input: {
   writeAudit({
     workspaceId: input.workspaceId,
     action: "integration.created",
-    meta: { id: row.id, repo: `${input.owner}/${input.repo}` },
+    meta: {
+      id: row.id,
+      repo: `${input.owner}/${input.repo}`,
+      vendorId: input.vendorId,
+    },
   });
 
   return row;
@@ -213,6 +225,8 @@ export function updateIntegration(
     enabled: boolean;
     webhookId: number | null;
     lastCheckedAt: Date | null;
+    baselineSpec: string | null;
+    vendorSpecUrl: string | null;
   }>,
 ) {
   return getDb()
@@ -286,6 +300,10 @@ export function serializeIntegration(i: Integration) {
     baseBranch: i.baseBranch,
     enabled: i.enabled,
     webhookId: i.webhookId,
+    specSource: i.specSource ?? "repo",
+    vendorId: i.vendorId,
+    vendorSpecUrl: i.vendorSpecUrl,
+    hasBaseline: Boolean(i.baselineSpec),
     lastCheckedAt: i.lastCheckedAt?.toISOString() ?? null,
     createdAt: i.createdAt.toISOString(),
   };
