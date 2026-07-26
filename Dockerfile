@@ -30,10 +30,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/fixtures ./fixtures
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# Native sqlite module + deps
+# Native sqlite module (self-contained prebuilds; no bindings package)
 COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-COPY --from=builder /app/node_modules/bindings ./node_modules/bindings
-COPY --from=builder /app/node_modules/file-uri-to-path ./node_modules/file-uri-to-path
 
 RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data /app/node_modules
 
