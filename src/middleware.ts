@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * On Vercel, Next.js API route files take precedence over vercel.json rewrites.
- * When BACKEND_URL is set, proxy all /api traffic to Railway at runtime.
+ * Proxy /api to Railway whenever BACKEND_URL is set, or when running on Vercel.
  */
 export async function middleware(request: NextRequest) {
-  const backend = process.env.BACKEND_URL?.replace(/\/$/, "");
+  const backend = (
+    process.env.BACKEND_URL ||
+    (process.env.VERCEL ? "https://repairo-production.up.railway.app" : "")
+  )?.replace(/\/$/, "");
+
   if (!backend) {
     return NextResponse.next();
   }
