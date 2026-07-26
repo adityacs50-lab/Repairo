@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getGitHubOAuthConfig } from "@/lib/auth/config";
-import { randomBytes } from "crypto";
+import { createOAuthState } from "@/lib/auth/oauth-state";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET() {
   const config = getGitHubOAuthConfig();
@@ -16,7 +17,7 @@ export async function GET() {
     );
   }
 
-  const state = randomBytes(16).toString("hex");
+  const state = createOAuthState(config.sessionSecret);
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", config.clientId);
   url.searchParams.set("redirect_uri", config.callbackUrl);
@@ -24,9 +25,10 @@ export async function GET() {
   url.searchParams.set("state", state);
 
   const response = NextResponse.redirect(url.toString());
+  // Best-effort cookie (may be lost through some proxies); state is self-verifying.
   response.cookies.set("repairo_oauth_state", state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
     path: "/",
     maxAge: 600,

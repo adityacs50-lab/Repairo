@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * On Vercel, Next.js API route files take precedence over vercel.json rewrites.
- * Proxy /api to Railway whenever BACKEND_URL is set, or when running on Vercel.
+ * Proxy /api to Railway on Vercel. Explicitly forwards Cookie (fetch often strips it).
  */
 export async function middleware(request: NextRequest) {
   const backend = (
@@ -19,10 +18,34 @@ export async function middleware(request: NextRequest) {
     backend,
   );
 
-  const headers = new Headers(request.headers);
-  headers.delete("host");
+  const headers = new Headers();
+  const pass = [
+    "accept",
+    "accept-language",
+    "content-type",
+    "authorization",
+    "user-agent",
+    "x-hub-signature-256",
+    "x-github-event",
+    "x-github-delivery",
+    "stripe-signature",
+  ];
+  for (const key of pass) {
+    const value = request.headers.get(key);
+    if (value) headers.set(key, value);
+  }
+
+  const cookie = request.headers.get("cookie");
+  if (cookie) {
+    headers.set("cookie", cookie);
+  }
+
   headers.set("x-forwarded-host", request.headers.get("host") ?? "");
   headers.set("x-forwarded-proto", "https");
+  headers.set(
+    "x-forwarded-for",
+    request.headers.get("x-forwarded-for") ?? "vercel",
+  );
 
   const init: RequestInit = {
     method: request.method,
@@ -39,17 +62,25 @@ export async function middleware(request: NextRequest) {
   const responseHeaders = new Headers();
   upstream.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (lower === "transfer-encoding" || lower === "content-encoding") return;
-    if (lower === "set-cookie") return;
+    if (
+      lower === "transfer-encoding" ||
+      lower === "content-encoding" ||
+      lower === "set-cookie"
+    ) {
+      return;
+    }
     responseHeaders.set(key, value);
   });
 
-  const cookies =
-    typeof upstream.headers.getSetCookie === "function"
-      ? upstream.headers.getSetCookie()
-      : [];
-  for (const cookie of cookies) {
-    responseHeaders.append("set-cookie", cookie);
+  const getSetCookie = upstream.headers.getSetCookie?.bind(upstream.headers);
+  const cookies = getSetCookie ? getSetCookie() : [];
+  if (cookies.length) {
+    for (const c of cookies) {
+      responseHeaders.append("set-cookie", c);
+    }
+  } else {
+    const single = upstream.headers.get("set-cookie");
+    if (single) responseHeaders.append("set-cookie", single);
   }
 
   return new NextResponse(upstream.body, {

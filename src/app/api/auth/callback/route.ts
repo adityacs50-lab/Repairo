@@ -5,6 +5,7 @@ import {
   buildSessionValue,
   sessionCookieOptions,
 } from "@/lib/auth/session";
+import { verifyOAuthState } from "@/lib/auth/oauth-state";
 import { upsertGithubUser } from "@/lib/db/users";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +22,11 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   const storedState = request.cookies.get("repairo_oauth_state")?.value;
+  const stateOk =
+    verifyOAuthState(state, config.sessionSecret) ||
+    (Boolean(state) && Boolean(storedState) && state === storedState);
 
-  if (!code || !state || !storedState || state !== storedState) {
+  if (!code || !state || !stateOk) {
     return NextResponse.redirect(
       `${config.appUrl}/app?error=invalid_oauth_state`,
     );
@@ -93,11 +97,20 @@ export async function GET(request: NextRequest) {
     });
 
     const response = NextResponse.redirect(`${config.appUrl}/app`);
-    response.cookies.set(SESSION_COOKIE, sessionValue, sessionCookieOptions());
+    response.cookies.set(SESSION_COOKIE, sessionValue, {
+      ...sessionCookieOptions(),
+      secure: true,
+    });
     response.cookies.delete("repairo_oauth_state");
     return response;
-  } catch {
-    return NextResponse.redirect(`${config.appUrl}/app?error=oauth_failed`);
+  } catch (err) {
+    const detail =
+      err instanceof Error ? err.message.slice(0, 80) : "oauth_failed";
+    const q = new URLSearchParams({
+      error: "oauth_failed",
+      detail,
+    });
+    return NextResponse.redirect(`${config.appUrl}/app?${q.toString()}`);
   }
 }
 

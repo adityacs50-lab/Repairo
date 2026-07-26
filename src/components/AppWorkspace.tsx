@@ -135,8 +135,19 @@ export function AppWorkspace() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error")) {
-      setError("GitHub sign-in failed or is not configured.");
+    const oauthError = params.get("error");
+    if (oauthError) {
+      const detail = params.get("detail");
+      const messages: Record<string, string> = {
+        oauth_not_configured:
+          "GitHub OAuth is not configured on the server. Check Railway env vars.",
+        invalid_oauth_state:
+          "Sign-in expired or was interrupted. Click Continue with GitHub again.",
+        oauth_failed:
+          detail ||
+          "GitHub rejected the sign-in. Check Client ID/Secret and callback URL.",
+      };
+      setError(messages[oauthError] ?? "GitHub sign-in failed. Try again.");
       window.history.replaceState({}, "", "/app");
     }
     if (params.get("billing") === "success") {
