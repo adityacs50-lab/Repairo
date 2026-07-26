@@ -1,10 +1,20 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 
 function getKey() {
-  const secret =
-    process.env.TOKEN_ENCRYPTION_KEY ||
-    process.env.SESSION_SECRET ||
-    "dev-only-insecure-token-encryption-key!!";
+  const secret = process.env.TOKEN_ENCRYPTION_KEY || process.env.SESSION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "TOKEN_ENCRYPTION_KEY or SESSION_SECRET must be set in production",
+      );
+    }
+    return createHash("sha256")
+      .update("dev-only-insecure-token-encryption-key!!")
+      .digest();
+  }
+  if (process.env.NODE_ENV === "production" && secret.length < 32) {
+    throw new Error("TOKEN_ENCRYPTION_KEY / SESSION_SECRET must be 32+ chars");
+  }
   return createHash("sha256").update(secret).digest();
 }
 

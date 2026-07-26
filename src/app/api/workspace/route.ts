@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { jsonError, requireGithubConfig } from "@/lib/api/errors";
 import { getDb } from "@/lib/db";
@@ -9,9 +9,20 @@ import {
   workspaces,
 } from "@/lib/db/schema";
 import { getWorkspaceForUser } from "@/lib/db/users";
-import { requireWorkspaceAccess } from "@/lib/db/integrations";
+import {
+  getWorkspaceUsage,
+  requireWorkspaceAccess,
+} from "@/lib/db/integrations";
 import { randomUUID } from "crypto";
 import { stripeConfigured } from "@/lib/billing/stripe";
+import { PLANS } from "@/lib/billing/plans";
+import {
+  createPendingInvite,
+  listPendingInvites,
+} from "@/lib/db/invites";
+import { listAudit } from "@/lib/db/audit";
+import { writeAudit } from "@/lib/db/audit";
+import { assertCanInvite } from "@/lib/db/invites";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,6 +50,10 @@ export async function GET() {
       .where(eq(workspaceMembers.workspaceId, workspace.id))
       .all();
 
+    const usage = getWorkspaceUsage(workspace);
+    const pending = listPendingInvites(workspace.id);
+    const audit = listAudit(workspace.id, 20);
+
     return NextResponse.json({
       workspace: {
         id: workspace.id,
@@ -48,6 +63,19 @@ export async function GET() {
       },
       role: member.role,
       members,
+      pendingInvites: pending.map((p) => ({
+        id: p.id,
+        githubLogin: p.githubLogin,
+        createdAt: p.createdAt.toISOString(),
+      })),
+      usage,
+      plans: PLANS,
+      audit: audit.map((a) => ({
+        id: a.id,
+        action: a.action,
+        meta: a.metaJson,
+        createdAt: a.createdAt.toISOString(),
+      })),
       billingConfigured: stripeConfigured(),
     });
   } catch (error) {
@@ -79,48 +107,55 @@ export async function PATCH(request: NextRequest) {
         .set({ name: body.name.trim(), updatedAt: new Date() })
         .where(eq(workspaces.id, workspace.id))
         .run();
+      writeAudit({
+        workspaceId: workspace.id,
+        userId: session.userId,
+        action: "workspace.renamed",
+        meta: { name: body.name.trim() },
+      });
     }
 
     if (body.inviteLogin?.trim()) {
+      const login = body.inviteLogin.trim().replace(/^@/, "");
       const invitee = getDb()
         .select()
         .from(users)
-        .where(eq(users.login, body.inviteLogin.trim()))
+        .where(sql`lower(${users.login}) = ${login.toLowerCase()}`)
         .get();
-      if (!invitee) {
-        return NextResponse.json(
-          {
-            error:
-              "User not found. They must sign in to Repairo with GitHub first.",
-          },
-          { status: 404 },
-        );
-      }
-      const existing = getDb()
-        .select()
-        .from(workspaceMembers)
-        .where(eq(workspaceMembers.userId, invitee.id))
-        .get();
-      // Allow invite even if in another workspace membership unique is per workspace
-      const already = getDb()
-        .select()
-        .from(workspaceMembers)
-        .where(eq(workspaceMembers.workspaceId, workspace.id))
-        .all()
-        .find((m) => m.userId === invitee.id);
-      if (!already) {
-        getDb()
-          .insert(workspaceMembers)
-          .values({
-            id: randomUUID(),
+
+      if (invitee) {
+        assertCanInvite(workspace);
+        const already = getDb()
+          .select()
+          .from(workspaceMembers)
+          .where(eq(workspaceMembers.workspaceId, workspace.id))
+          .all()
+          .find((m) => m.userId === invitee.id);
+        if (!already) {
+          getDb()
+            .insert(workspaceMembers)
+            .values({
+              id: randomUUID(),
+              workspaceId: workspace.id,
+              userId: invitee.id,
+              role: "member",
+              createdAt: new Date(),
+            })
+            .run();
+          writeAudit({
             workspaceId: workspace.id,
-            userId: invitee.id,
-            role: "member",
-            createdAt: new Date(),
-          })
-          .run();
+            userId: session.userId,
+            action: "invite.accepted_direct",
+            meta: { githubLogin: login },
+          });
+        }
+      } else {
+        createPendingInvite({
+          workspace,
+          githubLogin: login,
+          invitedByUserId: session.userId,
+        });
       }
-      void existing;
     }
 
     const updated = getWorkspaceForUser(session.userId);
@@ -132,6 +167,13 @@ export async function PATCH(request: NextRequest) {
             plan: updated.plan,
           }
         : null,
+      pendingInvites: updated
+        ? listPendingInvites(updated.id).map((p) => ({
+            id: p.id,
+            githubLogin: p.githubLogin,
+            createdAt: p.createdAt.toISOString(),
+          }))
+        : [],
     });
   } catch (error) {
     return jsonError(error);

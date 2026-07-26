@@ -72,6 +72,29 @@ You do **not** need GitHub/Stripe secrets on Vercel if all `/api` traffic is rew
 
 ---
 
+## C2. Stripe billing (optional but required for Pro)
+
+1. Create a Stripe account → **Product** “Repairo Pro” → recurring **$29/mo** price  
+2. Copy the **Price ID** (`price_…`) into Railway as `STRIPE_PRICE_PRO`  
+3. Railway vars:
+
+| Variable | Value |
+|----------|--------|
+| `STRIPE_SECRET_KEY` | `sk_live_…` or `sk_test_…` |
+| `STRIPE_PRICE_PRO` | `price_…` |
+| `STRIPE_WEBHOOK_SECRET` | from step 4 |
+
+4. Stripe Dashboard → **Developers → Webhooks → Add endpoint**  
+   - URL: `https://YOUR-VERCEL-DOMAIN/api/webhooks/stripe` (proxied to Railway)  
+   - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`  
+   - Copy signing secret → `STRIPE_WEBHOOK_SECRET`  
+5. Redeploy Railway. Health should show `"stripe": true`.  
+6. Smoke: `/app` → Settings → **Upgrade to Pro** → complete Checkout → plan becomes `pro`.
+
+Plans: **Free** = 1 integration, 15 runs/mo, 3 seats · **Pro** = 50 / 500 / 15.
+
+---
+
 ## D. Smoke test
 
 1. `https://YOUR-VERCEL-DOMAIN/api/health` — should proxy Railway and return `ok`
@@ -101,6 +124,8 @@ Fixture demo: `/demo` (also uses `/api/repair` via Railway).
 | Cookie / signed-out after login | Same `APP_URL` on Railway; don’t open Railway URL for login — use Vercel |
 | Webhook never fires | Integration webhook URL uses `APP_URL` (Vercel); Vercel must rewrite `/api/webhooks/*` |
 | Data lost on Railway restart | Attach volume at `/app/data` |
+| Stripe checkout works but plan stays free | Webhook URL must hit Vercel `/api/webhooks/stripe`; check `STRIPE_WEBHOOK_SECRET` |
+| Upgrade button missing | Stripe vars not set — health shows `"stripe": false` |
 
 ---
 

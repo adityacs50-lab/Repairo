@@ -1,8 +1,9 @@
 import Stripe from "stripe";
 import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { getDb } from "@/lib/db";
 import { subscriptions, users, workspaces } from "@/lib/db/schema";
-import { randomUUID } from "crypto";
+import { writeAudit } from "@/lib/db/audit";
 
 export function stripeConfigured() {
   return Boolean(
@@ -59,7 +60,8 @@ export function setWorkspacePlan(
   if (existing) {
     db.update(subscriptions)
       .set({
-        stripeSubscriptionId: sub?.subscriptionId ?? existing.stripeSubscriptionId,
+        stripeSubscriptionId:
+          sub?.subscriptionId ?? existing.stripeSubscriptionId,
         status: sub?.status ?? existing.status,
         priceId: sub?.priceId ?? existing.priceId,
         updatedAt: now,
@@ -79,4 +81,10 @@ export function setWorkspacePlan(
       })
       .run();
   }
+
+  writeAudit({
+    workspaceId,
+    action: "billing.plan_changed",
+    meta: { plan, status: sub?.status },
+  });
 }

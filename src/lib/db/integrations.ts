@@ -1,18 +1,19 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   integrations,
   repairRuns,
   workspaces,
   workspaceMembers,
+  subscriptions,
+  auditLogs,
   type Integration,
   type Workspace,
 } from "@/lib/db/schema";
 import { AuthError } from "@/lib/auth/session";
 import { randomBytes, randomUUID } from "crypto";
-
-export const FREE_INTEGRATION_LIMIT = 1;
-export const PRO_INTEGRATION_CAP = 50;
+import { getPlanLimits } from "@/lib/billing/plans";
+import { writeAudit } from "@/lib/db/audit";
 
 export function requireWorkspaceAccess(userId: string, workspaceId: string) {
   const member = getDb()
@@ -43,16 +44,97 @@ export function countIntegrations(workspaceId: string) {
     .all().length;
 }
 
+function monthStart() {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+export function countRunsThisMonth(workspaceId: string) {
+  const db = getDb();
+  const ints = db
+    .select()
+    .from(integrations)
+    .where(eq(integrations.workspaceId, workspaceId))
+    .all();
+  const ids = new Set(ints.map((i) => i.id));
+  const start = monthStart();
+  const integrationRuns = db
+    .select()
+    .from(repairRuns)
+    .where(gte(repairRuns.createdAt, start))
+    .all()
+    .filter((r) => ids.has(r.integrationId)).length;
+
+  // Quick repairs don't create repair_runs rows — count audit events too.
+  const quick = db
+    .select()
+    .from(auditLogs)
+    .where(eq(auditLogs.workspaceId, workspaceId))
+    .all()
+    .filter(
+      (a) =>
+        a.action === "repair.quick" &&
+        a.createdAt.getTime() >= start.getTime(),
+    ).length;
+
+  return integrationRuns + quick;
+}
+
+export function getWorkspaceUsage(workspace: Workspace) {
+  const limits = getPlanLimits(workspace.plan);
+  const integrationsUsed = countIntegrations(workspace.id);
+  const runsUsed = countRunsThisMonth(workspace.id);
+  const seatsUsed = getDb()
+    .select()
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.workspaceId, workspace.id))
+    .all().length;
+  const sub = getDb()
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.workspaceId, workspace.id))
+    .get();
+
+  return {
+    plan: workspace.plan,
+    limits: {
+      integrations: limits.integrations,
+      runsPerMonth: limits.runsPerMonth,
+      seats: limits.seats,
+    },
+    used: {
+      integrations: integrationsUsed,
+      runsThisMonth: runsUsed,
+      seats: seatsUsed,
+    },
+    subscriptionStatus: sub?.status ?? "inactive",
+    paymentIssue: ["past_due", "unpaid", "incomplete"].includes(
+      sub?.status ?? "",
+    ),
+  };
+}
+
 export function assertCanCreateIntegration(workspace: Workspace) {
+  const limits = getPlanLimits(workspace.plan);
   const count = countIntegrations(workspace.id);
-  if (workspace.plan === "free" && count >= FREE_INTEGRATION_LIMIT) {
+  if (count >= limits.integrations) {
     throw new AuthError(
-      "Free plan allows 1 integration. Upgrade to Pro to add more.",
+      `${limits.name} plan allows ${limits.integrations} integration${
+        limits.integrations === 1 ? "" : "s"
+      }. Upgrade to Pro for more.`,
       402,
     );
   }
-  if (count >= PRO_INTEGRATION_CAP) {
-    throw new AuthError("Integration limit reached", 400);
+}
+
+export function assertCanRunRepair(workspace: Workspace) {
+  const limits = getPlanLimits(workspace.plan);
+  const used = countRunsThisMonth(workspace.id);
+  if (used >= limits.runsPerMonth) {
+    throw new AuthError(
+      `Monthly run limit reached (${limits.runsPerMonth} on ${limits.name}). Upgrade or wait until next month.`,
+      402,
+    );
   }
 }
 
@@ -85,7 +167,7 @@ export function createIntegration(input: {
   baseBranch: string;
 }): Integration {
   const now = new Date();
-  return getDb()
+  const row = getDb()
     .insert(integrations)
     .values({
       id: randomUUID(),
@@ -107,6 +189,14 @@ export function createIntegration(input: {
     })
     .returning()
     .get();
+
+  writeAudit({
+    workspaceId: input.workspaceId,
+    action: "integration.created",
+    meta: { id: row.id, repo: `${input.owner}/${input.repo}` },
+  });
+
+  return row;
 }
 
 export function updateIntegration(
@@ -134,8 +224,16 @@ export function updateIntegration(
 }
 
 export function deleteIntegration(id: string) {
+  const existing = getIntegration(id);
   getDb().delete(repairRuns).where(eq(repairRuns.integrationId, id)).run();
   getDb().delete(integrations).where(eq(integrations.id, id)).run();
+  if (existing) {
+    writeAudit({
+      workspaceId: existing.workspaceId,
+      action: "integration.deleted",
+      meta: { id },
+    });
+  }
 }
 
 export function listRuns(workspaceId: string, limit = 50) {

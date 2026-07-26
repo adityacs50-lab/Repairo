@@ -62,10 +62,10 @@ SQLite data persists in the `repairo-data` volume.
 
 ## Plans
 
-- **Free:** 1 watched integration  
-- **Pro:** up to 50 integrations (Stripe)
+- **Free:** 1 watched integration · 15 repair runs / month · 3 seats  
+- **Pro ($29/mo):** 50 integrations · 500 runs / month · 15 seats  
 
-Without Stripe env, Free still works; billing UI shows setup instructions.
+Without Stripe env, Free still works; billing UI shows setup instructions. See [DEPLOY.md](DEPLOY.md) § Stripe.
 
 ## API map
 

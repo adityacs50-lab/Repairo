@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 export function SiteHeader({
   active,
 }: {
-  active?: "home" | "demo" | "app";
+  active?: "home" | "demo" | "app" | "pricing";
 }) {
   const [open, setOpen] = useState(false);
 
@@ -36,6 +36,16 @@ export function SiteHeader({
         </Link>
 
         <div className="hidden items-center gap-4 sm:flex">
+          <Link
+            href="/pricing"
+            className={`text-sm ${
+              active === "pricing"
+                ? "font-medium"
+                : "text-black/70 hover:text-black"
+            }`}
+          >
+            Pricing
+          </Link>
           <Link
             href="/app"
             className={`text-sm ${
@@ -98,6 +108,7 @@ export function SiteHeader({
             <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4 text-sm sm:px-8">
               {[
                 { href: "/", label: "Product", match: "home" as const },
+                { href: "/pricing", label: "Pricing", match: "pricing" as const },
                 { href: "/app", label: "Open app", match: "app" as const },
                 { href: "/demo", label: "Live demo", match: "demo" as const },
                 { href: "/#how", label: "How it works" },

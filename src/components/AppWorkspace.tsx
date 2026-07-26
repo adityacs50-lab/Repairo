@@ -93,6 +93,16 @@ export function AppWorkspace() {
   >([]);
   const [billingConfigured, setBillingConfigured] = useState(false);
   const [role, setRole] = useState<"owner" | "member">("owner");
+  const [pendingInvites, setPendingInvites] = useState<
+    Array<{ id: string; githubLogin: string; createdAt: string }>
+  >([]);
+  const [usage, setUsage] = useState<{
+    plan: string;
+    limits: { integrations: number; runsPerMonth: number; seats: number };
+    used: { integrations: number; runsThisMonth: number; seats: number };
+    subscriptionStatus: string;
+    paymentIssue: boolean;
+  } | null>(null);
 
   const refreshAll = useCallback(async () => {
     const [intRes, runsRes, wsRes] = await Promise.all([
@@ -124,12 +134,20 @@ export function AppWorkspace() {
         billingConfigured: boolean;
         role: "owner" | "member";
         workspace: Workspace;
+        usage?: typeof usage;
+        pendingInvites?: Array<{
+          id: string;
+          githubLogin: string;
+          createdAt: string;
+        }>;
       };
       setMembers(data.members);
       setBillingConfigured(data.billingConfigured);
       setRole(data.role);
       setWorkspace(data.workspace);
       setWorkspaceName(data.workspace.name);
+      if (data.usage) setUsage(data.usage);
+      if (data.pendingInvites) setPendingInvites(data.pendingInvites);
     }
   }, []);
 
@@ -152,6 +170,11 @@ export function AppWorkspace() {
     }
     if (params.get("billing") === "success") {
       setMessage("Billing updated. Your workspace is Pro.");
+      setTab("settings");
+      window.history.replaceState({}, "", "/app");
+    }
+    if (params.get("billing") === "cancel") {
+      setMessage("Checkout canceled — you can upgrade anytime.");
       window.history.replaceState({}, "", "/app");
     }
 
@@ -472,20 +495,92 @@ export function AppWorkspace() {
 
       {tab === "overview" && (
         <div className="space-y-4">
+          {usage?.paymentIssue && (
+            <div className="border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+              Payment failed or past due. Update your card in Manage billing or
+              your workspace may drop back to Free limits.
+            </div>
+          )}
           <div className="grid gap-px bg-line sm:grid-cols-3">
             {[
-              { label: "Plan", value: workspace?.plan ?? "free" },
-              { label: "Integrations", value: String(integrations.length) },
-              { label: "Recent runs", value: String(runs.length) },
+              {
+                label: "Plan",
+                value: workspace?.plan ?? "free",
+              },
+              {
+                label: "Integrations",
+                value: usage
+                  ? `${usage.used.integrations}/${usage.limits.integrations}`
+                  : String(integrations.length),
+              },
+              {
+                label: "Runs this month",
+                value: usage
+                  ? `${usage.used.runsThisMonth}/${usage.limits.runsPerMonth}`
+                  : String(runs.length),
+              },
             ].map((stat) => (
               <div key={stat.label} className="bg-bg px-4 py-5">
                 <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-dim">
                   {stat.label}
                 </p>
-                <p className="mt-2 text-2xl font-semibold capitalize">{stat.value}</p>
+                <p className="mt-2 text-2xl font-semibold capitalize">
+                  {stat.value}
+                </p>
               </div>
             ))}
           </div>
+          {usage && (
+            <div className="border border-line bg-bg-panel p-5">
+              <h2 className="text-lg font-medium">Usage</h2>
+              <div className="mt-4 space-y-3">
+                {(
+                  [
+                    [
+                      "Integrations",
+                      usage.used.integrations,
+                      usage.limits.integrations,
+                    ],
+                    [
+                      "Runs",
+                      usage.used.runsThisMonth,
+                      usage.limits.runsPerMonth,
+                    ],
+                    ["Seats", usage.used.seats, usage.limits.seats],
+                  ] as const
+                ).map(([label, used, limit]) => {
+                  const pct = Math.min(100, Math.round((used / limit) * 100));
+                  return (
+                    <div key={label}>
+                      <div className="flex justify-between text-xs text-muted">
+                        <span>{label}</span>
+                        <span className="font-mono">
+                          {used} / {limit}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 bg-line">
+                        <div
+                          className="h-full bg-fg transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {workspace?.plan !== "pro" && billingConfigured && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("settings");
+                  }}
+                  className="btn-primary mt-5 !py-2 !text-sm"
+                >
+                  Upgrade to Pro
+                </button>
+              )}
+            </div>
+          )}
           <div className="border border-line bg-bg-panel p-5">
             <h2 className="text-lg font-medium">Latest runs</h2>
             <div className="mt-4 space-y-2">
@@ -507,7 +602,9 @@ export function AppWorkspace() {
                       PR #{run.prNumber}
                     </a>
                   ) : (
-                    <span className="text-xs text-muted-dim">{run.error || "—"}</span>
+                    <span className="text-xs text-muted-dim">
+                      {run.error || "—"}
+                    </span>
                   )}
                 </div>
               ))}
@@ -729,7 +826,7 @@ export function AppWorkspace() {
                 <input
                   value={inviteLogin}
                   onChange={(e) => setInviteLogin(e.target.value)}
-                  placeholder="must have signed into Repairo once"
+                  placeholder="works even before they sign in"
                   className="w-full border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-accent"
                 />
               </label>
@@ -752,19 +849,45 @@ export function AppWorkspace() {
                 </li>
               ))}
             </ul>
+            {pendingInvites.length > 0 && (
+              <div className="mt-4 border-t border-line pt-4">
+                <p className="font-mono text-[11px] uppercase text-muted-dim">
+                  Pending invites
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-muted">
+                  {pendingInvites.map((p) => (
+                    <li key={p.id}>@{p.githubLogin} · waiting for first sign-in</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="border border-line bg-bg-panel p-5">
             <h2 className="text-lg font-medium">Billing</h2>
             <p className="mt-2 text-sm text-muted">
               Current plan:{" "}
-              <span className="text-fg capitalize">{workspace?.plan}</span>. Free
-              includes 1 integration; Pro unlocks more.
+              <span className="text-fg capitalize">{workspace?.plan}</span>
+              {usage ? (
+                <>
+                  {" "}
+                  · {usage.used.integrations}/{usage.limits.integrations}{" "}
+                  integrations · {usage.used.runsThisMonth}/
+                  {usage.limits.runsPerMonth} runs this month
+                </>
+              ) : null}
+              .
             </p>
+            {usage?.paymentIssue && (
+              <p className="mt-2 text-sm text-warn">
+                Subscription status: {usage.subscriptionStatus}. Update payment
+                method to keep Pro.
+              </p>
+            )}
             {!billingConfigured ? (
               <p className="mt-3 text-sm text-muted-dim">
                 Stripe is not configured on this server. Set STRIPE_SECRET_KEY,
-                STRIPE_PRICE_PRO, and STRIPE_WEBHOOK_SECRET.
+                STRIPE_PRICE_PRO, and STRIPE_WEBHOOK_SECRET on Railway.
               </p>
             ) : (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -774,7 +897,7 @@ export function AppWorkspace() {
                     onClick={startCheckout}
                     className="btn-primary !py-2 !text-sm"
                   >
-                    Upgrade to Pro
+                    Upgrade to Pro — $29/mo
                   </button>
                 )}
                 <button
@@ -784,6 +907,9 @@ export function AppWorkspace() {
                 >
                   Manage billing
                 </button>
+                <a href="/pricing" className="btn-ghost !py-2 !text-sm">
+                  Compare plans
+                </a>
               </div>
             )}
           </div>

@@ -7,6 +7,7 @@ import {
 } from "@/lib/billing/stripe";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { writeAudit } from "@/lib/db/audit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -37,9 +38,8 @@ export async function POST(request: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as {
-      metadata?: { workspaceId?: string };
+      metadata?: { workspaceId?: string; userId?: string };
       subscription?: string | null;
-      customer?: string | null;
     };
     const workspaceId = session.metadata?.workspaceId;
     if (workspaceId && session.subscription) {
@@ -47,6 +47,11 @@ export async function POST(request: NextRequest) {
         subscriptionId: String(session.subscription),
         status: "active",
         priceId: process.env.STRIPE_PRICE_PRO,
+      });
+      writeAudit({
+        workspaceId,
+        userId: session.metadata?.userId,
+        action: "billing.checkout_completed",
       });
     }
   }
@@ -83,6 +88,37 @@ export async function POST(request: NextRequest) {
         status: sub.status,
         priceId: sub.items?.data?.[0]?.price?.id,
       });
+    }
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    const invoice = event.data.object as {
+      customer?: string | null;
+      subscription?: string | null;
+    };
+    if (invoice.customer) {
+      const user = getDb()
+        .select()
+        .from(users)
+        .where(eq(users.stripeCustomerId, String(invoice.customer)))
+        .get();
+      if (user) {
+        const { getWorkspaceForUser } = await import("@/lib/db/users");
+        const workspace = getWorkspaceForUser(user.id);
+        if (workspace) {
+          setWorkspacePlan(workspace.id, workspace.plan, {
+            subscriptionId: invoice.subscription
+              ? String(invoice.subscription)
+              : undefined,
+            status: "past_due",
+          });
+          writeAudit({
+            workspaceId: workspace.id,
+            userId: user.id,
+            action: "billing.payment_failed",
+          });
+        }
+      }
     }
   }
 

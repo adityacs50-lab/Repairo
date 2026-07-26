@@ -87,24 +87,34 @@ export async function getFileContent(
     .filter(Boolean)
     .map(encodeURIComponent)
     .join("/");
-  const data = await gh<{
-    type: string;
-    encoding: string;
-    content: string;
-    sha: string;
-    path: string;
-  }>(token, `/repos/${owner}/${repo}/contents/${encodedPath}${qs}`);
+  try {
+    const data = await gh<{
+      type: string;
+      encoding: string;
+      content: string;
+      sha: string;
+      path: string;
+    }>(token, `/repos/${owner}/${repo}/contents/${encodedPath}${qs}`);
 
-  if (data.type !== "file") {
-    throw new GitHubError(`${path} is not a file`, 400);
+    if (data.type !== "file") {
+      throw new GitHubError(`${path} is not a file`, 400);
+    }
+
+    const content =
+      data.encoding === "base64"
+        ? Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf8")
+        : data.content;
+
+    return { path: data.path, content, sha: data.sha };
+  } catch (error) {
+    if (error instanceof GitHubError && error.status === 404) {
+      throw new GitHubError(
+        `File not found: ${path}${ref ? ` @ ${ref}` : ""} — this repo needs an OpenAPI file and TypeScript consumers`,
+        404,
+      );
+    }
+    throw error;
   }
-
-  const content =
-    data.encoding === "base64"
-      ? Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf8")
-      : data.content;
-
-  return { path: data.path, content, sha: data.sha };
 }
 
 export async function getRepo(

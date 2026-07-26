@@ -147,6 +147,28 @@ export default function HomePage() {
         </section>
 
         <section
+          id="pricing"
+          className="border-t border-line px-5 py-20 sm:px-8"
+        >
+          <div className="mx-auto max-w-6xl">
+            <Reveal>
+              <h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+                Free to try. Pro when you scale watches.
+              </h2>
+              <p className="mt-4 max-w-xl text-muted">
+                1 integration and 15 runs/month on Free. Pro unlocks 50 watches,
+                500 runs, and team seats.
+              </p>
+              <div className="mt-8">
+                <Link href="/pricing" className="btn-ghost">
+                  See pricing
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        <section
           id="repair"
           className="border-t border-line px-5 py-20 sm:px-8"
         >

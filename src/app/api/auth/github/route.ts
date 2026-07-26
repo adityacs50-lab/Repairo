@@ -1,11 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getGitHubOAuthConfig } from "@/lib/auth/config";
 import { createOAuthState } from "@/lib/auth/oauth-state";
+import { assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  try {
+    assertRateLimit({
+      key: `oauth:${clientIp(request)}`,
+      limit: 20,
+      windowMs: 60_000,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Rate limited";
+    return NextResponse.json({ error: message }, { status: 429 });
+  }
+
   const config = getGitHubOAuthConfig();
   if (!config) {
     return NextResponse.json(
@@ -25,7 +37,6 @@ export async function GET() {
   url.searchParams.set("state", state);
 
   const response = NextResponse.redirect(url.toString());
-  // Best-effort cookie (may be lost through some proxies); state is self-verifying.
   response.cookies.set("repairo_oauth_state", state, {
     httpOnly: true,
     secure: true,

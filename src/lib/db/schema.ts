@@ -144,6 +144,50 @@ export const subscriptions = sqliteTable("subscriptions", {
     .$defaultFn(() => new Date()),
 });
 
+export const pendingInvites = sqliteTable(
+  "pending_invites",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id),
+    githubLogin: text("github_login").notNull(),
+    invitedByUserId: text("invited_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    status: text("status", { enum: ["pending", "accepted", "revoked"] })
+      .notNull()
+      .default("pending"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("pending_invites_workspace_login").on(
+      t.workspaceId,
+      t.githubLogin,
+    ),
+  ],
+);
+
+export const auditLogs = sqliteTable("audit_logs", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  workspaceId: text("workspace_id"),
+  userId: text("user_id"),
+  action: text("action").notNull(),
+  metaJson: text("meta_json", { mode: "json" }).$type<Record<
+    string,
+    unknown
+  > | null>(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
 export type User = typeof users.$inferSelect;
 export type Workspace = typeof workspaces.$inferSelect;
 export type Integration = typeof integrations.$inferSelect;

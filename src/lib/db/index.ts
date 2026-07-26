@@ -98,6 +98,23 @@ function createDb() {
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS pending_invites (
+      id TEXT PRIMARY KEY NOT NULL,
+      workspace_id TEXT NOT NULL REFERENCES workspaces(id),
+      github_login TEXT NOT NULL,
+      invited_by_user_id TEXT NOT NULL REFERENCES users(id),
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at INTEGER NOT NULL,
+      UNIQUE(workspace_id, github_login)
+    );
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id TEXT PRIMARY KEY NOT NULL,
+      workspace_id TEXT,
+      user_id TEXT,
+      action TEXT NOT NULL,
+      meta_json TEXT,
+      created_at INTEGER NOT NULL
+    );
   `);
 
   return drizzle(sqlite, { schema });

@@ -1,11 +1,10 @@
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { getDb } from "@/lib/db";
-import { repairRuns, type Integration } from "@/lib/db/schema";
-import { updateIntegration } from "@/lib/db/integrations";
+import { repairRuns, type Integration, workspaces } from "@/lib/db/schema";
+import { assertCanRunRepair, updateIntegration } from "@/lib/db/integrations";
 import { decryptToken } from "@/lib/crypto/token";
 import { getUserById } from "@/lib/db/users";
-import { workspaces } from "@/lib/db/schema";
 import { runRepair } from "@/lib/engine";
 import {
   createPullRequestFromRepair,
@@ -21,6 +20,14 @@ export async function runIntegrationJob(options: {
   accessToken?: string;
 }) {
   const db = getDb();
+  const workspace = db
+    .select()
+    .from(workspaces)
+    .where(eq(workspaces.id, options.integration.workspaceId))
+    .get();
+  if (!workspace) throw new Error("Workspace not found");
+  assertCanRunRepair(workspace);
+
   const runId = randomUUID();
   const now = new Date();
 
@@ -35,13 +42,6 @@ export async function runIntegrationJob(options: {
     .run();
 
   try {
-    const workspace = db
-      .select()
-      .from(workspaces)
-      .where(eq(workspaces.id, options.integration.workspaceId))
-      .get();
-    if (!workspace) throw new Error("Workspace not found");
-
     let token = options.accessToken;
     if (!token) {
       const owner = getUserById(workspace.ownerUserId);

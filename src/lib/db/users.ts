@@ -9,6 +9,8 @@ import {
 } from "./schema";
 import { encryptToken } from "@/lib/crypto/token";
 import { randomUUID } from "crypto";
+import { acceptPendingInvitesForLogin } from "@/lib/db/invites";
+import { writeAudit } from "@/lib/db/audit";
 
 export async function upsertGithubUser(input: {
   githubId: string;
@@ -82,6 +84,14 @@ export async function upsertGithubUser(input: {
       })
       .run();
 
+    acceptPendingInvitesForLogin(user.id, input.login);
+    writeAudit({
+      workspaceId: workspace.id,
+      userId: user.id,
+      action: "user.signup",
+      meta: { login: input.login },
+    });
+
     return { user, workspace };
   }
 
@@ -122,6 +132,8 @@ export async function upsertGithubUser(input: {
       })
       .run();
   }
+
+  acceptPendingInvitesForLogin(user.id, input.login);
 
   return { user, workspace };
 }
