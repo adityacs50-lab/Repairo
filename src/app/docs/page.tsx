@@ -31,6 +31,7 @@ export default function DocsPage() {
           </a>{" "}
           loop: detect → impact → apply as a PR.
         </p>
+        <ol className="list-decimal space-y-2 pl-5">
           <li>
             Sign in at <Link href="/app" className="text-fg underline">/app</Link>{" "}
             with GitHub (<code className="text-fg">repo</code> +{" "}
