@@ -6,22 +6,27 @@ const columns = [
     links: [
       { href: "/app", label: "Try on GitHub" },
       { href: "/demo", label: "Live demo" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/use-cases", label: "Use cases" },
       { href: "/#how", label: "How it works" },
     ],
   },
   {
-    title: "Resources",
+    title: "Developers",
     links: [
+      { href: "/docs", label: "Docs" },
+      { href: "/changelog", label: "Changelog" },
+      { href: "/security", label: "Security" },
       { href: "/api/health", label: "Status" },
-      { href: "/privacy", label: "Privacy" },
-      { href: "/terms", label: "Terms" },
     ],
   },
   {
-    title: "Connect",
+    title: "Company",
     links: [
-      { href: "/app", label: "Open app" },
-      { href: "/demo", label: "Fixture demo" },
+      { href: "/about", label: "About" },
+      { href: "/contact", label: "Contact" },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/terms", label: "Terms" },
     ],
   },
 ];
@@ -36,6 +41,17 @@ export function SiteFooter() {
             Self-maintaining API integrations — detect, impact, repair on your
             GitHub.
           </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/docs" className="text-sm text-muted hover:text-fg">
+              Docs
+            </Link>
+            <Link href="/security" className="text-sm text-muted hover:text-fg">
+              Security
+            </Link>
+            <Link href="/contact" className="text-sm text-muted hover:text-fg">
+              Contact
+            </Link>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
           {columns.map((col) => (
