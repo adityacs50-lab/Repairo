@@ -18,6 +18,7 @@ const columns = [
       { href: "/docs", label: "Docs" },
       { href: "/changelog", label: "Changelog" },
       { href: "/security", label: "Security" },
+      { href: "/video", label: "Launch reel" },
       { href: "/api/health", label: "Status" },
     ],
   },
