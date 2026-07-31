@@ -29,13 +29,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const origin = request.nextUrl.origin;
-  const callbackUrl = `${origin}/api/auth/callback`;
+  const callbackUrl = process.env.GITHUB_CALLBACK_URL?.trim() || `${request.nextUrl.origin}/api/auth/callback`;
 
   const state = createOAuthState(config.sessionSecret);
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", config.clientId);
-  url.searchParams.set("redirect_uri", callbackUrl);
+  if (process.env.OMIT_REDIRECT_URI !== "true") {
+    url.searchParams.set("redirect_uri", callbackUrl);
+  }
   url.searchParams.set("scope", config.scopes);
   url.searchParams.set("state", state);
 
