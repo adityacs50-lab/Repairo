@@ -1,9 +1,12 @@
 export function getAppUrl() {
   if (process.env.APP_URL?.trim()) return process.env.APP_URL.trim().replace(/\/$/, "");
   if (process.env.NEXT_PUBLIC_APP_URL?.trim()) return process.env.NEXT_PUBLIC_APP_URL.trim().replace(/\/$/, "");
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim()) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()}`;
+  if (process.env.VERCEL_URL?.trim()) return `https://${process.env.VERCEL_URL.trim()}`;
   if (process.env.RAILWAY_PUBLIC_DOMAIN?.trim()) return `https://${process.env.RAILWAY_PUBLIC_DOMAIN.trim()}`;
   return "http://localhost:3000";
 }
+
 
 
 export function getGitHubOAuthConfig() {
