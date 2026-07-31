@@ -1,10 +1,10 @@
 export function getAppUrl() {
-  return (
-    process.env.APP_URL?.trim().replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") ||
-    "http://localhost:3000"
-  );
+  if (process.env.APP_URL?.trim()) return process.env.APP_URL.trim().replace(/\/$/, "");
+  if (process.env.NEXT_PUBLIC_APP_URL?.trim()) return process.env.NEXT_PUBLIC_APP_URL.trim().replace(/\/$/, "");
+  if (process.env.RAILWAY_PUBLIC_DOMAIN?.trim()) return `https://${process.env.RAILWAY_PUBLIC_DOMAIN.trim()}`;
+  return "http://localhost:3000";
 }
+
 
 export function getGitHubOAuthConfig() {
   const clientId = process.env.GITHUB_CLIENT_ID?.trim();
