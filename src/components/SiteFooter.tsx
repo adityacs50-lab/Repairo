@@ -1,82 +1,39 @@
 import Link from "next/link";
 
-const columns = [
-  {
-    title: "Product",
-    links: [
-      { href: "/app", label: "Try on GitHub" },
-      { href: "/demo", label: "Live demo" },
-      { href: "/agents", label: "Vendor agents" },
-      { href: "/pricing", label: "Pricing" },
-      { href: "/use-cases", label: "Use cases" },
-      { href: "/#how", label: "How it works" },
-    ],
-  },
-  {
-    title: "Developers",
-    links: [
-      { href: "/docs", label: "Docs" },
-      { href: "/changelog", label: "Changelog" },
-      { href: "/security", label: "Security" },
-      { href: "/video", label: "Launch reel" },
-      { href: "/api/health", label: "Status" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      { href: "/about", label: "About" },
-      { href: "/contact", label: "Contact" },
-      { href: "/privacy", label: "Privacy" },
-      { href: "/terms", label: "Terms" },
-    ],
-  },
-];
-
 export function SiteFooter() {
   return (
-    <footer className="relative z-10 border-t border-line bg-bg">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.2fr_2fr]">
-        <div>
-          <p className="text-xl font-semibold lowercase tracking-tight">repairo</p>
-          <p className="mt-3 max-w-xs text-sm text-muted">
-            Self-maintaining APIs — Dependabot for OpenAPI. Detect, impact,
-            apply on your GitHub.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/docs" className="text-sm text-muted hover:text-fg">
-              Docs
-            </Link>
-            <Link href="/security" className="text-sm text-muted hover:text-fg">
-              Security
-            </Link>
-            <Link href="/contact" className="text-sm text-muted hover:text-fg">
-              Contact
-            </Link>
+    <footer className="w-full bg-canvas py-[64px] border-t border-hairline">
+      <div className="mx-auto max-w-[1200px] px-6">
+        
+        {/* TOP ROW */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-[14px] text-body mb-[64px]">
+          <div className="flex flex-col gap-3">
+            <div className="font-mono text-[12px] uppercase tracking-[1.2px] text-ink mb-2">Product</div>
+            <Link href="/#features" className="hover:text-ink transition-colors">Features</Link>
+            <Link href="/pricing" className="hover:text-ink transition-colors">Pricing</Link>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="font-mono text-[12px] uppercase tracking-[1.2px] text-ink mb-2">Resources</div>
+            <Link href="/docs" className="hover:text-ink transition-colors">Documentation</Link>
+            <Link href="/docs#integrations" className="hover:text-ink transition-colors">Integrations</Link>
+            <Link href="/blog" className="hover:text-ink transition-colors">Blog</Link>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="font-mono text-[12px] uppercase tracking-[1.2px] text-ink mb-2">Community</div>
+            <a href="https://github.com/" target="_blank" rel="noreferrer" className="hover:text-ink transition-colors">GitHub</a>
+            <a href="https://twitter.com/" target="_blank" rel="noreferrer" className="hover:text-ink transition-colors">Twitter (X)</a>
+            <a href="https://discord.com/" target="_blank" rel="noreferrer" className="hover:text-ink transition-colors">Discord</a>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-          {columns.map((col) => (
-            <div key={col.title}>
-              <h3 className="text-sm font-medium text-fg">{col.title}</h3>
-              <ul className="mt-4 space-y-2.5">
-                {col.links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-muted transition hover:text-fg"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+
+        {/* BOTTOM ROW */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between text-[14px] text-body-mid border-t border-hairline pt-8">
+          <div>© {new Date().getFullYear()} Repairo, Inc.</div>
+          <div className="flex gap-6 mt-4 md:mt-0">
+            <Link href="/privacy" className="hover:text-ink transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-ink transition-colors">Terms of Service</Link>
+          </div>
         </div>
-      </div>
-      <div className="border-t border-line px-5 py-5 text-center text-xs text-muted-dim sm:px-8">
-        © {new Date().getFullYear()} Repairo. Review every PR before merge.
       </div>
     </footer>
   );

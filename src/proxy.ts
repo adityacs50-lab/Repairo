@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * Proxy /api to Railway on Vercel. Explicitly forwards Cookie (fetch often strips it).
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const backend = (
     process.env.BACKEND_URL ||
     (process.env.VERCEL ? "https://repairo-production.up.railway.app" : "")

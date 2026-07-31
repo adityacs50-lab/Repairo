@@ -16,16 +16,66 @@ export type VendorCatalogEntry = {
  */
 export const VENDOR_CATALOG: VendorCatalogEntry[] = [
   {
+    id: "openai",
+    name: "OpenAI API",
+    description:
+      "Automated AST repairs for OpenAI SDK migrations, model deprecations (e.g. gpt-3.5-turbo -> gpt-4o-mini), and Assistants API updates.",
+    openapiUrl:
+      "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+    homepage: "https://platform.openai.com/docs",
+    tags: ["ai", "llm"],
+  },
+  {
+    id: "gemini",
+    name: "Google Gemini",
+    description:
+      "Auto-patch Gemini AI model name updates, parameter shifts, and Google Generative AI SDK breaking changes.",
+    openapiUrl:
+      "https://raw.githubusercontent.com/google/generative-ai-js/main/docs/openapi.yaml",
+    homepage: "https://ai.google.dev/docs",
+    tags: ["ai", "google"],
+  },
+  {
+    id: "anthropic",
+    name: "Anthropic Claude",
+    description:
+      "Monitor and auto-repair Messages API parameter changes and Anthropic SDK breaking updates.",
+    openapiUrl:
+      "https://raw.githubusercontent.com/anthropic/anthropic-sdk-typescript/main/openapi.json",
+    homepage: "https://docs.anthropic.com/",
+    tags: ["ai", "claude"],
+  },
+  {
     id: "stripe",
     name: "Stripe",
     description:
-      "Payments API. Watch the public OpenAPI; repair TypeScript (and URL-like) consumers when the contract moves.",
+      "Payments API. Watch public OpenAPI; repair TypeScript consumers when the contract or version moves.",
     openapiUrl:
       "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml",
     previousOpenapiUrl:
       "https://raw.githubusercontent.com/stripe/openapi/v1220/openapi/spec3.yaml",
     homepage: "https://stripe.com/docs/api",
     tags: ["payments", "fintech"],
+  },
+  {
+    id: "razorpay",
+    name: "Razorpay",
+    description:
+      "Automated payment gateway contract tracking and SDK refactoring for Indian startup tech stacks.",
+    openapiUrl:
+      "https://raw.githubusercontent.com/razorpay/openapi-specs/main/openapi.yaml",
+    homepage: "https://razorpay.com/docs",
+    tags: ["payments", "india"],
+  },
+  {
+    id: "supabase",
+    name: "Supabase",
+    description:
+      "Detect client query & Auth method breaking changes (@supabase/supabase-js v1 -> v2 AST refactoring).",
+    openapiUrl:
+      "https://raw.githubusercontent.com/supabase/supabase/master/apps/docs/public/spec/supabase_v1.yml",
+    homepage: "https://supabase.com/docs",
+    tags: ["database", "auth"],
   },
   {
     id: "github",
@@ -47,6 +97,7 @@ export const VENDOR_CATALOG: VendorCatalogEntry[] = [
     tags: ["demo"],
   },
 ];
+
 
 export function getVendor(id: string) {
   return VENDOR_CATALOG.find((v) => v.id === id) ?? null;

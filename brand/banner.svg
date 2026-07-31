@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4200 700" width="4200" height="700">
+  <rect width="4200" height="700" fill="#080808"/>
+  <text x="2100" y="320" text-anchor="middle"
+        font-family="Geist, Inter, Segoe UI, Arial, sans-serif"
+        font-size="150" font-weight="600" fill="#ffffff"
+        letter-spacing="24">R   E   P   A   I   R   O</text>
+  <text x="2100" y="420" text-anchor="middle"
+        font-family="Geist, Inter, Segoe UI, Arial, sans-serif"
+        font-size="38" font-weight="500" fill="#b4b4b4"
+        letter-spacing="10">S  E  L  F  -  M  A  I  N  T  A  I  N  I  N  G  A  P  I  S</text>
+</svg>

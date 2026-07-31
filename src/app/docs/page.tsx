@@ -32,10 +32,12 @@ export default function DocsPage() {
           loop: detect → impact → apply as a PR.
         </p>
         <ol className="list-decimal space-y-2 pl-5">
-          <li>
-            Sign in at <Link href="/app" className="text-fg underline">/app</Link>{" "}
-            with GitHub (<code className="text-fg">repo</code> +{" "}
-            <code className="text-fg">read:user</code>).
+          <li className="flex flex-col gap-3 items-start my-4">
+            <span>Sign in to the dashboard to authenticate with your repository:</span>
+            <Link href="/app" className="inline-flex items-center justify-center rounded-full bg-primary px-[16px] py-[8px] text-[14px] text-on-primary border border-primary hover:bg-transparent hover:text-ink transition-colors">
+              Sign in with GitHub
+            </Link>
+            <span className="text-[13px] text-body-mid">Requires <code className="text-fg">repo</code> and <code className="text-fg">read:user</code> scopes.</span>
           </li>
           <li>
             Use <strong className="text-fg">Try your repo</strong> or create a
@@ -45,27 +47,23 @@ export default function DocsPage() {
           <li>List TypeScript consumer file paths that call the API.</li>
           <li>Run repair → review the blast radius → open a PR on GitHub.</li>
         </ol>
-        <p>
-          No OpenAPI repo handy? Use the{" "}
-          <Link href="/demo" className="text-fg underline">
-            fixture demo
-          </Link>
-          .
-        </p>
+          <div className="flex items-center gap-3 mt-4 p-4 border border-hairline rounded-xl bg-transparent">
+            <span className="text-[14px]">No OpenAPI repo handy?</span>
+            <Link href="/demo" className="inline-flex items-center justify-center rounded-full bg-transparent px-[16px] py-[6px] text-[14px] text-ink border border-hairline hover:border-body-mid transition-colors">
+              Try the Fixture Demo
+            </Link>
+          </div>
       </Section>
 
-      <Section title="Vendor agents (Dependabot for APIs)" id="vendors">
+      <Section title="Automated Integrations (Pro/Business)" id="integrations">
         <p>
-          Install a catalog agent (Stripe, GitHub REST, Petstore demo) that
-          fetches the vendor OpenAPI remotely, discovers client files in your
-          repo, and opens repair PRs when the contract moves. In the app:{" "}
-          <strong className="text-fg">Vendor agents</strong> tab → Install.
+          Instead of manually uploading specs, you can configure Repairo to poll remote OpenAPI schemas (like Stripe or internal microservices) continuously in the background.
         </p>
         <BulletList
           items={[
-            "Remote OpenAPI URL + stored baseline (incremental polls)",
-            "Scan repo for openapi.yaml and *client* / sdk TypeScript (also discovers Python clients)",
-            "Safe transforms still strongest on TypeScript; Python gets URL-like string patches when applicable",
+            "Scheduled daily polling or real-time Webhook triggers",
+            "Automatic discovery of TypeScript/TSX consumer files across your repository",
+            "Zero-touch PR generation when upstream breaking changes are detected",
           ]}
         />
       </Section>
@@ -131,9 +129,10 @@ export default function DocsPage() {
       <Section title="Plans & limits" id="plans">
         <BulletList
           items={[
-            "Free: 1 watched integration, 15 runs/month, 3 seats",
-            "Pro: 50 integrations, 500 runs/month, 15 seats",
-            "A run = Quick Repair, manual Run now, or webhook repair",
+            "Free: 1 repository, manual/on-demand scans, manual fixes.",
+            "Pro ($29/mo): Up to 10 repositories, scheduled daily scans, automated fix PRs.",
+            "Business ($99/mo): Up to 50 repositories, real-time webhooks, auto-merge capabilities.",
+            "Enterprise: Unlimited repositories, VPC/Self-hosted, SSO.",
           ]}
         />
         <p>
