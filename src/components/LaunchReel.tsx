@@ -61,7 +61,7 @@ const scenes: Scene[] = [
     duration: 7000,
     eyebrow: "early access",
     title: "Try it on your GitHub.",
-    subtitle: "repairo-steel.vercel.app",
+    subtitle: "heyrepairo.in",
     visual: "cta",
   },
 ];
@@ -182,7 +182,7 @@ function SceneVisual({ kind }: { kind: Scene["visual"] }) {
         repairo
       </p>
       <p className="mt-4 font-mono text-sm text-muted">
-        repairo-steel.vercel.app
+        heyrepairo.in
       </p>
     </motion.div>
   );

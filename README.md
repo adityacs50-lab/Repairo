@@ -66,7 +66,7 @@ That's the whole loop. Scan for drifts, run `repairo repair` and it all just wor
 
 ## Demo
 
-[Watch the 60-second Autoplay Demo Reel](https://repairo-steel.vercel.app/video)
+[Watch the 60-second Autoplay Demo Reel](https://heyrepairo.in/video)
 
 ## Why Use Repairo
 

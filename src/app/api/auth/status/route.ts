@@ -17,7 +17,7 @@ export async function GET() {
     githubConfigured: Boolean(config),
     db,
     expectedCallback:
-      "https://repairo-steel.vercel.app/api/auth/callback",
+      `${getAppUrl()}/api/auth/callback` || "https://heyrepairo.in/api/auth/callback",
     checklist: [
       "OAuth App callback URL must exactly match callbackUrl above",
       "GITHUB_CLIENT_SECRET on Railway must match the secret shown when you generated it",

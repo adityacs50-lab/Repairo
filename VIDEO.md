@@ -4,7 +4,7 @@ I can’t upload an MP4 from the agent, but you have a **cinematic autoplay reel
 
 ## Record in 2 minutes
 
-1. Open **https://repairo-steel.vercel.app/video** (or `http://localhost:3000/video`)
+1. Open **https://heyrepairo.in/video** (or `http://localhost:3000/video`)
 2. Go fullscreen (`F11` or browser fullscreen)
 3. Hide the browser UI / use Loom or OBS → **record tab**
 4. Let it loop once (~30–35s) or twice for a longer cut
@@ -34,7 +34,7 @@ Install a vendor agent — like Stripe. We watch the public OpenAPI, scan your r
 You get a real GitHub PR: blast radius, deterministic patches, safety score. You review. You merge. Nothing silent.
 
 **[Scene 6 — CTA]**  
-Try it on your own GitHub. Early access — repairo-steel.vercel.app.
+Try it on your own GitHub. Early access — heyrepairo.in.
 
 ---
 
