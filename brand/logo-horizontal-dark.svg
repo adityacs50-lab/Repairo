@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" width="640" height="180">
-  <!-- Minimalist 3D Isometric Vault Logo (Dark Theme/Light BG) -->
+  <!-- Minimalist Monochromatic 3D Isometric Vault Logo (Dark Theme/Light BG) -->
   <g stroke-linejoin="round" stroke-linecap="round">
     <!-- Box Left Face (Zinc 800) -->
     <polygon points="45,80 90,106 90,140 45,114" fill="#27272a" />
     <!-- Box Right Face (Zinc 600) -->
     <polygon points="90,106 135,80 135,114 90,140" fill="#52525b" />
-    <!-- Box Inner Green RAM Core -->
-    <polygon points="45,80 90,54 135,80 90,106" fill="#10B981" />
+    <!-- Box Inner Core (Zinc 300 - Monochromatic Gray) -->
+    <polygon points="45,80 90,54 135,80 90,106" fill="#d4d4d8" />
     
     <!-- Lid Left Edge thickness -->
     <polygon points="45,42 90,68 90,74 45,48" fill="#27272a" />

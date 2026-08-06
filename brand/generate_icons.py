@@ -20,11 +20,11 @@ def generate_yc_cube_icon(size: int = 512) -> Image.Image:
         fill=(11, 11, 11, 255)
     )
     
-    # 2. Draw 3D Isometric Opened Vault
+    # 2. Draw 3D Isometric Opened Vault (Monochromatic)
     # Colors:
-    # Left face (White/Light gray): (244, 244, 245, 255)
+    # Left face (White/Light gray): (244, 244, 255, 255)
     # Right face (Muted gray): (161, 161, 170, 255)
-    # Inner RAM Core (Vibrant green: #10B981): (16, 185, 129, 255)
+    # Inner Core (Monochromatic dark-gray: zinc-500): (113, 113, 122, 255)
     
     # Coordinates mapping (scaled by s):
     # Box Bottom Center
@@ -48,8 +48,8 @@ def generate_yc_cube_icon(size: int = 512) -> Image.Image:
     # Draw Right Face (Muted gray)
     draw.polygon([b_f_top, b_r_top, b_r_bot, b_bot], fill=(161, 161, 170, 255))
     
-    # Draw Inner RAM Core (Green)
-    draw.polygon([b_l_top, b_b_top, b_r_top, b_f_top], fill=(16, 185, 129, 255))
+    # Draw Inner Core (Monochromatic dark-gray: zinc-500)
+    draw.polygon([b_l_top, b_b_top, b_r_top, b_f_top], fill=(113, 113, 122, 255))
     
     # Floating Lid (raised vertically by 115px)
     offset_y = 115 * s
@@ -76,7 +76,7 @@ def generate_yc_cube_icon(size: int = 512) -> Image.Image:
     return img
 
 def main():
-    print("Generating Repairo 3D Isometric Vault icon assets...")
+    print("Generating Repairo 3D Isometric Vault icon assets (Monochromatic)...")
     
     # Generate 512x512 master icon
     icon_512 = generate_yc_cube_icon(512)
