@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 export function FinalCta() {
   return (
-    <section className="w-full px-6 md:px-12 max-w-7xl mx-auto py-12">
+    <section className="w-full px-6 md:px-12 max-w-7xl mx-auto py-24 md:py-32">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -21,7 +21,7 @@ export function FinalCta() {
           <div className="font-mono text-xs uppercase tracking-widest text-neutral-400 mb-4">
             READY TO AUTOMATE YOUR MAINTENANCE?
           </div>
-          <h2 className="text-3xl md:text-5xl font-semibold text-white tracking-tight leading-tight mb-8">
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-semibold text-white tracking-tight leading-tight mb-8">
             Stop breaking production.<br />
             Start repairing it.
           </h2>

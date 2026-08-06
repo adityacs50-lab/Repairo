@@ -26,7 +26,7 @@ export function CodeInstallSnippet() {
   };
 
   return (
-    <section className="w-full py-16 px-6 md:px-12 max-w-7xl mx-auto border-t border-neutral-200">
+    <section className="w-full py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-neutral-200">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         {/* Left column */}
         <motion.div
@@ -39,7 +39,7 @@ export function CodeInstallSnippet() {
           <div className="font-mono text-xs uppercase tracking-wider text-neutral-500 mb-2">
             QUICKSTART
           </div>
-          <h2 className="text-3xl md:text-4xl font-semibold text-black tracking-tight mb-4">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-black tracking-tight mb-4">
             Get started locally.
           </h2>
           <p className="text-sm text-neutral-600 leading-relaxed">
@@ -92,7 +92,7 @@ export function CodeInstallSnippet() {
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">2</span>
-                <span className="text-white font-medium">npx @repairo/cli scan ./src --vendors stripe,openai,supabase</span>
+                <span className="text-white font-medium">npx <span className="text-emerald-400">@repairo/cli</span> scan ./src <span className="text-cyan-400">--vendors</span> <span className="text-yellow-200">stripe,openai,supabase</span></span>
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">3</span>
@@ -104,11 +104,11 @@ export function CodeInstallSnippet() {
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">5</span>
-                <span className="text-white font-medium">npm install -g @repairo/cli</span>
+                <span className="text-white font-medium">npm install <span className="text-cyan-400">-g</span> <span className="text-emerald-400">@repairo/cli</span></span>
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">6</span>
-                <span className="text-white font-medium">repairo init --repo owner/your-app</span>
+                <span className="text-white font-medium">repairo init <span className="text-cyan-400">--repo</span> <span className="text-yellow-200">owner/your-app</span></span>
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">7</span>
@@ -120,7 +120,7 @@ export function CodeInstallSnippet() {
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">9</span>
-                <span className="text-white font-medium">repairo diff --spec https://api.stripe.com/v1/openapi.json</span>
+                <span className="text-white font-medium">repairo diff <span className="text-cyan-400">--spec</span> <span className="text-yellow-200">https://api.stripe.com/v1/openapi.json</span></span>
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">10</span>
@@ -132,7 +132,7 @@ export function CodeInstallSnippet() {
               </div>
               <div className="flex gap-4">
                 <span className="text-neutral-600 select-none w-4 text-right">12</span>
-                <span className="text-white font-medium">repairo repair --create-pr</span>
+                <span className="text-white font-medium">repairo repair <span className="text-cyan-400">--create-pr</span></span>
               </div>
             </div>
           </div>

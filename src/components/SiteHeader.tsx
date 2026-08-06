@@ -17,7 +17,7 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full bg-white/90 backdrop-blur-md border-b border-neutral-100 py-4 px-6 md:px-12 sticky top-0 z-50 transition-colors"
+      className="w-full bg-slate-50/90 backdrop-blur-md border-b border-neutral-100 py-4 px-6 md:px-12 sticky top-0 z-50 transition-colors"
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand Logo */}
@@ -30,16 +30,20 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
           <Link href="#features" className={`hover:text-black transition-colors ${active === 'features' ? 'text-black font-semibold' : ''}`}>Product</Link>
           <Link href="/docs" className={`hover:text-black transition-colors ${active === 'docs' ? 'text-black font-semibold' : ''}`}>Docs</Link>
           <Link href="/pricing" className={`hover:text-black transition-colors ${active === 'pricing' ? 'text-black font-semibold' : ''}`}>Pricing</Link>
+          <Link href="/app" className={`hover:text-black transition-colors ${active === 'login' ? 'text-black font-semibold' : ''}`}>Login</Link>
         </nav>
 
         {/* Right Actions */}
         <div className="flex items-center gap-3 md:gap-6">
+          <Link href="/contact" className="hidden md:inline text-sm font-medium text-neutral-600 hover:text-black transition-colors">
+            Book a demo
+          </Link>
           <motion.div {...buttonPressVariant}>
             <Link
               href="/app"
               className="inline-block bg-black text-white text-xs md:text-sm font-medium px-3.5 py-1.5 md:px-4 md:py-2 rounded-full hover:bg-neutral-800 transition-colors"
             >
-              Get Started
+              Start for free
             </Link>
           </motion.div>
 
@@ -92,6 +96,13 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
                 className="hover:text-black py-1.5 transition-colors"
               >
                 Pricing
+              </Link>
+              <Link
+                href="/app"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-black py-1.5 transition-colors"
+              >
+                Login
               </Link>
             </nav>
           </motion.div>

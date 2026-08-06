@@ -7,19 +7,19 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 
 export function FeaturePanel() {
   return (
-    <section id="features" className="w-full py-16 px-6 md:px-12 max-w-7xl mx-auto border-t border-neutral-200">
+    <section id="features" className="w-full py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-neutral-200">
       {/* Eyebrow and Section Header */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="mb-10"
+        className="mb-14"
       >
         <div className="font-mono text-xs uppercase tracking-wider text-neutral-500 mb-2">
           PLATFORM FEATURES
         </div>
-        <h2 className="text-3xl md:text-4xl font-semibold text-black tracking-tight">
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-black tracking-tight">
           Understand the blast radius.
         </h2>
       </motion.div>
@@ -34,7 +34,7 @@ export function FeaturePanel() {
       >
         {/* Card 1: Automatic change detection */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-colors h-full">
+          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-all shadow-xl hover:shadow-[0_30px_80px_-10px_rgba(0,0,0,0.2)] h-full">
             <div>
               <div className="w-8 h-8 rounded-lg border border-neutral-200 bg-white flex items-center justify-center mb-6 text-black">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -70,7 +70,7 @@ export function FeaturePanel() {
 
         {/* Card 2: Impact mapping across the codebase */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-colors h-full">
+          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-all shadow-xl hover:shadow-[0_30px_80px_-10px_rgba(0,0,0,0.2)] h-full">
             <div>
               <div className="w-8 h-8 rounded-lg border border-neutral-200 bg-white flex items-center justify-center mb-6 text-black">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -131,7 +131,7 @@ export function FeaturePanel() {
 
         {/* Card 3: Safe, reviewable PRs */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-colors h-full">
+          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-all shadow-xl hover:shadow-[0_30px_80px_-10px_rgba(0,0,0,0.2)] h-full">
             <div>
               <div className="w-8 h-8 rounded-lg border border-neutral-200 bg-white flex items-center justify-center mb-6 text-black">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -166,7 +166,7 @@ export function FeaturePanel() {
 
         {/* Card 4: Zero configuration */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-colors h-full">
+          <SpotlightCard className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 flex flex-col justify-between hover:border-neutral-300 transition-all shadow-xl hover:shadow-[0_30px_80px_-10px_rgba(0,0,0,0.2)] h-full">
             <div>
               <div className="w-8 h-8 rounded-lg border border-neutral-200 bg-white flex items-center justify-center mb-6 text-black">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

@@ -53,19 +53,19 @@ export function FaqSection() {
   };
 
   return (
-    <section className="w-full py-16 px-6 md:px-12 max-w-4xl mx-auto border-t border-neutral-200">
+    <section className="w-full py-24 md:py-32 px-6 md:px-12 max-w-4xl mx-auto border-t border-neutral-200">
       {/* Eyebrow and Section Header */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="mb-10 text-left"
+        className="mb-14 text-left"
       >
         <div className="font-mono text-xs uppercase tracking-wider text-neutral-500 mb-2">
           COMMON QUESTIONS
         </div>
-        <h2 className="text-3xl md:text-4xl font-semibold text-black tracking-tight">
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-black tracking-tight">
           Everything you need to know.
         </h2>
       </motion.div>

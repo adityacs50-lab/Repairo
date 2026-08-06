@@ -13,6 +13,9 @@ export function SiteFooter() {
           <div className="text-neutral-400">
             © {new Date().getFullYear()} Repairo, Inc.
           </div>
+          <div className="text-neutral-400">
+            <a href="mailto:hello@heyrepairo.in" className="hover:text-black transition-colors">hello@heyrepairo.in</a>
+          </div>
         </div>
 
         {/* Links Columns Grid */}
@@ -23,6 +26,7 @@ export function SiteFooter() {
             <ul className="space-y-2">
               <li><Link href="#features" className="hover:text-black transition-colors">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-black transition-colors">Pricing</Link></li>
+              <li><Link href="/security" className="hover:text-black transition-colors">Security</Link></li>
             </ul>
           </div>
 
@@ -33,6 +37,7 @@ export function SiteFooter() {
               <li><Link href="/docs" className="hover:text-black transition-colors">Documentation</Link></li>
               <li><Link href="/docs#integrations" className="hover:text-black transition-colors">Integrations</Link></li>
               <li><Link href="/blog" className="hover:text-black transition-colors">Blog</Link></li>
+              <li><Link href="/changelog" className="hover:text-black transition-colors">Changelog</Link></li>
             </ul>
           </div>
 

@@ -6,41 +6,13 @@ import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 export function HeroDashboardCard() {
   const [activeImpact, setActiveImpact] = React.useState<string | null>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const mouseX = useSpring(x, { stiffness: 150, damping: 25 });
-  const mouseY = useSpring(y, { stiffness: 150, damping: 25 });
-
-  const rotateX = useTransform(mouseY, [-0.5, 0.5], [4, -4]);
-  const rotateY = useTransform(mouseX, [-0.5, 0.5], [-4, 4]);
-
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-
-    const mouseXPos = (e.clientX - rect.left) / width - 0.5;
-    const mouseYPos = (e.clientY - rect.top) / height - 0.5;
-
-    x.set(mouseXPos);
-    y.set(mouseYPos);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="w-full bg-white border border-neutral-200 rounded-2xl shadow-xl overflow-hidden text-neutral-900 text-xs perspective-1000 transition-shadow hover:shadow-2xl"
+      className="w-full bg-white rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.08)] overflow-hidden text-neutral-900 text-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_70px_-10px_rgba(0,0,0,0.15)]"
     >
       <div className="flex flex-col md:flex-row min-h-[480px]">
         {/* Sidebar */}
