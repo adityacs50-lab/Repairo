@@ -3,9 +3,9 @@
 
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./brand/logo-horizontal-light.png">
-    <source media="(prefers-color-scheme: light)" srcset="./brand/logo-horizontal.png">
-    <img src="./brand/logo-horizontal.png" alt="Repairo" width="320">
+    <source media="(prefers-color-scheme: dark)" srcset="./brand/logo-horizontal-light.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./brand/logo-horizontal-dark.svg">
+    <img src="./brand/logo-horizontal-dark.svg" alt="Repairo" width="320">
   </picture>
 </h1>
 
