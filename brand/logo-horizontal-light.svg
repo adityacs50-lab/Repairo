@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" width="640" height="180">
-  <g fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M 110,65 A 35,35 0 1,1 80,120" />
-    <path d="M 65,115 L 125,55" stroke-width="10" />
-    <circle cx="125" cy="55" r="8" fill="#ffffff" stroke="none" />
+  <!-- Minimalist Code-Bracket Remediation Logo (Light Theme/Dark BG) -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left Bracket < -->
+    <path d="M 85,55 L 55,90 L 85,125" stroke="#ffffff" stroke-width="14" />
+    <!-- Right Bracket > -->
+    <path d="M 95,55 L 125,90 L 95,125" stroke="#ffffff" stroke-width="14" />
+    <!-- Healing Slash / (Premium green accent) -->
+    <path d="M 70,135 L 110,45" stroke="#10B981" stroke-width="12" />
   </g>
+  <!-- Wordmark -->
   <text x="170" y="122"
         font-family="Geist, Inter, system-ui, -apple-system, sans-serif"
         font-size="82"
