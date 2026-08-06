@@ -36,7 +36,7 @@
 
 Repairo is an automated API maintenance toolchain with compiler-grade AST primitives — scan, map, refactor, verify — executed in volatile RAM. Your third-party API dependencies (Stripe, Clerk, OpenAI) become monitored contracts that Repairo auto-patches, generates Pull Requests for, and secures without saving a single line of proprietary code to disk.
 
-→ [Compare Repairo to Dependabot, Speakeasy, PactFlow, and Generalist AI Assistants](#zero-hallucination-reliability).
+→ [Compare Repairo to Dependabot, Speakeasy, PactFlow, and Generalist AI Assistants](https://github.com/adityacs50-lab/Repairo#zero-hallucination-reliability).
 
 ## Install
 
@@ -117,6 +117,18 @@ Most dependency managers bump package versions, breaking your builds. Repairo up
 ```
 
 Only the specific call-site parameters are modified, keeping your business logic, formatting, and helper wrappers untouched.
+
+## Zero-Hallucination Reliability
+
+Unlike generalist AI coding assistants (Cursor, Devin, Copilot) that rely on probabilistic LLM guessing, Repairo is built on a **deterministic compiler engine**. Code transformations are compiled as strict AST transformations. They either compile perfectly or are blocked before push.
+
+| Dimension | Dependabot | Speakeasy | PactFlow | AI Assistants (Cursor/Devin) | Repairo |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Primary Focus** | Package upgrades | SDK generation | Contract testing | General code writing | **API change repair** |
+| **Remediation** | Version bump only | Regenerates SDK | None (CI break alert) | Prompt-based rewrite | **Deterministic AST patch** |
+| **Compiles?** | ⚠️ Unreliable | Yes (for SDK) | N/A | ⚠️ Probabilistic (hallucinates) | **✅ 100% Guaranteed** |
+| **InfoSec Posture** | Secure | Secure | Secure | ❌ High risk (code leaks) | **✅ Stateless RAM Vault** |
+| **Trigger** | PR on schedule | Provider push | CI integration | Developer prompt | **OpenAPI drift webhook** |
 
 ## Commands
 
