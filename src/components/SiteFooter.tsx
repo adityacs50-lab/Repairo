@@ -1,37 +1,58 @@
+import React from "react";
 import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="w-full bg-canvas py-[64px] border-t border-hairline">
-      <div className="mx-auto max-w-[1200px] px-6">
-        
-        {/* TOP ROW */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-[14px] text-body mb-[64px]">
-          <div className="flex flex-col gap-3">
-            <div className="font-mono text-[12px] uppercase tracking-[1.2px] text-ink mb-2">Product</div>
-            <Link href="/#features" className="hover:text-ink transition-colors">Features</Link>
-            <Link href="/pricing" className="hover:text-ink transition-colors">Pricing</Link>
+    <footer className="w-full bg-white border-t border-neutral-200 py-12 px-6 md:px-12 text-xs text-neutral-600">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
+        {/* Brand Column */}
+        <div className="space-y-4">
+          <div className="text-black font-semibold text-base tracking-tight">
+            <span>Repairo</span>
           </div>
-          <div className="flex flex-col gap-3">
-            <div className="font-mono text-[12px] uppercase tracking-[1.2px] text-ink mb-2">Resources</div>
-            <Link href="/docs" className="hover:text-ink transition-colors">Documentation</Link>
-            <Link href="/docs#integrations" className="hover:text-ink transition-colors">Integrations</Link>
-            <Link href="/blog" className="hover:text-ink transition-colors">Blog</Link>
-          </div>
-          <div className="flex flex-col gap-3">
-            <div className="font-mono text-[12px] uppercase tracking-[1.2px] text-ink mb-2">Community</div>
-            <a href="https://github.com/" target="_blank" rel="noreferrer" className="hover:text-ink transition-colors">GitHub</a>
-            <a href="https://twitter.com/" target="_blank" rel="noreferrer" className="hover:text-ink transition-colors">Twitter (X)</a>
-            <a href="https://discord.com/" target="_blank" rel="noreferrer" className="hover:text-ink transition-colors">Discord</a>
+          <div className="text-neutral-400">
+            © {new Date().getFullYear()} Repairo, Inc.
           </div>
         </div>
 
-        {/* BOTTOM ROW */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between text-[14px] text-body-mid border-t border-hairline pt-8">
-          <div>© {new Date().getFullYear()} Repairo, Inc.</div>
-          <div className="flex gap-6 mt-4 md:mt-0">
-            <Link href="/privacy" className="hover:text-ink transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-ink transition-colors">Terms of Service</Link>
+        {/* Links Columns Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 md:gap-16">
+          {/* Product */}
+          <div className="space-y-3">
+            <div className="font-semibold text-black">Product</div>
+            <ul className="space-y-2">
+              <li><Link href="#features" className="hover:text-black transition-colors">Features</Link></li>
+              <li><Link href="/pricing" className="hover:text-black transition-colors">Pricing</Link></li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div className="space-y-3">
+            <div className="font-semibold text-black">Resources</div>
+            <ul className="space-y-2">
+              <li><Link href="/docs" className="hover:text-black transition-colors">Documentation</Link></li>
+              <li><Link href="/docs#integrations" className="hover:text-black transition-colors">Integrations</Link></li>
+              <li><Link href="/blog" className="hover:text-black transition-colors">Blog</Link></li>
+            </ul>
+          </div>
+
+          {/* Community */}
+          <div className="space-y-3">
+            <div className="font-semibold text-black">Community</div>
+            <ul className="space-y-2">
+              <li><a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors">GitHub</a></li>
+              <li><a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors">Twitter (X)</a></li>
+              <li><a href="https://discord.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors">Discord</a></li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div className="space-y-3">
+            <div className="font-semibold text-black">Legal</div>
+            <ul className="space-y-2">
+              <li><Link href="/privacy" className="hover:text-black transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-black transition-colors">Terms of Service</Link></li>
+            </ul>
           </div>
         </div>
       </div>

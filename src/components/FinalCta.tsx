@@ -1,56 +1,56 @@
 "use client";
 
-import { motion } from "framer-motion";
+import React from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import NeuralBackground from "@/components/ui/flow-field-background";
+import { motion } from "framer-motion";
 
 export function FinalCta() {
   return (
-    <section className="relative w-full py-[120px] md:py-[180px] overflow-hidden border-t border-hairline bg-canvas group">
-      {/* Background Effect */}
-      <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 transition-opacity duration-700">
-        <NeuralBackground
-          particleCount={200}
-          color="#ffffff"
-          speed={0.5}
-        />
-      </div>
-      
-      {/* Gradient Mask for smooth blending */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(10,10,10,0)_0%,rgba(10,10,10,0.8)_100%)] z-10 pointer-events-none" />
+    <section className="w-full px-6 md:px-12 max-w-7xl mx-auto py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
+        className="bg-[#09090b] border border-neutral-800 rounded-3xl p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl flex flex-col items-center justify-center"
+      >
+        {/* Subtle radial line overlay */}
+        <div className="absolute inset-0 radial-pattern-bg opacity-40 pointer-events-none" />
 
-      <div className="relative z-20 mx-auto max-w-[800px] px-[24px] flex flex-col items-center text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="flex flex-col items-center"
-        >
-          <div className="font-mono text-[12px] uppercase tracking-[1.5px] text-body-mid mb-[24px]">
-            Ready to automate your maintenance?
+        <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
+          <div className="font-mono text-xs uppercase tracking-widest text-neutral-400 mb-4">
+            READY TO AUTOMATE YOUR MAINTENANCE?
           </div>
-          
-          <h2 className="text-[48px] md:text-[72px] font-normal tracking-[-1.5px] md:tracking-[-2px] text-ink leading-[1.05] mb-[32px]">
-            Stop breaking production.<br className="hidden md:block" /> Start repairing it.
+          <h2 className="text-3xl md:text-5xl font-semibold text-white tracking-tight leading-tight mb-8">
+            Stop breaking production.<br />
+            Start repairing it.
           </h2>
 
-          <Link href="/app" className="group/btn relative inline-flex h-[56px] items-center justify-center overflow-hidden rounded-full bg-ink px-[32px] font-medium text-canvas transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)]">
-            <span className="relative z-10 flex items-center gap-[8px] text-[16px]">
-              Start for free
-              <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-            </span>
-            <div className="absolute inset-0 z-0 flex h-full w-full justify-center [transform:skew(-12deg)_translateX(-150%)] group-hover/btn:duration-1000 group-hover/btn:[transform:skew(-12deg)_translateX(150%)]">
-              <div className="relative h-full w-[16px] bg-white/20" />
-            </div>
-          </Link>
-          
-          <p className="text-[14px] text-body-mid mt-[24px]">
+          <motion.div
+            whileHover={{ y: -2, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Link
+              href="/app"
+              className="relative inline-flex items-center gap-2 bg-white text-black font-semibold text-sm px-6 py-3 rounded-full hover:bg-neutral-200 transition-colors mb-4 group overflow-hidden"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <span>Start for free</span>
+                <span className="transition-transform group-hover:translate-x-1">→</span>
+              </span>
+              {/* Glossy Sheen Light Sweep on Hover */}
+              <div className="absolute inset-0 z-0 flex h-full w-full justify-center [transform:skew(-12deg)_translateX(-150%)] group-hover:duration-1000 group-hover:[transform:skew(-12deg)_translateX(150%)] transition-transform">
+                <div className="relative h-full w-[24px] bg-black/10" />
+              </div>
+            </Link>
+          </motion.div>
+
+          <p className="text-xs text-neutral-400">
             No credit card required. Connect GitHub and go.
           </p>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
     </section>
   );
 }

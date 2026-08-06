@@ -1,90 +1,102 @@
 "use client";
 
+import React, { useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { buttonPressVariant } from "@/lib/animationVariants";
 
-export function SiteHeader({ active }: { active?: string }) {
-  const [open, setOpen] = useState(false);
+interface SiteHeaderProps {
+  active?: string;
+}
 
-  const links = [
-    { name: "Product", href: "/#features" },
-    { name: "Docs", href: "/docs" },
-    { name: "Pricing", href: "/pricing" },
-  ];
+export function SiteHeader({ active }: SiteHeaderProps = {}) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-canvas/80 backdrop-blur-md">
-      <div className="mx-auto flex h-[64px] w-full max-w-[1200px] items-center justify-between px-6">
-        
-        {/* LOGO */}
-        <Link href="/" className="text-[20px] tracking-[-0.6px] font-normal text-ink hover:opacity-80 transition-opacity select-none">
-          Repairo
+    <motion.header
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="w-full bg-white/90 backdrop-blur-md border-b border-neutral-100 py-4 px-6 md:px-12 sticky top-0 z-50 transition-colors"
+    >
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Brand Logo */}
+        <Link href="/" className="text-black font-semibold text-lg tracking-tight hover:opacity-80 transition-opacity">
+          <span>Repairo</span>
         </Link>
 
-        {/* DESKTOP NAV */}
-        <nav className="hidden md:flex items-center gap-8 text-[14px] text-ink">
-          {links.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className="hover:opacity-70 transition-opacity"
-            >
-              {link.name}
-            </Link>
-          ))}
-          <Link
-            href="/app"
-            className="flex items-center justify-center rounded-full bg-primary px-[16px] py-[6px] text-[14px] text-on-primary border border-primary hover:bg-transparent hover:text-ink transition-colors ml-4"
-          >
-            Get Started
-          </Link>
+        {/* Center Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600">
+          <Link href="#features" className={`hover:text-black transition-colors ${active === 'features' ? 'text-black font-semibold' : ''}`}>Product</Link>
+          <Link href="/docs" className={`hover:text-black transition-colors ${active === 'docs' ? 'text-black font-semibold' : ''}`}>Docs</Link>
+          <Link href="/pricing" className={`hover:text-black transition-colors ${active === 'pricing' ? 'text-black font-semibold' : ''}`}>Pricing</Link>
         </nav>
 
-        {/* MOBILE MENU TOGGLE */}
-        <button
-          className="md:hidden flex flex-col justify-center gap-[5px] p-2 text-ink"
-          onClick={() => setOpen(!open)}
-          aria-label="Toggle menu"
-        >
-          <span className={cn("block h-[1px] w-5 bg-current transition-transform", open && "translate-y-[6px] rotate-45")} />
-          <span className={cn("block h-[1px] w-5 bg-current transition-opacity", open && "opacity-0")} />
-          <span className={cn("block h-[1px] w-5 bg-current transition-transform", open && "-translate-y-[6px] -rotate-45")} />
-        </button>
+        {/* Right Actions */}
+        <div className="flex items-center gap-3 md:gap-6">
+          <motion.div {...buttonPressVariant}>
+            <Link
+              href="/app"
+              className="inline-block bg-black text-white text-xs md:text-sm font-medium px-3.5 py-1.5 md:px-4 md:py-2 rounded-full hover:bg-neutral-800 transition-colors"
+            >
+              Get Started
+            </Link>
+          </motion.div>
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-1.5 text-neutral-700 hover:text-black focus:outline-none cursor-pointer"
+            aria-label="Toggle menu"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* MOBILE MENU DRAWER */}
+      {/* Mobile Drawer Dropdown */}
       <AnimatePresence>
-        {open && (
+        {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="absolute top-[64px] left-0 w-full bg-canvas border-b border-hairline overflow-hidden md:hidden"
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="md:hidden overflow-hidden border-t border-neutral-100 mt-3 pt-4 pb-2"
           >
-            <div className="flex flex-col px-6 py-4 gap-6">
-              {links.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="text-[16px] text-ink"
-                  onClick={() => setOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
+            <nav className="flex flex-col space-y-3 text-sm font-medium text-neutral-700 px-2">
               <Link
-                href="/app"
-                className="mt-4 flex w-full items-center justify-center rounded-full bg-primary py-3 text-[16px] text-on-primary border border-primary"
-                onClick={() => setOpen(false)}
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-black py-1.5 transition-colors"
               >
-                Get Started
+                Product
               </Link>
-            </div>
+              <Link
+                href="/docs"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-black py-1.5 transition-colors"
+              >
+                Docs
+              </Link>
+              <Link
+                href="/pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-black py-1.5 transition-colors"
+              >
+                Pricing
+              </Link>
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   );
 }

@@ -1,4 +1,9 @@
+"use client";
+
+import React from "react";
 import { Check } from "lucide-react";
+import { motion } from "framer-motion";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
 
 export function PricingCard({
   tier,
@@ -16,56 +21,77 @@ export function PricingCard({
   highlighted?: boolean;
 }) {
   return (
-    <div
-      className={`flex flex-col p-[32px] rounded-2xl border transition-colors ${
-        highlighted
-          ? "border-accent-sunset bg-[rgba(255,122,23,0.03)]"
-          : "border-hairline bg-transparent hover:border-body-mid"
-      }`}
+    <motion.div
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.2 }}
+      className="h-full"
     >
-      <div className="flex flex-col gap-[8px] mb-[32px]">
-        <h3
-          className={`font-mono text-[14px] uppercase tracking-[1.4px] ${
-            highlighted ? "text-accent-sunset" : "text-ink"
-          }`}
-        >
-          {tier}
-        </h3>
-        <div className="text-[32px] md:text-[40px] font-normal tracking-tight text-ink leading-none">
-          {price}
-        </div>
-        <p className="text-[14px] text-body-mid leading-[1.5] h-[42px]">
-          {description}
-        </p>
-      </div>
-
-      <button
-        className={`w-full py-[12px] rounded-full text-[14px] font-medium transition-transform active:scale-95 mb-[32px] ${
+      <SpotlightCard
+        className={`flex flex-col p-8 rounded-2xl border transition-all h-full justify-between ${
           highlighted
-            ? "bg-primary text-on-primary hover:opacity-90"
-            : "bg-transparent text-ink border border-hairline hover:border-body-mid"
+            ? "border-black bg-neutral-50/80 shadow-md ring-1 ring-black/5"
+            : "border-neutral-200 bg-white hover:border-neutral-300"
         }`}
       >
-        {buttonText}
-      </button>
-
-      <div className="flex flex-col gap-[16px]">
-        {features.map((feature, i) => (
-          <div key={i} className="flex items-start gap-[12px]">
-            <Check className="w-[18px] h-[18px] text-primary shrink-0 mt-[2px]" />
-            <span className="text-[14px] text-body leading-[1.5]">
-              {feature}
-            </span>
+        <div>
+          <div className="flex flex-col gap-2 mb-8">
+            <div className="flex items-center justify-between">
+              <h3
+                className={`font-mono text-xs uppercase tracking-widest ${
+                  highlighted ? "text-black font-semibold" : "text-neutral-500"
+                }`}
+              >
+                {tier}
+              </h3>
+              {highlighted && (
+                <span className="text-[10px] font-semibold bg-black text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Popular
+                </span>
+              )}
+            </div>
+            <div className="text-3xl md:text-4xl font-semibold tracking-tight text-black leading-none mt-1">
+              {price}
+            </div>
+            <p className="text-xs text-neutral-600 leading-relaxed min-h-[42px] mt-2">
+              {description}
+            </p>
           </div>
-        ))}
-      </div>
-    </div>
+
+          {/* Button with clear pill border & background */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`w-full py-3 rounded-full text-xs font-semibold transition-all mb-8 cursor-pointer ${
+              highlighted
+                ? "bg-black text-white hover:bg-neutral-800 shadow-sm"
+                : "bg-white text-black border border-neutral-300 hover:border-black hover:bg-neutral-50"
+            }`}
+          >
+            {buttonText}
+          </motion.button>
+        </div>
+
+        {/* Feature List */}
+        <div className="flex flex-col gap-3 pt-4 border-t border-neutral-100">
+          {features.map((feature, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+                <Check className="w-2.5 h-2.5 text-emerald-600 stroke-[3]" />
+              </div>
+              <span className="text-xs text-neutral-700 leading-snug">
+                {feature}
+              </span>
+            </div>
+          ))}
+        </div>
+      </SpotlightCard>
+    </motion.div>
   );
 }
 
 export function PricingSection() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[24px]">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <PricingCard
         tier="Free"
         price="$0"
