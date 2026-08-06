@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" width="640" height="180">
-  <!-- Minimalist Code-Bracket Remediation Logo (Light Theme/Dark BG) -->
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Left Bracket < -->
-    <path d="M 85,55 L 55,90 L 85,125" stroke="#ffffff" stroke-width="14" />
-    <!-- Right Bracket > -->
-    <path d="M 95,55 L 125,90 L 95,125" stroke="#ffffff" stroke-width="14" />
-    <!-- Healing Slash / (Premium green accent) -->
-    <path d="M 70,135 L 110,45" stroke="#10B981" stroke-width="12" />
+  <!-- Minimalist 3D Isometric Vault Logo (Light Theme/Dark BG) -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- Box Left Face (Zinc 200) -->
+    <polygon points="45,80 90,106 90,140 45,114" fill="#e4e4e7" />
+    <!-- Box Right Face (Zinc 400) -->
+    <polygon points="90,106 135,80 135,114 90,140" fill="#a1a1aa" />
+    <!-- Box Inner Green RAM Core -->
+    <polygon points="45,80 90,54 135,80 90,106" fill="#10B981" />
+    
+    <!-- Lid Left Edge thickness -->
+    <polygon points="45,42 90,68 90,74 45,48" fill="#e4e4e7" />
+    <!-- Lid Right Edge thickness -->
+    <polygon points="90,68 135,42 135,48 90,74" fill="#a1a1aa" />
+    <!-- Lid Top Face (White) -->
+    <polygon points="45,42 90,16 135,42 90,68" fill="#ffffff" />
   </g>
   <!-- Wordmark -->
   <text x="170" y="122"
