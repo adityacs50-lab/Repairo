@@ -15,7 +15,7 @@ export function SiteFooter() {
             © {new Date().getFullYear()} Repairo, Inc.
           </div>
           <div className="text-charcoal">
-            <a href="mailto:hello@heyrepairo.in" className="hover:text-ink transition-colors">hello@heyrepairo.in</a>
+            <a href="mailto:info@heyrepairo.in" className="hover:text-ink transition-colors">info@heyrepairo.in</a>
           </div>
         </div>
 

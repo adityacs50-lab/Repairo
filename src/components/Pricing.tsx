@@ -3,7 +3,8 @@
 import React from "react";
 import { Check } from "lucide-react";
 import { motion } from "framer-motion";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Spotlight } from "@/components/ui/spotlight";
+import { BorderTrail } from "@/components/ui/border-trail";
 
 export function PricingCard({
   tier,
@@ -26,16 +27,18 @@ export function PricingCard({
       transition={{ duration: 0.2 }}
       className="h-full"
     >
-      <SpotlightCard
+      <div
         className={`flex flex-col p-8 rounded-2xl border transition-all h-full justify-between relative overflow-hidden ${
           highlighted
             ? "border-hairline-strong bg-surface-elevated shadow-inner shadow-canvas/50"
             : "border-hairline bg-surface-card hover:border-hairline-strong shadow-inner shadow-canvas/50"
         }`}
       >
+        <Spotlight className="from-zinc-200/40 via-zinc-200/10 to-transparent blur-2xl" size={300} />
         {highlighted && (
-          <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-ink/20 to-transparent" />
+          <BorderTrail className="bg-gradient-to-l from-accent-blue/50 via-accent-blue/20 to-transparent" size={150} />
         )}
+        <div className="relative z-10 flex flex-col justify-between h-full">
         <div>
           <div className="flex flex-col gap-2 mb-8">
             <div className="flex items-center justify-between">
@@ -52,8 +55,24 @@ export function PricingCard({
                 </span>
               )}
             </div>
-            <div className="text-3xl md:text-4xl font-medium font-display tracking-tight text-ink leading-none mt-1 flex flex-col gap-1">
-              <span>{price.split(" or ")[0]}</span>
+            <div className="font-medium font-display tracking-tight text-ink leading-none mt-1 flex flex-col gap-1">
+              <span className="text-3xl md:text-4xl">
+                {(() => {
+                  const p = price.split(" or ")[0];
+                  if (p.startsWith("$")) {
+                    const hasMo = p.endsWith("/mo");
+                    const num = p.replace("$", "").replace("/mo", "");
+                    return (
+                      <span className="flex items-start">
+                        <span className="text-lg md:text-xl font-sans mt-1 mr-0.5 text-mute">$</span>
+                        <span>{num}</span>
+                        {hasMo && <span className="text-base md:text-lg font-sans mt-auto mb-1 ml-1 text-mute font-normal">/mo</span>}
+                      </span>
+                    );
+                  }
+                  return p;
+                })()}
+              </span>
               {price.includes(" or ") && (
                 <span className="text-xs font-normal text-mute">
                   or {price.split(" or ")[1]}
@@ -92,7 +111,8 @@ export function PricingCard({
             </div>
           ))}
         </div>
-      </SpotlightCard>
+        </div>
+      </div>
     </motion.div>
   );
 }

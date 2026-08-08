@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { containerVariants, itemVariants } from "@/lib/animationVariants";
+import { Spotlight } from "@/components/ui/spotlight";
 
 const team = [
   {
@@ -49,8 +50,10 @@ export function TeamSection() {
             <motion.div 
               key={member.name}
               variants={itemVariants}
-              className="bg-surface-card border border-hairline-strong p-8 rounded-2xl flex flex-col items-center text-center hover:border-hairline transition-colors group"
+              className="relative bg-surface-card border border-hairline-strong p-8 rounded-2xl flex flex-col items-center text-center hover:border-hairline transition-colors group overflow-hidden"
             >
+              <Spotlight className="from-zinc-200/40 via-zinc-200/10 to-transparent blur-2xl" size={300} />
+              <div className="relative z-10 flex flex-col items-center">
               <div className="w-20 h-20 rounded-full bg-surface-elevated border border-hairline flex items-center justify-center text-2xl font-display text-ink mb-6 group-hover:scale-105 transition-transform overflow-hidden">
                 {member.avatar.includes('/') ? (
                   <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
@@ -85,6 +88,7 @@ export function TeamSection() {
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                   </svg>
                 </a>
+              </div>
               </div>
             </motion.div>
           ))}

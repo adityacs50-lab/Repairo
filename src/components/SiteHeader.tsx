@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { buttonPressVariant } from "@/lib/animationVariants";
+import { TextEffect } from "@/components/ui/text-effect";
 
 interface SiteHeaderProps {
   active?: string;
@@ -22,8 +23,8 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="text-ink font-semibold text-lg tracking-tight hover:opacity-80 transition-opacity font-display flex items-center gap-2">
-          <span className="w-4 h-4 rounded-full bg-ink inline-block" />
-          <span>Repairo</span>
+          <img src="/logo.jpg" alt="Repairo Logo" className="w-6 h-6 rounded-md object-contain" />
+          <TextEffect per="char" preset="fade">Repairo</TextEffect>
         </Link>
 
         {/* Center Desktop Navigation */}

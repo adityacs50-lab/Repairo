@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+import { BorderTrail } from "@/components/ui/border-trail";
 
 type Tab = "overview" | "changes" | "pulls" | "integrations" | "settings";
 
@@ -14,8 +15,9 @@ export function HeroDashboardCard() {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="w-full bg-surface-card rounded-lg shadow-2xl overflow-hidden text-body text-sm border border-hairline-strong font-sans"
+      className="relative w-full bg-surface-card rounded-lg shadow-2xl overflow-hidden text-body text-sm border border-hairline-strong font-sans"
     >
+      <BorderTrail size={120} className="bg-accent-blue" />
       <div className="flex flex-col md:flex-row min-h-[500px]">
         {/* Sidebar */}
         <div className="w-full md:w-56 border-b md:border-b-0 md:border-r border-hairline p-4 bg-canvas flex flex-col justify-between">

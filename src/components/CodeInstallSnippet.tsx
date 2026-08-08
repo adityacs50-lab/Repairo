@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { BorderTrail } from "@/components/ui/border-trail";
 
 const CLI_SNIPPET = `# 1. Quick scan via npx (no installation required)
 npx @repairo/cli scan ./src --vendors stripe,openai,supabase
@@ -55,7 +56,9 @@ export function CodeInstallSnippet() {
           transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
           className="lg:col-span-7"
         >
-          <div className="bg-surface-elevated text-ink rounded-2xl p-6 font-mono text-xs border border-hairline shadow-inner shadow-canvas/50 relative">
+          <div className="bg-surface-elevated text-ink rounded-2xl p-6 font-mono text-xs border border-hairline shadow-inner shadow-canvas/50 relative overflow-hidden">
+            <BorderTrail className="bg-gradient-to-l from-accent-blue/40 via-accent-blue/10 to-transparent" size={150} />
+            
             {/* Top Right Copy Button */}
             <div className="absolute top-4 right-4">
               <motion.button

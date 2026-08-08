@@ -3,12 +3,13 @@
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
 import { containerVariants, itemVariants } from "@/lib/animationVariants";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 
 const stats = [
-  { value: "47,000+", label: "Breaking changes detected" },
-  { value: "12x", label: "Faster than manual maintenance" },
-  { value: "99.8%", label: "Patch accuracy" },
-  { value: "< 2 min", label: "Average time to first repair" },
+  { prefix: "", value: 47000, suffix: "+", label: "Breaking changes detected" },
+  { prefix: "", value: 12, suffix: "x", label: "Faster than manual maintenance" },
+  { prefix: "", value: 99, suffix: ".8%", label: "Patch accuracy" },
+  { prefix: "< ", value: 2, suffix: " min", label: "Average time to first repair" },
 ];
 
 const comparisonData = [
@@ -59,7 +60,11 @@ export function BenchmarkSection() {
         >
           {stats.map((stat, i) => (
             <motion.div key={i} variants={itemVariants} className="text-center">
-              <div className="text-5xl md:text-6xl font-display font-medium text-ink mb-3 tracking-tight">{stat.value}</div>
+              <div className="text-5xl md:text-6xl font-display font-medium text-ink mb-3 tracking-tight">
+                {stat.prefix}
+                <AnimatedNumber value={stat.value} springOptions={{ bounce: 0, duration: 2000 }} />
+                {stat.suffix}
+              </div>
               <div className="text-mute text-sm md:text-base">{stat.label}</div>
             </motion.div>
           ))}

@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { containerVariants, itemVariants, cardHoverVariant } from "@/lib/animationVariants";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Spotlight } from "@/components/ui/spotlight";
 
 export function FeaturePanel() {
   return (
@@ -34,7 +34,8 @@ export function FeaturePanel() {
       >
         {/* Card 1: Automatic change detection */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group">
+          <div className="relative bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group overflow-hidden">
+            <Spotlight className="from-zinc-200/30 via-zinc-200/10 to-transparent blur-2xl dark:from-zinc-800/30 dark:via-zinc-800/10" size={300} />
             <div>
               <div className="w-8 h-8 rounded-lg border border-hairline bg-surface-elevated flex items-center justify-center mb-6 text-ink group-hover:bg-body transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -65,12 +66,13 @@ export function FeaturePanel() {
                 <div className="text-[10px] text-charcoal font-mono">2m ago</div>
               </div>
             </div>
-          </SpotlightCard>
+          </div>
         </motion.div>
 
         {/* Card 2: Impact mapping across the codebase */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group">
+          <div className="relative bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group overflow-hidden">
+            <Spotlight className="from-zinc-200/30 via-zinc-200/10 to-transparent blur-2xl dark:from-zinc-800/30 dark:via-zinc-800/10" size={300} />
             <div>
               <div className="w-8 h-8 rounded-lg border border-hairline bg-surface-elevated flex items-center justify-center mb-6 text-ink group-hover:bg-body transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -126,12 +128,13 @@ export function FeaturePanel() {
                 </div>
               </div>
             </div>
-          </SpotlightCard>
+          </div>
         </motion.div>
 
         {/* Card 3: Safe, reviewable PRs */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group">
+          <div className="relative bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group overflow-hidden">
+            <Spotlight className="from-zinc-200/30 via-zinc-200/10 to-transparent blur-2xl dark:from-zinc-800/30 dark:via-zinc-800/10" size={300} />
             <div>
               <div className="w-8 h-8 rounded-lg border border-hairline bg-surface-elevated flex items-center justify-center mb-6 text-ink group-hover:bg-body transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -161,12 +164,13 @@ export function FeaturePanel() {
                 View PR
               </button>
             </div>
-          </SpotlightCard>
+          </div>
         </motion.div>
 
         {/* Card 4: Zero configuration */}
         <motion.div variants={itemVariants} {...cardHoverVariant}>
-          <SpotlightCard className="bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group">
+          <div className="relative bg-surface-card border border-hairline rounded-2xl p-6 flex flex-col justify-between hover:border-hairline-strong transition-all h-full group overflow-hidden">
+            <Spotlight className="from-zinc-200/30 via-zinc-200/10 to-transparent blur-2xl dark:from-zinc-800/30 dark:via-zinc-800/10" size={300} />
             <div>
               <div className="w-8 h-8 rounded-lg border border-hairline bg-surface-elevated flex items-center justify-center mb-6 text-ink group-hover:bg-body transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -202,7 +206,7 @@ export function FeaturePanel() {
                 Connect & Monitor
               </button>
             </div>
-          </SpotlightCard>
+          </div>
         </motion.div>
       </motion.div>
     </section>

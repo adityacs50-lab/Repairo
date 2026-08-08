@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -15,14 +16,14 @@ import { BenchmarkSection } from "@/components/BenchmarkSection";
 import { EnterpriseSecurity } from "@/components/EnterpriseSecurity";
 import { TeamSection } from "@/components/TeamSection";
 import { BookDemoSection } from "@/components/BookDemoSection";
-
+import { TextEffect } from "@/components/ui/text-effect";
 const logos = [
-  { name: "OpenAI", icon: <svg className="w-4 h-4 fill-current text-ink" viewBox="0 0 24 24"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9 6.0651 6.0651 0 0 0-4.981-2.01 6.0094 6.0094 0 0 0-5.724 4.0217 6.0094 6.0094 0 0 0-3.994 2.915 6.0504 6.0504 0 0 0 .7427 7.0466 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.596 24a6.056 6.056 0 0 0 5.7578-4.02 6.0094 6.0094 0 0 0 3.9933-2.915 6.0462 6.0462 0 0 0-.7427-7.0466z"/></svg>, className: "text-ink" },
-  { name: "Gemini", icon: <svg className="w-4 h-4 fill-current text-accent-blue" viewBox="0 0 24 24"><path d="M12 0C12 6.627 6.627 12 0 12c6.627 0 12 5.373 12 12 0-6.627 5.373-12 12-12-6.627 0-12-5.373-12-12z"/></svg>, className: "text-accent-blue" },
-  { name: "ANTHROPIC", className: "font-mono tracking-widest text-sm text-accent-orange" },
-  { name: "stripe", className: "font-serif italic text-lg tracking-tight lowercase text-accent-blue" },
-  { name: "supabase", icon: <svg className="w-3.5 h-3.5 fill-current text-accent-green" viewBox="0 0 24 24"><path d="M13.359 1.954a1.086 1.086 0 0 0-1.748.272L6.155 13.89a.543.543 0 0 0 .49.774h6.05l-1.054 7.382a1.086 1.086 0 0 0 1.748-.272l5.456-11.664a.543.543 0 0 0-.49-.774h-6.05l-1.054 7.382z"/></svg>, className: "text-accent-green" },
-  { name: "GitHub", icon: <svg className="w-4 h-4 fill-current text-ink" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>, className: "text-ink" }
+  { name: "OpenAI", icon: <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9 6.0651 6.0651 0 0 0-4.981-2.01 6.0094 6.0094 0 0 0-5.724 4.0217 6.0094 6.0094 0 0 0-3.994 2.915 6.0504 6.0504 0 0 0 .7427 7.0466 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.596 24a6.056 6.056 0 0 0 5.7578-4.02 6.0094 6.0094 0 0 0 3.9933-2.915 6.0462 6.0462 0 0 0-.7427-7.0466z"/></svg>, className: "font-medium" },
+  { name: "Gemini", icon: <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C12 6.627 6.627 12 0 12c6.627 0 12 5.373 12 12 0-6.627 5.373-12 12-12-6.627 0-12-5.373-12-12z"/></svg>, className: "font-medium" },
+  { name: "ANTHROPIC", className: "font-mono tracking-widest text-sm font-medium" },
+  { name: "stripe", className: "font-serif italic text-lg tracking-tight lowercase font-bold" },
+  { name: "supabase", icon: <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M13.359 1.954a1.086 1.086 0 0 0-1.748.272L6.155 13.89a.543.543 0 0 0 .49.774h6.05l-1.054 7.382a1.086 1.086 0 0 0 1.748-.272l5.456-11.664a.543.543 0 0 0-.49-.774h-6.05l-1.054 7.382z"/></svg>, className: "font-medium" },
+  { name: "GitHub", icon: <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>, className: "font-medium" }
 ];
 
 export default function HomePage() {
@@ -44,9 +45,14 @@ export default function HomePage() {
               variants={itemVariants}
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-medium tracking-tight text-ink leading-[1.05]"
             >
-              Stop breaking production.<br />
+              <TextEffect as="span" per="word" preset="blur">
+                Stop breaking production.
+              </TextEffect>
+              <br />
               <span className="bg-ink text-primary-on px-4 py-1.5 rounded-xl inline-block mt-2">
-                Start repairing it.
+                <TextEffect as="span" per="word" preset="fade-in-blur" delay={0.8}>
+                  Start repairing it.
+                </TextEffect>
               </span>
             </motion.h1>
             <motion.p
@@ -90,31 +96,21 @@ export default function HomePage() {
               <div className="absolute left-0 top-10 bottom-0 w-24 bg-gradient-to-r from-canvas to-transparent z-10 pointer-events-none" />
               <div className="absolute right-0 top-10 bottom-0 w-24 bg-gradient-to-l from-canvas to-transparent z-10 pointer-events-none" />
 
-              <div className="flex overflow-hidden w-full select-none">
-                <motion.div
-                  className="flex gap-20 text-charcoal font-semibold text-base shrink-0 items-center justify-around min-w-full"
-                  animate={{ x: ["-50%", "0%"] }}
-                  transition={{
-                    ease: "linear",
-                    duration: 25,
-                    repeat: Infinity,
-                  }}
+              <div className="flex overflow-hidden w-full select-none pause-on-hover">
+                <div
+                  className="flex gap-20 text-charcoal font-semibold text-base shrink-0 items-center min-w-max animate-marquee pr-20"
                 >
-                  {/* Set 1 */}
-                  {logos.map((logo, index) => (
-                    <span key={`l1-${index}`} className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity shrink-0 duration-200 cursor-pointer">
-                      {logo.icon}
-                      <span className={logo.className}>{logo.name}</span>
-                    </span>
+                  {[0, 1, 2, 3].map((setIndex) => (
+                    <React.Fragment key={`set-${setIndex}`}>
+                      {logos.map((logo, index) => (
+                        <span key={`logo-${setIndex}-${index}`} className="group flex items-center gap-2 opacity-60 hover:opacity-100 transition-all shrink-0 duration-200 cursor-pointer text-charcoal hover:text-ink">
+                          {logo.icon}
+                          <span className={logo.className}>{logo.name}</span>
+                        </span>
+                      ))}
+                    </React.Fragment>
                   ))}
-                  {/* Set 2 */}
-                  {logos.map((logo, index) => (
-                    <span key={`l2-${index}`} className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity shrink-0 duration-200 cursor-pointer">
-                      {logo.icon}
-                      <span className={logo.className}>{logo.name}</span>
-                    </span>
-                  ))}
-                </motion.div>
+                </div>
               </div>
             </motion.div>
           </motion.div>

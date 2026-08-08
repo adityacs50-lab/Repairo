@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Lock, ShieldCheck, FileText, Building2, Check, X } from "lucide-react";
 import { containerVariants, itemVariants } from "@/lib/animationVariants";
+import { Spotlight } from "@/components/ui/spotlight";
 
 const genericApproach = [
   "Full repository clone",
@@ -116,8 +117,10 @@ export function EnterpriseSecurity() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
         >
           {pillars.map((pillar, i) => (
-            <motion.div key={i} variants={itemVariants} className="flex flex-col items-start p-6 rounded-2xl border border-hairline bg-surface-card hover:border-hairline-strong shadow-inner shadow-canvas/50 transition-all">
-              <div className="p-3 bg-surface-elevated border border-hairline rounded-xl mb-5">
+            <motion.div key={i} variants={itemVariants} className="relative flex flex-col items-start p-6 rounded-2xl border border-hairline bg-surface-card hover:border-hairline-strong shadow-inner shadow-canvas/50 transition-all overflow-hidden">
+              <Spotlight className="from-zinc-200/40 via-zinc-200/10 to-transparent blur-2xl" size={250} />
+              <div className="relative z-10 w-full">
+              <div className="p-3 bg-surface-elevated border border-hairline rounded-xl mb-5 inline-block">
                 <pillar.icon className="w-6 h-6 text-ink" />
               </div>
               <h4 className="text-lg font-medium text-ink mb-3">{pillar.title}</h4>
@@ -137,6 +140,7 @@ export function EnterpriseSecurity() {
                   ))}
                 </div>
               )}
+              </div>
             </motion.div>
           ))}
         </motion.div>

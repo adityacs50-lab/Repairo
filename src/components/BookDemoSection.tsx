@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { TextEffect } from "@/components/ui/text-effect";
 
 export function BookDemoSection() {
   const [formData, setFormData] = useState({
@@ -67,7 +68,7 @@ export function BookDemoSection() {
             Get in touch
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium font-display text-ink tracking-tight leading-tight mb-6">
-            Ready to stop breaking production?
+            <TextEffect preset="fade">Ready to stop breaking production?</TextEffect>
           </h2>
           <p className="text-lg text-mute mb-8 leading-relaxed">
             Book a personalized demo with our founders to see how Repairo can automatically maintain your APIs and save your engineering team hundreds of hours.
