@@ -1,146 +1,191 @@
-import type { Metadata } from "next";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import { BulletList, ContentPage, Section } from "@/components/ContentPage";
 
-export const metadata: Metadata = {
-  title: "Docs — Repairo",
-  description:
-    "How Repairo diffs OpenAPI, maps TypeScript impact, and opens safe GitHub PRs.",
-};
+const docsNav = [
+  {
+    title: "GETTING STARTED",
+    items: [
+      { href: "#overview", label: "Overview & Architecture" },
+      { href: "#quickstart", label: "Quickstart Guide" },
+      { href: "#cli-installation", label: "CLI Installation" },
+    ],
+  },
+  {
+    title: "CORE CONCEPTS",
+    items: [
+      { href: "#diffing-engine", label: "OpenAPI Diffing Engine" },
+      { href: "#impact-mapping", label: "TypeScript Impact Mapping" },
+      { href: "#ast-transforms", label: "Deterministic AST Transforms" },
+    ],
+  },
+  {
+    title: "INTEGRATIONS",
+    items: [
+      { href: "#github-webhooks", label: "Automated GitHub Webhooks" },
+      { href: "#vendors", label: "Supported Vendors" },
+    ],
+  },
+  {
+    title: "SECURITY & COMPLIANCE",
+    items: [
+      { href: "#vault", label: "Zero-Disk Volatile RAM Vault" },
+      { href: "#oauth", label: "GitHub OAuth Scopes & Permissions" },
+      { href: "#soc2", label: "SOC 2 & Enterprise Controls" },
+    ],
+  },
+];
+
+function CodeSnippet({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-surface-elevated text-ink rounded-xl p-4 font-mono text-xs border border-hairline shadow-inner shadow-canvas/50 relative my-6">
+      <div className="absolute top-3 right-3">
+        <button
+          onClick={handleCopy}
+          type="button"
+          className="flex items-center gap-1.5 bg-surface-deep hover:bg-body text-ink border border-hairline px-2 py-1 rounded-md text-[10px] transition-colors cursor-pointer"
+        >
+          {copied ? (
+            <span className="text-emerald-400">Copied</span>
+          ) : (
+            <span>Copy</span>
+          )}
+        </button>
+      </div>
+      <pre className="overflow-x-auto whitespace-pre-wrap pr-16 text-mute leading-relaxed">
+        {code}
+      </pre>
+    </div>
+  );
+}
+
+function Callout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="my-6 pl-4 py-2 border-l-2 border-hairline-strong bg-surface-card/30">
+      <div className="text-sm text-mute leading-relaxed">
+        <strong className="text-ink font-medium">Info:</strong> {children}
+      </div>
+    </div>
+  );
+}
 
 export default function DocsPage() {
   return (
     <ContentPage
       eyebrow="Documentation"
-      title="How Repairo works"
-      description="Connect GitHub, track OpenAPI before → after, map TypeScript impact, open a Dependabot-style repair PR."
+      title="How Repairo Works"
+      description="Repairo sits as the deterministic application layer between external API contracts and your internal codebase—automating the complete detect → impact → patch loop."
       activeHref="/docs"
-      cta={{ href: "/app", label: "Try on your GitHub repo" }}
+      customNav={docsNav}
     >
-      <Section title="Quick start" id="quick-start">
+      <Section title="Overview & Architecture" id="overview">
         <p>
-          Repairo is the application layer between API contracts and customer
-          codebases — the{" "}
-          <a
-            href="https://www.ycombinator.com/rfs"
-            target="_blank"
-            rel="noreferrer"
-            className="text-fg underline"
-          >
-            self-maintaining APIs
-          </a>{" "}
-          loop: detect → impact → apply as a PR.
+          Instead of manually tracking down API changes, Repairo provides a seamless pipeline from an upstream OpenAPI spec directly into your TypeScript codebase.
         </p>
-        <ol className="list-decimal space-y-2 pl-5">
-          <li className="flex flex-col gap-3 items-start my-4">
-            <span>Sign in to the dashboard to authenticate with your repository:</span>
-            <Link href="/app" className="inline-flex items-center justify-center rounded-full bg-primary px-[16px] py-[8px] text-[14px] text-on-primary border border-primary hover:bg-transparent hover:text-ink transition-colors">
+      </Section>
+
+      <Section title="Quickstart Guide" id="quickstart">
+        <ol className="list-decimal space-y-6 pl-5 mt-4">
+          <li className="pl-2">
+            <strong className="text-ink font-medium block text-base mb-2">1. Authenticate with GitHub</strong>
+            <p>Connect your repository with scoped read/write permissions through our dashboard.</p>
+            <Link href="/app" className="mt-3 inline-flex items-center justify-center rounded-full bg-ink px-[16px] py-[8px] text-[14px] text-primary-on border border-ink hover:bg-body transition-colors">
               Sign in with GitHub
             </Link>
-            <span className="text-[13px] text-body-mid">Requires <code className="text-fg">repo</code> and <code className="text-fg">read:user</code> scopes.</span>
           </li>
-          <li>
-            Use <strong className="text-fg">Try your repo</strong> or create a
-            watched integration with before/after OpenAPI paths (or the same
-            path on two refs).
+          <li className="pl-2">
+            <strong className="text-ink font-medium block text-base mb-2">2. Define Watched Specs</strong>
+            <p>Point Repairo to your remote OpenAPI JSON or YAML endpoints, or use local paths within your repo.</p>
           </li>
-          <li>List TypeScript consumer file paths that call the API.</li>
-          <li>Run repair → review the blast radius → open a PR on GitHub.</li>
+          <li className="pl-2">
+            <strong className="text-ink font-medium block text-base mb-2">3. Review & Merge PR</strong>
+            <p>Inspect the generated AST patch in GitHub and merge with a single click. We never bypass your CI pipeline.</p>
+          </li>
         </ol>
-          <div className="flex items-center gap-3 mt-4 p-4 border border-hairline rounded-xl bg-transparent">
-            <span className="text-[14px]">No OpenAPI repo handy?</span>
-            <Link href="/demo" className="inline-flex items-center justify-center rounded-full bg-transparent px-[16px] py-[6px] text-[14px] text-ink border border-hairline hover:border-body-mid transition-colors">
-              Try the Fixture Demo
-            </Link>
-          </div>
       </Section>
 
-      <Section title="Automated Integrations (Pro/Business)" id="integrations">
+      <Section title="CLI Installation" id="cli-installation">
         <p>
-          Instead of manually uploading specs, you can configure Repairo to poll remote OpenAPI schemas (like Stripe or internal microservices) continuously in the background.
+          You can test Repairo's diffing and mapping engine locally before hooking up a repository.
         </p>
-        <BulletList
-          items={[
-            "Scheduled daily polling or real-time Webhook triggers",
-            "Automatic discovery of TypeScript/TSX consumer files across your repository",
-            "Zero-touch PR generation when upstream breaking changes are detected",
-          ]}
-        />
+        <CodeSnippet code={`# Quick scan via npx (no installation required)
+npx @repairo/cli scan ./src --vendors stripe,openai,supabase
+
+# Or install globally for automated CI/CD workflows
+npm install -g @repairo/cli
+repairo init --repo owner/your-app`} />
       </Section>
 
-      <Section title="OpenAPI diffing" id="diffing">
+      <Section title="OpenAPI Diffing Engine" id="diffing-engine">
         <p>
           Repairo parses before and after OpenAPI documents, then classifies
           changes into breaking, additive, and safe categories — path/method
           moves, required fields, enum renames, base URL / version bumps, and
           status-code shifts.
         </p>
-        <p>
-          The diff is the source of truth. We do not guess from runtime traffic
-          or undocumented endpoints.
-        </p>
       </Section>
 
-      <Section title="Impact mapping" id="impact">
+      <Section title="TypeScript Impact Mapping" id="impact-mapping">
         <p>
           For each classified change, Repairo traces TypeScript call sites,
           types, and status checks in the consumer files you list. Output is a
           blast-radius summary: which files and symbols are likely affected.
         </p>
-        <BulletList
-          items={[
-            "Supported today: TypeScript / TSX consumer sources",
-            "You provide explicit file paths (no whole-monorepo crawl yet)",
-            "Impact is advisory — always review before merge",
-          ]}
-        />
       </Section>
 
-      <Section title="Deterministic transforms" id="transforms">
+      <Section title="Deterministic AST Transforms" id="ast-transforms">
         <p>
           Patches are rule-based, not free-form LLM rewrites. Supported safe
-          transforms include:
-        </p>
-        <BulletList
-          items={[
-            "URL / version path bumps (e.g. /v1 → /v2)",
-            "Required field additions where a default is unambiguous",
-            "Enum rename updates in string literals and unions",
-            "Status-code expectation updates in checks",
-          ]}
-        />
-        <p>
-          Each run includes a safety score. Unsupported or ambiguous changes are
-          left for humans — Repairo will not invent business logic.
+          transforms include URL path bumps, required field additions where a default is unambiguous, enum rename updates in string literals, and status-code expectation updates.
         </p>
       </Section>
 
-      <Section title="GitHub permissions" id="permissions">
+      <Section title="Automated GitHub Webhooks" id="github-webhooks">
         <p>
-          OAuth scopes: <code className="text-fg">repo</code> (read specs + open
-          PRs) and <code className="text-fg">read:user</code> (identity). See{" "}
-          <Link href="/security" className="text-fg underline">
-            Security
-          </Link>{" "}
-          for storage and architecture.
+          Configure Repairo to poll remote schemas continuously. We integrate directly with GitHub Webhooks to push branch updates immediately when a dependency drifts.
         </p>
       </Section>
 
-      <Section title="Plans & limits" id="plans">
+      <Section title="Supported Vendors" id="vendors">
         <BulletList
           items={[
-            "Free: 1 repository, manual/on-demand scans, manual fixes.",
-            "Pro ($29/mo): Up to 10 repositories, scheduled daily scans, automated fix PRs.",
-            "Business ($99/mo): Up to 50 repositories, real-time webhooks, auto-merge capabilities.",
-            "Enterprise: Unlimited repositories, VPC/Self-hosted, SSO.",
+            "Stripe API",
+            "OpenAI (Platform & Chat APIs)",
+            "Supabase",
+            "Custom OpenAPI 3.x / 2.0 schemas",
           ]}
         />
+      </Section>
+
+      <Section title="Zero-Disk Volatile RAM Vault" id="vault">
         <p>
-          Full comparison on{" "}
-          <Link href="/pricing" className="text-fg underline">
-            Pricing
-          </Link>
-          .
+          Your code's privacy and security is the core foundation of our architecture.
+        </p>
+        <Callout>
+          Repairo never writes your proprietary code to disk. All refactoring is processed strictly inside volatile memory and wiped immediately upon completion.
+        </Callout>
+      </Section>
+
+      <Section title="GitHub OAuth Scopes & Permissions" id="oauth">
+        <p>
+          OAuth scopes: <code className="text-ink bg-surface-elevated px-1.5 py-0.5 rounded font-mono text-xs border border-hairline">repo</code> (read specs + open
+          PRs) and <code className="text-ink bg-surface-elevated px-1.5 py-0.5 rounded font-mono text-xs border border-hairline">read:user</code> (identity).
+        </p>
+      </Section>
+
+      <Section title="SOC 2 & Enterprise Controls" id="soc2">
+        <p>
+          Enterprise customers get isolated VPC runners, explicit SSO integration with Entra ID or Okta, and comprehensive SOC 2 Type II compliance reports available upon request.
         </p>
       </Section>
     </ContentPage>

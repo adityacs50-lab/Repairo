@@ -33,13 +33,13 @@ export default function PricingPage() {
           className="px-[24px] w-full max-w-[1200px] mx-auto"
         >
           <div className="flex flex-col gap-[16px] mb-[64px] text-center items-center">
-            <motion.div variants={itemVariants} className="font-mono text-[14px] uppercase tracking-[1.4px] text-ink">
+            <motion.div variants={itemVariants} className="font-mono text-[14px] uppercase tracking-[1.4px] text-charcoal">
               Pricing
             </motion.div>
-            <motion.h1 variants={itemVariants} className="text-[48px] md:text-[64px] leading-[1] font-normal tracking-[-1.2px] md:tracking-[-2px] text-ink max-w-[800px]">
+            <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl leading-[1.1] font-medium font-display tracking-tight text-ink max-w-[800px]">
               Simple, transparent pricing.
             </motion.h1>
-            <motion.p variants={itemVariants} className="text-[18px] md:text-[24px] text-body-mid leading-[1.5] max-w-[600px] mt-[16px]">
+            <motion.p variants={itemVariants} className="text-[18px] md:text-[20px] text-mute leading-[1.5] max-w-[600px] mt-[8px]">
               Start free, upgrade when you need automated PRs and team features.
             </motion.p>
           </div>

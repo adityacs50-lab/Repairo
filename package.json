@@ -10,6 +10,7 @@
     "demo:engine": "npx tsx src/lib/engine/run-demo.ts"
   },
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "better-sqlite3": "^13.0.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
@@ -20,6 +21,7 @@
     "react-dom": "19.2.4",
     "stripe": "^22.3.2",
     "tailwind-merge": "^3.6.0",
+    "ts-morph": "^28.0.0",
     "yaml": "^2.7.0"
   },
   "devDependencies": {

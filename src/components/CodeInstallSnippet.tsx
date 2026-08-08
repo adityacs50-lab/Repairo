@@ -26,7 +26,7 @@ export function CodeInstallSnippet() {
   };
 
   return (
-    <section className="w-full py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-neutral-200">
+    <section className="w-full py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-hairline bg-canvas">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         {/* Left column */}
         <motion.div
@@ -36,13 +36,13 @@ export function CodeInstallSnippet() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="lg:col-span-5 flex flex-col justify-center"
         >
-          <div className="font-mono text-xs uppercase tracking-wider text-neutral-500 mb-2">
+          <div className="font-mono text-xs uppercase tracking-wider text-charcoal mb-2">
             QUICKSTART
           </div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-black tracking-tight mb-4">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium font-display text-ink tracking-tight mb-4">
             Get started locally.
           </h2>
-          <p className="text-sm text-neutral-600 leading-relaxed">
+          <p className="text-sm text-mute leading-relaxed">
             Install the CLI to test our static analyzer against your codebase before deploying to GitHub Actions.
           </p>
         </motion.div>
@@ -55,7 +55,7 @@ export function CodeInstallSnippet() {
           transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
           className="lg:col-span-7"
         >
-          <div className="bg-[#09090b] text-neutral-300 rounded-2xl p-6 font-mono text-xs border border-neutral-800 shadow-2xl relative">
+          <div className="bg-surface-elevated text-ink rounded-2xl p-6 font-mono text-xs border border-hairline shadow-inner shadow-canvas/50 relative">
             {/* Top Right Copy Button */}
             <div className="absolute top-4 right-4">
               <motion.button
@@ -63,7 +63,7 @@ export function CodeInstallSnippet() {
                 whileTap={{ scale: 0.97 }}
                 onClick={handleCopy}
                 type="button"
-                className="flex items-center gap-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 border border-neutral-700/60 px-3 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 bg-surface-deep hover:bg-body text-ink border border-hairline px-3 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer"
               >
                 {copied ? (
                   <>
@@ -87,52 +87,52 @@ export function CodeInstallSnippet() {
             {/* Code Content with Line Numbers */}
             <div className="space-y-2 leading-relaxed overflow-x-auto pt-2">
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">1</span>
-                <span className="text-neutral-400"># 1. Quick scan via npx (no installation required)</span>
+                <span className="text-charcoal select-none w-4 text-right">1</span>
+                <span className="text-charcoal"># 1. Quick scan via npx (no installation required)</span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">2</span>
-                <span className="text-white font-medium">npx <span className="text-emerald-400">@repairo/cli</span> scan ./src <span className="text-cyan-400">--vendors</span> <span className="text-yellow-200">stripe,openai,supabase</span></span>
+                <span className="text-charcoal select-none w-4 text-right">2</span>
+                <span className="text-ink font-medium">npx <span className="text-emerald-400">@repairo/cli</span> scan ./src <span className="text-accent-blue">--vendors</span> <span className="text-accent-orange">stripe,openai,supabase</span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">3</span>
+                <span className="text-charcoal select-none w-4 text-right">3</span>
                 <span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">4</span>
-                <span className="text-neutral-400"># 2. Or install globally for automated CI/CD workflows</span>
+                <span className="text-charcoal select-none w-4 text-right">4</span>
+                <span className="text-charcoal"># 2. Or install globally for automated CI/CD workflows</span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">5</span>
-                <span className="text-white font-medium">npm install <span className="text-cyan-400">-g</span> <span className="text-emerald-400">@repairo/cli</span></span>
+                <span className="text-charcoal select-none w-4 text-right">5</span>
+                <span className="text-ink font-medium">npm install <span className="text-accent-blue">-g</span> <span className="text-emerald-400">@repairo/cli</span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">6</span>
-                <span className="text-white font-medium">repairo init <span className="text-cyan-400">--repo</span> <span className="text-yellow-200">owner/your-app</span></span>
+                <span className="text-charcoal select-none w-4 text-right">6</span>
+                <span className="text-ink font-medium">repairo init <span className="text-accent-blue">--repo</span> <span className="text-accent-orange">owner/your-app</span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">7</span>
+                <span className="text-charcoal select-none w-4 text-right">7</span>
                 <span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">8</span>
-                <span className="text-neutral-400"># 3. Preview AST refactoring diff for breaking OpenAPI spec changes</span>
+                <span className="text-charcoal select-none w-4 text-right">8</span>
+                <span className="text-charcoal"># 3. Preview AST refactoring diff for breaking OpenAPI spec changes</span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">9</span>
-                <span className="text-white font-medium">repairo diff <span className="text-cyan-400">--spec</span> <span className="text-yellow-200">https://api.stripe.com/v1/openapi.json</span></span>
+                <span className="text-charcoal select-none w-4 text-right">9</span>
+                <span className="text-ink font-medium">repairo diff <span className="text-accent-blue">--spec</span> <span className="text-accent-orange">https://api.stripe.com/v1/openapi.json</span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">10</span>
+                <span className="text-charcoal select-none w-4 text-right">10</span>
                 <span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">11</span>
-                <span className="text-neutral-400"># 4. Apply AST patches & open reviewable GitHub PR</span>
+                <span className="text-charcoal select-none w-4 text-right">11</span>
+                <span className="text-charcoal"># 4. Apply AST patches & open reviewable GitHub PR</span>
               </div>
               <div className="flex gap-4">
-                <span className="text-neutral-600 select-none w-4 text-right">12</span>
-                <span className="text-white font-medium">repairo repair <span className="text-cyan-400">--create-pr</span></span>
+                <span className="text-charcoal select-none w-4 text-right">12</span>
+                <span className="text-ink font-medium">repairo repair <span className="text-accent-blue">--create-pr</span></span>
               </div>
             </div>
           </div>
