@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { buttonPressVariant } from "@/lib/animationVariants";
 import { TextEffect } from "@/components/ui/text-effect";
+import { cn } from "@/lib/cn";
 
 interface SiteHeaderProps {
   active?: string;
@@ -29,10 +30,10 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
 
         {/* Center Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-mute">
-          <Link href="/#features" className={`hover:text-ink transition-colors ${active === 'features' ? 'text-ink font-semibold' : ''}`}>Product</Link>
-          <Link href="/docs" className={`hover:text-ink transition-colors ${active === 'docs' ? 'text-ink font-semibold' : ''}`}>Docs</Link>
-          <Link href="/pricing" className={`hover:text-ink transition-colors ${active === 'pricing' ? 'text-ink font-semibold' : ''}`}>Pricing</Link>
-          <Link href="/app" className={`hover:text-ink transition-colors ${active === 'login' ? 'text-ink font-semibold' : ''}`}>Login</Link>
+          <Link href="/#features" className={cn("hover:text-ink transition-colors", active === 'features' && "text-ink font-semibold")}>Product</Link>
+          <Link href="/docs" className={cn("hover:text-ink transition-colors", active === 'docs' && "text-ink font-semibold")}>Docs</Link>
+          <Link href="/pricing" className={cn("hover:text-ink transition-colors", active === 'pricing' && "text-ink font-semibold")}>Pricing</Link>
+          <Link href="/app" className={cn("hover:text-ink transition-colors", active === 'login' && "text-ink font-semibold")}>Login</Link>
         </nav>
 
         {/* Right Actions */}
