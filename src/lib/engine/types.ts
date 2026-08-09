@@ -65,6 +65,7 @@ export interface RepairRunResult {
   impacts: ImpactMatch[];
   fixes: SuggestedFix[];
   pullRequest: PullRequestDraft;
+  sbom?: any;
   summary: {
     breaking: number;
     nonBreaking: number;

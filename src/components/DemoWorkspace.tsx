@@ -79,7 +79,7 @@ export function DemoWorkspace() {
   const [step, setStep] = useState(0);
   const [apiReady, setApiReady] = useState(false);
   const [tab, setTab] = useState<
-    "inputs" | "changes" | "impact" | "diff" | "pr"
+    "inputs" | "changes" | "impact" | "diff" | "pr" | "sbom"
   >("inputs");
   const [pending, startTransition] = useTransition();
 
@@ -412,6 +412,7 @@ export function DemoWorkspace() {
                 ["impact", "Impact"],
                 ["diff", "Patch"],
                 ["pr", "Pull request"],
+                ["sbom", "Security & SBOM"],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -728,6 +729,83 @@ export function DemoWorkspace() {
                               {file.path.split("/").pop()}
                             </span>
                           ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {tab === "sbom" && (
+                  <div className="space-y-6">
+                    {!result ? (
+                      <p className="text-muted leading-relaxed">
+                        Please run the AST repair scan to generate the CycloneDX SBOM.
+                      </p>
+                    ) : (
+                      <div className="space-y-5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-line pb-4">
+                          <div>
+                            <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-dim">
+                              Software Bill of Materials
+                            </p>
+                            <h2 className="mt-1 text-xl font-semibold text-fg">
+                              CycloneDX SBOM
+                            </h2>
+                            <p className="mt-1 font-mono text-xs text-muted-dim">
+                              Spec version · 1.5 | Format · CycloneDX JSON
+                            </p>
+                          </div>
+                          <div className="border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-center rounded-lg">
+                            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-emerald-400">
+                              Trivy CVE Audit
+                            </p>
+                            <p className="text-base font-semibold text-emerald-400">
+                              PASS
+                            </p>
+                            <p className="text-[10px] text-muted-dim">
+                              0 Vulnerabilities
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Components list */}
+                        <div className="space-y-3">
+                          <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-dim">
+                            Audited Dependencies & API Contracts
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {result.sbom?.components?.map((comp: any) => (
+                              <div
+                                key={comp.name}
+                                className="border border-line bg-bg p-3.5 flex flex-col justify-between hover:border-accent/40 transition-colors"
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-semibold text-fg text-sm">{comp.name}</span>
+                                    <span className="font-mono text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-muted-dim">
+                                      v{comp.version}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted leading-relaxed mt-1.5">
+                                    {comp.description}
+                                  </p>
+                                </div>
+                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5 font-mono text-[10px]">
+                                  <span className="text-muted-dim">purl: {comp.purl || "N/A"}</span>
+                                  <span className="text-emerald-400 font-medium">Scanned</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Raw JSON scroll box */}
+                        <div className="space-y-2">
+                          <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-dim">
+                            CycloneDX JSON Output
+                          </p>
+                          <pre className="max-h-[300px] overflow-y-auto whitespace-pre-wrap border border-line bg-black/40 p-4 font-mono text-xs leading-relaxed text-muted scrollbar-thin">
+                            {JSON.stringify(result.sbom, null, 2)}
+                          </pre>
                         </div>
                       </div>
                     )}

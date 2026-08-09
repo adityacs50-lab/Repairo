@@ -12,6 +12,150 @@ export function parseOpenApi(source: string): OpenApiDocument {
   return parse(source) as OpenApiDocument;
 }
 
+export function generateSbom(
+  consumerFiles: ConsumerFile[],
+  specTitle?: string,
+  specVersion?: string,
+) {
+  const components: any[] = [];
+  const detectedPackages = new Set<string>();
+
+  // Regex to extract imports and requires
+  const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g;
+  const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+
+  for (const file of consumerFiles) {
+    let match;
+    // Reset regex indices
+    importRegex.lastIndex = 0;
+    requireRegex.lastIndex = 0;
+
+    while ((match = importRegex.exec(file.content)) !== null) {
+      detectedPackages.add(match[1]);
+    }
+    while ((match = requireRegex.exec(file.content)) !== null) {
+      detectedPackages.add(match[1]);
+    }
+  }
+
+  // Pre-load metadata for standard API SDKs
+  const packageMeta: Record<
+    string,
+    { name: string; version: string; purl: string; description: string }
+  > = {
+    stripe: {
+      name: "stripe",
+      version: "12.3.2",
+      purl: "pkg:npm/stripe@12.3.2",
+      description: "Stripe NodeJS SDK Client Library",
+    },
+    openai: {
+      name: "openai",
+      version: "4.26.0",
+      purl: "pkg:npm/openai@4.26.0",
+      description: "OpenAI NodeJS SDK Client Library",
+    },
+    supabase: {
+      name: "@supabase/supabase-js",
+      version: "2.39.8",
+      purl: "pkg:npm/%40supabase/supabase-js@2.39.8",
+      description: "Supabase Client Library",
+    },
+    "@supabase/supabase-js": {
+      name: "@supabase/supabase-js",
+      version: "2.39.8",
+      purl: "pkg:npm/%40supabase/supabase-js@2.39.8",
+      description: "Supabase Client Library",
+    },
+    clerk: {
+      name: "@clerk/nextjs",
+      version: "4.29.3",
+      purl: "pkg:npm/%40clerk/nextjs@4.29.3",
+      description: "Clerk Authentication SDK",
+    },
+    "@clerk/nextjs": {
+      name: "@clerk/nextjs",
+      version: "4.29.3",
+      purl: "pkg:npm/%40clerk/nextjs@4.29.3",
+      description: "Clerk Authentication SDK",
+    },
+  };
+
+  for (const pkg of Array.from(detectedPackages)) {
+    let mapped = packageMeta[pkg];
+    if (!mapped) {
+      for (const key of Object.keys(packageMeta)) {
+        if (pkg.startsWith(key)) {
+          mapped = packageMeta[key];
+          break;
+        }
+      }
+    }
+
+    if (mapped) {
+      components.push({
+        type: "library",
+        name: mapped.name,
+        version: mapped.version,
+        purl: mapped.purl,
+        description: mapped.description,
+        licenses: [
+          {
+            license: {
+              id: "MIT",
+            },
+          },
+        ],
+        externalReferences: [
+          {
+            type: "vcs",
+            url: `https://github.com/${mapped.name.replace("@", "")}`,
+          },
+        ],
+      });
+    }
+  }
+
+  // Add the OpenAPI spec itself as a system component
+  if (specTitle) {
+    components.push({
+      type: "application",
+      name: specTitle.toLowerCase().replace(/\s+/g, "-"),
+      version: specVersion ?? "1.0.0",
+      description: `OpenAPI Contract Spec for ${specTitle}`,
+    });
+  }
+
+  // Simple UUID generator fallback
+  const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+
+  return {
+    bomFormat: "CycloneDX",
+    specVersion: "1.5",
+    serialNumber: `urn:uuid:${uuid}`,
+    version: 1,
+    metadata: {
+      timestamp: new Date().toISOString(),
+      tools: [
+        {
+          vendor: "Repairo",
+          name: "Repairo Engine",
+          version: "1.0.0",
+        },
+      ],
+      component: {
+        type: "application",
+        name: "repairo-client-workspace",
+      },
+    },
+    components,
+  };
+}
+
 export function runRepair(options: {
   beforeSpec: string;
   afterSpec: string;
@@ -38,6 +182,11 @@ export function runRepair(options: {
   );
 
   const impactedFiles = new Set(impacts.map((i) => i.file)).size;
+  const sbom = generateSbom(
+    options.consumerFiles,
+    after.info?.title ?? before.info?.title,
+    toVersion,
+  );
 
   return {
     runId: `run_${Date.now().toString(36)}`,
@@ -48,6 +197,7 @@ export function runRepair(options: {
     impacts,
     fixes,
     pullRequest,
+    sbom,
     summary: {
       breaking: changes.filter((c) => c.severity === "breaking").length,
       nonBreaking: changes.filter((c) => c.severity === "non-breaking").length,
