@@ -11,7 +11,7 @@ Key features and technical architecture of Repairo:
 3. Fully Local Option: The CLI is open-source (Apache-2.0) and can run completely offline, satisfying rigorous SOC 2, GDPR, and InfoSec requirements.
 4. Pricing Model:
    - Developer Tier (Free): Local CLI scanning, manual rule triggers, open-source presets, up to 3 repository runs per month.
-   - Team Tier ($150/month): Background OpenAPI polling, automated PR generation, stateless RAM vault automation, unlimited repository runs.
+   - Team Tier ($100/month): Background OpenAPI polling, automated PR generation, stateless RAM vault automation, unlimited repository runs.
    - Enterprise Tier (Custom): Private API specs, hybrid VPC runner agent, SSO/RBAC, and custom SLAs.
 5. Integration Support: Currently automates API drifts and SDK migrations for TypeScript consumers of Stripe, Supabase, Clerk, OpenAI, Gemini, and Anthropic Claude.
 

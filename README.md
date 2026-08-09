@@ -78,7 +78,7 @@ For a deep dive into the architecture, check out [DEPLOY.md](./DEPLOY.md) and [D
 | Tier | Price | Features |
 | :--- | :--- | :--- |
 | **Developer (Free)** | $0 | CLI local scanning, manual triggers, open-source presets, 3 runs/month |
-| **Team** | $150/mo | Background OpenAPI spec monitoring, Stateless RAM vault automation, unlimited PR runs |
+| **Team** | $100/mo | Background OpenAPI spec monitoring, Stateless RAM vault automation, unlimited PR runs |
 | **Enterprise** | Custom | Private Spec mapping, hybrid VPC runners, SSO/RBAC controls, custom SLA |
 
 ---

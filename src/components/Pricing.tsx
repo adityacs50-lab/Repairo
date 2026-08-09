@@ -149,7 +149,7 @@ export function PricingSection() {
       />
       <PricingCard
         tier="Business"
-        price="$249/mo"
+        price="$100/mo"
         description="Real-time CI/CD automation, detailed audit logs, and priority support for scaling teams."
         buttonText="Start free trial"
         highlighted={true}
