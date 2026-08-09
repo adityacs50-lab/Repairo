@@ -1,29 +1,11 @@
-<br />
-<br />
+<p align="center">
+  <img src="public/logo.jpg" alt="Repairo Logo" width="180" style="border-radius: 12px;" />
+</p>
 
-<h1 align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./brand/logo-horizontal-light.svg">
-    <source media="(prefers-color-scheme: light)" srcset="./brand/logo-horizontal-dark.svg">
-    <img src="./brand/logo-horizontal-dark.svg" alt="Repairo" width="320">
-  </picture>
-</h1>
-
-<br />
-<br />
+<h1 align="center">Repairo</h1>
 
 <p align="center">
   <strong>Like Dependabot, built for API stability.</strong>
-  <br /><br />
-  <a href="#install">Install</a>
-  ·
-  <a href="#quickstart">Quickstart</a>
-  ·
-  <a href="./DEPLOY.md">Documentation</a>
-  ·
-  <a href="./LAUNCH.md">Changelog</a>
-  ·
-  <a href="https://github.com/adityacs50-lab/Repairo/issues">Issues</a>
 </p>
 
 <p align="center">
@@ -34,25 +16,33 @@
   <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-0EA5E9?style=flat-square"></a>
 </p>
 
-Repairo is an automated API maintenance toolchain with compiler-grade AST primitives — scan, map, refactor, verify — executed in volatile RAM. Your third-party API dependencies (Stripe, Clerk, OpenAI) become monitored contracts that Repairo auto-patches, generates Pull Requests for, and secures without saving a single line of proprietary code to disk.
+<hr />
 
-→ [Compare Repairo to Dependabot, Speakeasy, PactFlow, and Generalist AI Assistants](https://github.com/adityacs50-lab/Repairo#zero-hallucination-reliability).
+**Repairo** is an automated API maintenance toolchain that continuously monitors OpenAPI specifications, parses TS consumers using compiler-grade AST engines, and automatically generates verified, reviewable pull requests.
 
-## Install
+## 🚀 Key Features
 
-Repairo in its most basic form is just a CLI: no lengthy signup, account setup, or SDK to import.
+*   **Deterministic Patches:** Unlike probabilistic coding assistants that guess, Repairo translates contract changes into compile-guaranteed code transformations using `ts-morph`. Patches either compile 100% correctly or are blocked before push.
+*   **Stateless RAM Vault:** Files and credentials stream into an ephemeral RAM buffer, apply transformations, push code, and zero out the memory block in **~24ms**. Code never touches physical disk or logs.
+*   **Fully Offline Option:** Run the open-source CLI completely locally to fit tight InfoSec, SOC 2, and GDPR policies.
+*   **Otto (AI Assistant):** An interactive developer chat assistant powered by Sarvam AI to walk you through setup, architecture, and integration issues.
+*   **Ambient Dev Workspace:** A sleek background music (BGM) loop with interactive play/pause controls to keep you in the zone.
 
+---
+
+## 🛠️ Quickstart
+
+Install the CLI globally:
 ```bash
 npm install -g @repairo/cli
 ```
 
-Or run a quick local scan via `npx`:
-
+Or execute a quick scan on your directory:
 ```bash
 npx @repairo/cli scan ./src --vendors stripe,openai,supabase
 ```
 
-## Quickstart
+### CLI Command Reference
 
 ```bash
 repairo init --repo owner/your-app           # link your repository
@@ -62,22 +52,9 @@ repairo repair --create-pr                   # apply AST patches & open PR
 repairo deploy                               # setup webhook integration
 ```
 
-That's the whole loop. Scan for drifts, run `repairo repair` and it all just works.
+---
 
-## Demo
-
-[Watch the 60-second Autoplay Demo Reel](https://heyrepairo.in/video)
-
-## Why Use Repairo
-
-- **Zero AI Hallucinations. 100% Compile Guarantee.** Unlike generalist AI assistants that rely on probabilistic guessing, Repairo compiles code changes as strict AST transforms. Code changes either compile perfectly or are blocked.
-- **The 24ms Volatile RAM Vault.** Code processing occurs strictly in volatile RAM. No codebase files, secrets, or temporary AST snippets are written to physical disk, databases, or log files. Memory blocks are zeroed out in ~24ms.
-- **Your code stays clean and vanilla.** No SDK to import, no daemon to run, no dashboard to maintain. The CLI works directly on your source files and outputs standard GitHub pull requests.
-- **Source-available engine.** Apache-2.0. Code is auditable on GitHub.
-
-## How it works
-
-Repairo is a zero-retention API maintenance engine: we stream code into an isolated, volatile RAM buffer, parse it using Tree-sitter and the TypeScript Compiler API, execute AST transformations, and push the patch to GitHub.
+## 📦 How it Works
 
 ```
 ┌───────────────────────────┐      ┌───────────────────────────┐
@@ -92,121 +69,21 @@ Repairo is a zero-retention API maintenance engine: we stream code into an isola
 └───────────────────────────┘      └───────────────────────────┘
 ```
 
-Decryption and transformation is a two-party operation: our hosted poller monitors spec drift, your machine or our volatile RAM node runs the code transformation. Neither side retains your code.
+For a deep dive into the architecture, check out [DEPLOY.md](./DEPLOY.md) and [DESIGN.md](./DESIGN.md).
 
-For the full security architecture, see [our technical workflow documentation](./REPAIRO_TECHNICAL_WORKFLOW.md).
+---
 
-## AST Drift Remediation
+## 💳 Pricing Tiers
 
-Most dependency managers bump package versions, breaking your builds. Repairo updates the integration code itself. Every parameter shift in your SDK calls is refactored on-the-fly.
+| Tier | Price | Features |
+| :--- | :--- | :--- |
+| **Developer (Free)** | $0 | CLI local scanning, manual triggers, open-source presets, 3 runs/month |
+| **Team** | $150/mo | Background OpenAPI spec monitoring, Stateless RAM vault automation, unlimited PR runs |
+| **Enterprise** | Custom | Private Spec mapping, hybrid VPC runners, SSO/RBAC controls, custom SLA |
 
-```diff
-// Stripe SDK v11 (Deprecated charging)
--const charge = await stripe.charges.create({
--  amount: 2000,
--  currency: "usd",
--  customer: customerId,
--});
-// Stripe SDK v12+ (Deterministic AST Patch)
-+const charge = await stripe.paymentIntents.create({
-+  amount: 2000,
-+  currency: "usd",
-+  customer: customerId,
-+  automatic_payment_methods: { enabled: true },
-+});
-```
+---
 
-Only the specific call-site parameters are modified, keeping your business logic, formatting, and helper wrappers untouched.
+## 📄 License & Contributing
 
-## Zero-Hallucination Reliability
-
-Unlike generalist AI coding assistants (Cursor, Devin, Copilot) that rely on probabilistic LLM guessing, Repairo is built on a **deterministic compiler engine**. Code transformations are compiled as strict AST transformations. They either compile perfectly or are blocked before push.
-
-| Dimension | Dependabot | Speakeasy | PactFlow | AI Assistants (Cursor/Devin) | Repairo |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Primary Focus** | Package upgrades | SDK generation | Contract testing | General code writing | **API change repair** |
-| **Remediation** | Version bump only | Regenerates SDK | None (CI break alert) | Prompt-based rewrite | **Deterministic AST patch** |
-| **Compiles?** | ⚠️ Unreliable | Yes (for SDK) | N/A | ⚠️ Probabilistic (hallucinates) | **✅ 100% Guaranteed** |
-| **InfoSec Posture** | Secure | Secure | Secure | ❌ High risk (code leaks) | **✅ Stateless RAM Vault** |
-| **Trigger** | PR on schedule | Provider push | CI integration | Developer prompt | **OpenAPI drift webhook** |
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| [`repairo`](#quickstart) | Check integration status and scan for drifts. |
-| [`repairo init`](#quickstart) | Link your codebase and set up workspace configuration. |
-| [`repairo scan <path>`](#quickstart) | Scan codebase for API dependencies. |
-| [`repairo diff --spec <url>`](#quickstart) | Diff OpenAPI specifications and list contract deltas. |
-| [`repairo repair`](#quickstart) | Run the AST refactoring engine locally to patch code. |
-| [`repairo deploy`](#quickstart) | Generate webhook keys and walk through platform deployment. |
-| [`repairo info`](#quickstart) | Show current session and linked workspace info. |
-| [`repairo logout`](#quickstart) | Clear local session configuration. |
-
-## Pricing
-
-Repairo is built on an **APIs Protected** infrastructure pricing model. Decide which integrations are mission-critical and pay for operational stability:
-
-* **Developer Tier (Free):** CLI local scanning, manual rule triggers, open-source presets, up to 3 automated repo runs/month.
-* **Team Tier ($150/month):** Automated background spec monitoring, 24ms Volatile RAM Vault automation, 100% automated PR generation, unlimited repository runs.
-* **Enterprise Tier (Custom):** Custom private API spec mapping, private VPC hybrid runner agent, dedicated SLA, and SSO/RBAC controls.
-
-## FAQ
-
-<details>
-<summary><strong>What is zero retention?</strong></summary>
-
-Zero-retention is a cryptographic and compliance property: our hosted platform processes repository files inside an ephemeral RAM vault. The moment the commit is generated and pushed, the RAM memory block is zero-filled in ~24ms. Zero code is ever written to disk.
-</details>
-
-<details>
-<summary><strong>Does it work offline?</strong></summary>
-
-Yes. The local CLI parser (`@repairo/cli`) runs entirely on your local machine and requires no network permissions or credentials, so you can test transformations offline before deploying.
-</details>
-
-<details>
-<summary><strong>Does this meet SOC 2 / GDPR requirements?</strong></summary>
-
-Yes. Because our hosted vault has zero code retention and runs fully statelessly, it satisfies stringent InfoSec audits. GDPR-compliant.
-</details>
-
-<details>
-<summary><strong>What does Repairo cost?</strong></summary>
-
-Free for individual developers and open-source projects. Paid plans are based on the number of critical API integrations monitored.
-</details>
-
-<details>
-<summary><strong>Can I self-host?</strong></summary>
-
-Yes. You can self-host the open-source CLI parser in your own private CI/CD runners (GitHub Actions, GitLab CI). If you need hosted enterprise runners within a private cloud VPC, contact our team.
-</details>
-
-## Supply chain
-
-Repairo CLI ships with five runtime dependencies. Each is a load-bearing piece of the compiler pipeline to keep the supply-chain attack surface tight.
-
-| Dependency | Purpose | Status |
-|------------|---------|--------|
-| [`ts-morph`](https://github.com/dsherret/ts-morph) | TypeScript AST Compiler API wrapper | ✓ no known vulnerabilities |
-| [`yaml`](https://github.com/eemeli/yaml) | OpenAPI YAML spec parser | ✓ no known vulnerabilities |
-| [`@octokit/rest`](https://github.com/octokit/rest.js) | GitHub REST API client | ✓ no known vulnerabilities |
-| [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) | Local cache and SQLite driver | ✓ no known vulnerabilities |
-| [`drizzle-orm`](https://github.com/drizzle-team/drizzle-orm) | Local relational mapping layer | ✓ no known vulnerabilities |
-
-## Security
-
-Don't file public GitHub issues for security vulnerabilities. Report them directly to our security response team at [security@repairo.com](mailto:security@repairo.com). We will coordinate verification and patch releases immediately.
-
-## Contributing
-
-You can fork this repo and create pull requests:
-
-[github.com/adityacs50-lab/Repairo](https://github.com/adityacs50-lab/Repairo) - [bugs](https://github.com/adityacs50-lab/Repairo/issues) and [discussions](https://github.com/adityacs50-lab/Repairo/discussions)
-
-## License
-
-Apache-2.0. Copyright © Repairo Inc.
-
-See [LICENSE](./LICENSE) for the full text. For what this license means for your team in practice, see [DEPLOY.md](./DEPLOY.md).
+Repairo is open-source under the [Apache-2.0 License](./LICENSE). Contributions are welcome!
+Feel free to read [LAUNCH.md](./LAUNCH.md) to set up a dev environment or contact us at `security@repairo.com` to report vulnerabilities.
