@@ -17,6 +17,7 @@ import { EnterpriseSecurity } from "@/components/EnterpriseSecurity";
 import { TeamSection } from "@/components/TeamSection";
 import { BookDemoSection } from "@/components/BookDemoSection";
 import { TextEffect } from "@/components/ui/text-effect";
+import { WaitlistForm } from "@/components/WaitlistForm";
 const logos = [
   { name: "OpenAI", icon: <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9 6.0651 6.0651 0 0 0-4.981-2.01 6.0094 6.0094 0 0 0-5.724 4.0217 6.0094 6.0094 0 0 0-3.994 2.915 6.0504 6.0504 0 0 0 .7427 7.0466 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.596 24a6.056 6.056 0 0 0 5.7578-4.02 6.0094 6.0094 0 0 0 3.9933-2.915 6.0462 6.0462 0 0 0-.7427-7.0466z"/></svg>, className: "font-medium" },
   { name: "Gemini", icon: <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C12 6.627 6.627 12 0 12c6.627 0 12 5.373 12 12 0-6.627 5.373-12 12-12-6.627 0-12-5.373-12-12z"/></svg>, className: "font-medium" },
@@ -61,23 +62,17 @@ export default function HomePage() {
             >
               Repairo detects OpenAPI spec changes, maps the impact across your codebase, and opens a safe PR automatically.
             </motion.p>
-            <motion.div variants={itemVariants} className="flex items-center gap-4 pt-2">
-              <motion.div {...buttonPressVariant}>
-                <Link
-                  href="/app"
-                  className="inline-block bg-ink text-primary-on font-medium px-7 py-3.5 rounded-full text-sm hover:bg-body transition-colors"
-                >
-                  Start for free
-                </Link>
-              </motion.div>
-              <motion.div {...buttonPressVariant}>
-                <Link
-                  href="/docs"
-                  className="inline-block bg-surface-card border border-hairline-strong text-ink font-medium px-7 py-3.5 rounded-full text-sm hover:bg-surface-elevated transition-colors"
-                >
+            <motion.div variants={itemVariants} className="w-full max-w-md mx-auto pt-2">
+              <WaitlistForm />
+              <div className="mt-4 flex items-center justify-center gap-6 text-xs text-mute font-medium">
+                <Link href="/docs" className="hover:text-ink transition-colors underline decoration-hairline hover:decoration-ink decoration-1 underline-offset-2">
                   Read the docs
                 </Link>
-              </motion.div>
+                <span>•</span>
+                <Link href="/app" className="hover:text-ink transition-colors underline decoration-hairline hover:decoration-ink decoration-1 underline-offset-2">
+                  Log in
+                </Link>
+              </div>
             </motion.div>
 
             {/* Trust Line */}

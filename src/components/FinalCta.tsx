@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { TextEffect } from "@/components/ui/text-effect";
 import { Spotlight } from "@/components/ui/spotlight";
 import { BorderTrail } from "@/components/ui/border-trail";
+import { WaitlistForm } from "@/components/WaitlistForm";
 
 export function FinalCta() {
   return (
@@ -39,28 +40,12 @@ export function FinalCta() {
             <TextEffect per="word" preset="fade">Start repairing it.</TextEffect>
           </h2>
 
-          <motion.div
-            whileHover={{ y: -2, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Link
-              href="/app"
-              className="relative inline-flex items-center gap-2 bg-ink text-primary-on font-medium text-sm px-6 py-3 rounded-full hover:bg-body transition-colors mb-4 group overflow-hidden"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <span>Start for free</span>
-                <span className="transition-transform group-hover:translate-x-1">→</span>
-              </span>
-              {/* Glossy Sheen Light Sweep on Hover */}
-              <div className="absolute inset-0 z-0 flex h-full w-full justify-center [transform:skew(-12deg)_translateX(-150%)] group-hover:duration-1000 group-hover:[transform:skew(-12deg)_translateX(150%)] transition-transform">
-                <div className="relative h-full w-[24px] bg-primary-on/10" />
-              </div>
-            </Link>
-          </motion.div>
+          <div className="w-full max-w-md mb-6">
+            <WaitlistForm />
+          </div>
 
           <p className="text-xs text-mute">
-            No credit card required. Connect GitHub and go.
+            Join the private beta. Get early access to Repairo.
           </p>
         </div>
       </motion.div>
