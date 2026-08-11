@@ -1,77 +1,77 @@
-# Repairo CLI
+# Repairo CLI (`repairo-cli`)
 
-> **Repairo detects breaking changes in third-party APIs, maps their impact across your codebase, and generates validated code repairs.**
+> **Repairo detects breaking changes in third-party APIs, maps their impact across your codebase, and generates validated AST repairs.**
 
 Repairo is a developer tool built for Node.js / TypeScript codebases. It ingests OpenAPI 3.0/3.1 specifications, performs structural spec diffing, maps impacted AST nodes across your repository using `ts-morph`, executes deterministic repairs, validates changes via TypeScript compilation & unit tests, and generates reviewable diffs or GitHub Pull Requests.
 
 ---
 
-## 🛠️ Installation & Usage
+## 🛠️ Installation & Quickstart
 
-### Local Development / Quickstart
-
-Execute CLI directly using `npx`:
+Run directly without installation via `npx`:
 
 ```bash
-# 1. Scan codebase for API SDK dependencies (Stripe, OpenAI, Supabase, fetch, etc.)
-npx tsx src/cli/index.ts scan ./src --vendors stripe,openai,supabase
+# 1. Scan your codebase for third-party API dependencies
+npx repairo-cli scan ./src --vendors stripe,openai,supabase
 
 # 2. Initialize local .repairo configuration workspace
-npx tsx src/cli/index.ts init --repo owner/repository
+npx repairo-cli init --repo owner/your-app
 
-# 3. Compare OpenAPI contract against baseline snapshot & view AST impact
-npx tsx src/cli/index.ts diff --spec ./specs/new-openapi.json
+# 3. Detect API contract drift & map code impact from an OpenAPI spec
+npx repairo-cli diff --spec ./specs/new-openapi.json
 
-# 4. Preview validated AST repairs without modifying files (--dry-run)
-npx tsx src/cli/index.ts repair --dry-run
+# 4. Preview AST repairs with tsc compiler validation
+npx repairo-cli repair --dry-run
 
-# 5. Apply validated AST repairs to working tree (--apply)
-npx tsx src/cli/index.ts repair --apply
-
-# 6. Create GitHub Pull Request (--create-pr)
-npx tsx src/cli/index.ts repair --create-pr
+# 5. Apply validated AST repairs or open GitHub PR
+npx repairo-cli repair --apply # or --create-pr
 ```
 
-Or via global npm package:
+Or install globally via npm:
 
 ```bash
-npm install -g @repairo/cli
+npm install -g repairo-cli
+
 repairo scan ./src
+repairo init --repo owner/your-app
+repairo diff --spec ./specs/new-openapi.json
+repairo repair --dry-run
+repairo repair --apply
 ```
 
 ---
 
 ## 🚀 End-to-End Demo Workflow
 
-Repairo ships with a real, reproducible fixture in `fixtures/breaking-api-demo/`.
+Repairo ships with a reproducible fixture in `fixtures/breaking-api-demo/`.
 
 ### Step 1: Scan Repository
 ```bash
-npx tsx src/cli/index.ts scan ./fixtures/breaking-api-demo/src
+npx repairo-cli scan ./fixtures/breaking-api-demo/src
 ```
 *Outputs real file counts, detected vendors (OpenAI), and call site counts.*
 
 ### Step 2: Save Baseline Spec Snapshot
 ```bash
-npx tsx src/cli/index.ts diff --spec ./fixtures/breaking-api-demo/specs/old-openapi.json
+npx repairo-cli diff --spec ./fixtures/breaking-api-demo/specs/old-openapi.json
 ```
 *Saves baseline snapshot to `.repairo/snapshots/openapi.json`.*
 
 ### Step 3: Compute Contract Changes & Impact
 ```bash
-npx tsx src/cli/index.ts diff --spec ./fixtures/breaking-api-demo/specs/new-openapi.json --target ./fixtures/breaking-api-demo/src
+npx repairo-cli diff --spec ./fixtures/breaking-api-demo/specs/new-openapi.json --target ./fixtures/breaking-api-demo/src
 ```
 *Detects parameter removal (`max_tokens` → `max_output_tokens`) and maps affected call sites.*
 
 ### Step 4: Dry-Run AST Repair & Validation
 ```bash
-npx tsx src/cli/index.ts repair --dry-run --target ./fixtures/breaking-api-demo/src
+npx repairo-cli repair --dry-run --spec ./fixtures/breaking-api-demo/specs/new-openapi.json --target ./fixtures/breaking-api-demo/src
 ```
-*Generates deterministic AST transformation, runs `tsc` compilation check, displays unified code diff, and preserves files.*
+*Generates deterministic AST transformation targeting `PropertyAssignment` request objects, runs `tsc` compilation check, displays unified code diff, and preserves interface signatures.*
 
 ### Step 5: Apply Validated Repair
 ```bash
-npx tsx src/cli/index.ts repair --apply --target ./fixtures/breaking-api-demo/src
+npx repairo-cli repair --apply --spec ./fixtures/breaking-api-demo/specs/new-openapi.json --target ./fixtures/breaking-api-demo/src
 ```
 *Applies validated patch to disk.*
 
@@ -95,6 +95,7 @@ Covers:
 7. CLI scan test
 8. CLI diff test
 9. CLI repair test
+10. Interface vs Call Site AST Scope Regression Test
 
 ---
 
