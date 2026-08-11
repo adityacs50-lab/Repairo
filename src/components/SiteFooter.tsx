@@ -7,10 +7,9 @@ export function SiteFooter() {
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
         {/* Brand Column */}
         <div className="space-y-4">
-          <div className="text-ink font-semibold text-base tracking-tight font-display flex items-center gap-2">
-            <img src="/logo.jpg" alt="Repairo AI Logo" className="h-6 w-auto object-contain rounded" />
-            <span>Repairo</span>
-          </div>
+          <Link href="/" className="hover:opacity-80 transition-opacity inline-block">
+            <img src="/logo.jpg" alt="Repairo AI Logo" className="h-8 md:h-9 w-auto object-contain rounded" />
+          </Link>
           <div className="text-charcoal">
             © {new Date().getFullYear()} Repairo, Inc.
           </div>
