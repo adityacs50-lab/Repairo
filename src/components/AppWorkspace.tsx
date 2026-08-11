@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { HeroEnter, PixelCluster } from "@/components/Motion";
 import { QuickRepair } from "@/components/QuickRepair";
 import { VendorAgents } from "@/components/VendorAgents";
+import { DemoWorkspace } from "@/components/DemoWorkspace";
 
 type AuthUser = {
   id: string;
@@ -384,63 +385,8 @@ export function AppWorkspace() {
     window.location.href = data.url;
   }
 
-  if (configured === null) {
-    return (
-      <div className="border border-line bg-bg-panel p-10 text-muted">
-        Loading workspace…
-      </div>
-    );
-  }
-
-  if (!configured) {
-    return (
-      <div className="border border-line bg-bg-panel p-8">
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
-          Setup required
-        </p>
-        <h1 className="mt-3 text-2xl font-semibold">Connect GitHub to run Repairo</h1>
-        <p className="mt-3 text-sm text-muted">{configError}</p>
-        <a href="/demo" className="btn-ghost mt-8 inline-flex">
-          Use fixture demo
-        </a>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="border border-line bg-bg-panel p-8">
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
-          SaaS workspace
-        </p>
-        <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">
-          Sign in with GitHub — then repair one of your repos
-        </h1>
-        <p className="mt-3 max-w-xl text-sm text-muted">
-          Connect your account, pick a repository with OpenAPI + TypeScript
-          consumers, run a repair, and open a real pull request you can review
-          and merge.
-        </p>
-        {error && (
-          <p className="mt-4 border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
-            {error}
-          </p>
-        )}
-        <div className="mt-8 flex flex-wrap gap-3">
-          <a href="/api/auth/github" className="btn-primary inline-flex">
-            Continue with GitHub
-          </a>
-          <a href="/demo" className="btn-ghost inline-flex">
-            See fixture demo first
-          </a>
-        </div>
-        <ol className="mt-10 list-decimal space-y-2 pl-5 text-sm text-muted">
-          <li>Authorize Repairo (repo read/write to open PRs)</li>
-          <li>Choose before/after OpenAPI paths or two git refs</li>
-          <li>Run repair → open PR on GitHub</li>
-        </ol>
-      </div>
-    );
+  if (!configured || !user) {
+    return <DemoWorkspace />;
   }
 
   return (
