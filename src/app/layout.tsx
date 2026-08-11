@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import RepairoChatAssistant from "@/components/RepairoChatAssistant";
-import BackgroundMusic from "@/components/BackgroundMusic";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -67,7 +66,6 @@ export default function RootLayout({
       <body className="relative min-h-full bg-canvas text-ink font-sans selection:bg-surface-light selection:text-primary-on">
         {children}
         <RepairoChatAssistant />
-        <BackgroundMusic />
       </body>
     </html>
   );
