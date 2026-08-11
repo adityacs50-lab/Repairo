@@ -138,6 +138,21 @@ const demoClientBefore = fs.readFileSync(demoClientPath, "utf-8");
 const repairTransform = applyAstTransforms(demoClientBefore, demoDiff, demoClientPath);
 assert(repairTransform.content.includes("max_output_tokens"), "Generates valid AST repair for breaking API parameter change");
 
+// Test 10: Interface vs Call Site AST Scope Regression Test
+console.log("\nTest 10: Interface vs Call Site AST Scope Regression Test");
+const codeWithInterfaceAndCall = `
+export interface ChatCompletionsInput {
+  max_tokens?: number;
+}
+const response = await openai.chat.completions.create({
+  max_tokens: 500
+});
+`;
+const scopeTestResult = applyAstTransforms(codeWithInterfaceAndCall, openaiChanges, "src/ai.ts");
+assert(scopeTestResult.content.includes("max_tokens?: number;"), "Interface declaration max_tokens?: number; remains 100% UNCHANGED");
+assert(scopeTestResult.content.includes("max_output_tokens: 500"), "Call site max_tokens: 500 is renamed to max_output_tokens: 500");
+assert(!scopeTestResult.content.includes("max_tokens: 500"), "Old max_tokens: 500 property is removed from call site");
+
 console.log("\n==================================================");
 console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);
 console.log("==================================================\n");

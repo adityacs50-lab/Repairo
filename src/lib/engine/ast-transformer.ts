@@ -41,30 +41,26 @@ export function applyAstTransforms(
     }
 
     if (oldField && newField && oldField !== newField) {
-      // A. Object Property Assignments (e.g. call site options { max_tokens: 500 })
+      // Object Property Assignments (e.g. call site options { max_tokens: 500 })
+      // Only transform actual request object property assignments, not interface/type declarations.
       const propertyAssignments = sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAssignment);
       for (const prop of propertyAssignments) {
         if (prop.getName() === oldField) {
-          prop.getNameNode().replaceWithText(newField);
+          const parentObj = prop.getFirstAncestorByKind(SyntaxKind.ObjectLiteralExpression);
+          if (parentObj) {
+            prop.getNameNode().replaceWithText(newField);
 
-          fixes.push({
-            changeId: change.id,
-            file: filePath,
-            description: `Renamed property "${oldField}" → "${newField}" via AST`,
-            before: `${oldField}: ...`,
-            after: `${newField}: ...`,
-            safe: true,
-            safetyNotes: ["AST Property rename preserving initializer and formatting"],
-          });
-          pathHints.push(oldField);
-        }
-      }
-
-      // B. Interface / Type Property Signatures (e.g. interface Input { max_tokens?: number })
-      const propertySignatures = sourceFile.getDescendantsOfKind(SyntaxKind.PropertySignature);
-      for (const propSig of propertySignatures) {
-        if (propSig.getName() === oldField) {
-          propSig.getNameNode().replaceWithText(newField);
+            fixes.push({
+              changeId: change.id,
+              file: filePath,
+              description: `Renamed property "${oldField}" → "${newField}" via AST`,
+              before: `${oldField}: ...`,
+              after: `${newField}: ...`,
+              safe: true,
+              safetyNotes: ["AST PropertyAssignment rename preserving initializer and formatting"],
+            });
+            pathHints.push(oldField);
+          }
         }
       }
     }
