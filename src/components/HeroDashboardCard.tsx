@@ -24,7 +24,7 @@ export function HeroDashboardCard() {
           <div>
             {/* Logo */}
             <div className="font-semibold text-lg mb-8 text-ink tracking-tight font-display flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full bg-ink" />
+              <img src="/logo.jpg" alt="Repairo AI Logo" className="h-6 w-auto object-contain rounded" />
               <span>Repairo</span>
             </div>
 

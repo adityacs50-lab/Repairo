@@ -8,7 +8,7 @@ export function SiteFooter() {
         {/* Brand Column */}
         <div className="space-y-4">
           <div className="text-ink font-semibold text-base tracking-tight font-display flex items-center gap-2">
-            <span className="w-4 h-4 rounded-full bg-ink inline-block" />
+            <img src="/logo.jpg" alt="Repairo AI Logo" className="h-6 w-auto object-contain rounded" />
             <span>Repairo</span>
           </div>
           <div className="text-charcoal">

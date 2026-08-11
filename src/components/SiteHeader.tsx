@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { buttonPressVariant } from "@/lib/animationVariants";
-import { TextEffect } from "@/components/ui/text-effect";
 import { cn } from "@/lib/cn";
 
 interface SiteHeaderProps {
@@ -19,13 +18,12 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full bg-canvas/80 backdrop-blur-md border-b border-hairline py-4 px-6 md:px-12 sticky top-0 z-50 transition-colors font-sans"
+      className="w-full bg-canvas/80 backdrop-blur-md border-b border-hairline py-3 px-6 md:px-12 sticky top-0 z-50 transition-colors font-sans"
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="text-ink font-semibold text-lg tracking-tight hover:opacity-80 transition-opacity font-display flex items-center gap-2">
-          <img src="/logo.jpg" alt="Repairo Logo" className="w-6 h-6 rounded-md object-contain" />
-          <TextEffect per="char" preset="fade">Repairo</TextEffect>
+        <Link href="/" className="hover:opacity-80 transition-opacity flex items-center gap-3">
+          <img src="/logo.jpg" alt="Repairo AI Logo" className="h-8 md:h-9 w-auto object-contain rounded" />
         </Link>
 
         {/* Center Desktop Navigation */}
