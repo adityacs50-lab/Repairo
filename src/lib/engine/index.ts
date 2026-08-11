@@ -20,13 +20,11 @@ export function generateSbom(
   const components: any[] = [];
   const detectedPackages = new Set<string>();
 
-  // Regex to extract imports and requires
   const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g;
   const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 
   for (const file of consumerFiles) {
     let match;
-    // Reset regex indices
     importRegex.lastIndex = 0;
     requireRegex.lastIndex = 0;
 
@@ -38,7 +36,6 @@ export function generateSbom(
     }
   }
 
-  // Pre-load metadata for standard API SDKs
   const packageMeta: Record<
     string,
     { name: string; version: string; purl: string; description: string }
@@ -67,18 +64,6 @@ export function generateSbom(
       purl: "pkg:npm/%40supabase/supabase-js@2.39.8",
       description: "Supabase Client Library",
     },
-    clerk: {
-      name: "@clerk/nextjs",
-      version: "4.29.3",
-      purl: "pkg:npm/%40clerk/nextjs@4.29.3",
-      description: "Clerk Authentication SDK",
-    },
-    "@clerk/nextjs": {
-      name: "@clerk/nextjs",
-      version: "4.29.3",
-      purl: "pkg:npm/%40clerk/nextjs@4.29.3",
-      description: "Clerk Authentication SDK",
-    },
   };
 
   for (const pkg of Array.from(detectedPackages)) {
@@ -99,24 +84,11 @@ export function generateSbom(
         version: mapped.version,
         purl: mapped.purl,
         description: mapped.description,
-        licenses: [
-          {
-            license: {
-              id: "MIT",
-            },
-          },
-        ],
-        externalReferences: [
-          {
-            type: "vcs",
-            url: `https://github.com/${mapped.name.replace("@", "")}`,
-          },
-        ],
+        licenses: [{ license: { id: "MIT" } }],
       });
     }
   }
 
-  // Add the OpenAPI spec itself as a system component
   if (specTitle) {
     components.push({
       type: "application",
@@ -126,7 +98,6 @@ export function generateSbom(
     });
   }
 
-  // Simple UUID generator fallback
   const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -140,17 +111,8 @@ export function generateSbom(
     version: 1,
     metadata: {
       timestamp: new Date().toISOString(),
-      tools: [
-        {
-          vendor: "Repairo",
-          name: "Repairo Engine",
-          version: "1.0.0",
-        },
-      ],
-      component: {
-        type: "application",
-        name: "repairo-client-workspace",
-      },
+      tools: [{ vendor: "Repairo", name: "Repairo Engine", version: "1.0.0" }],
+      component: { type: "application", name: "repairo-client-workspace" },
     },
     components,
   };
@@ -212,3 +174,8 @@ export * from "./types";
 export { diffOpenApi } from "./diff";
 export { findImpactedCode } from "./impact";
 export { buildPullRequest, generateFixes } from "./repair";
+export { scanDirectory, scanCodebase } from "./ast-parser";
+export { applyAstTransforms } from "./ast-transformer";
+export { validateCodebase } from "./validation";
+export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";
+export { getGitStatus, createGitHubPR } from "./github";

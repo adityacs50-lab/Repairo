@@ -97,33 +97,38 @@ export default function DocsPage() {
       <Section title="Quickstart Guide" id="quickstart">
         <ol className="list-decimal space-y-6 pl-5 mt-4">
           <li className="pl-2">
-            <strong className="text-ink font-medium block text-base mb-2">1. Authenticate with GitHub</strong>
-            <p>Connect your repository with scoped read/write permissions through our dashboard.</p>
-            <Link href="/app" className="mt-3 inline-flex items-center justify-center rounded-full bg-ink px-[16px] py-[8px] text-[14px] text-primary-on border border-ink hover:bg-body transition-colors">
-              Sign in with GitHub
-            </Link>
+            <strong className="text-ink font-medium block text-base mb-2">1. Scan Your Repository</strong>
+            <p>Run Repairo locally against any directory to discover third-party API dependencies (Stripe, OpenAI, Supabase, etc.).</p>
           </li>
           <li className="pl-2">
-            <strong className="text-ink font-medium block text-base mb-2">2. Define Watched Specs</strong>
-            <p>Point Repairo to your remote OpenAPI JSON or YAML endpoints, or use local paths within your repo.</p>
+            <strong className="text-ink font-medium block text-base mb-2">2. Diff OpenAPI Specs</strong>
+            <p>Compare new OpenAPI 3.0/3.1 specs against baseline snapshots to calculate exact AST call site impacts.</p>
           </li>
           <li className="pl-2">
-            <strong className="text-ink font-medium block text-base mb-2">3. Review & Merge PR</strong>
-            <p>Inspect the generated AST patch in GitHub and merge with a single click. We never bypass your CI pipeline.</p>
+            <strong className="text-ink font-medium block text-base mb-2">3. Validate &amp; Apply Patches</strong>
+            <p>Preview AST transformations with compiler-grade typechecking (<code className="text-ink bg-surface-elevated px-1.5 py-0.5 rounded font-mono text-xs border border-hairline">tsc --noEmit</code>) before applying to disk or opening a GitHub PR.</p>
           </li>
         </ol>
       </Section>
 
       <Section title="CLI Installation" id="cli-installation">
         <p>
-          You can test Repairo's diffing and mapping engine locally before hooking up a repository.
+          You can run Repairo 100% offline against any local repository without requiring a cloud backend or third-party AI keys.
         </p>
-        <CodeSnippet code={`# Quick scan via npx (no installation required)
+        <CodeSnippet code={`# 1. Scan any codebase for API dependencies
 npx @repairo/cli scan ./src --vendors stripe,openai,supabase
 
-# Or install globally for automated CI/CD workflows
-npm install -g @repairo/cli
-repairo init --repo owner/your-app`} />
+# 2. Initialize local .repairo configuration workspace
+repairo init --repo owner/your-app
+
+# 3. Detect contract drift & map code impact from an OpenAPI spec
+repairo diff --spec ./specs/new-openapi.json
+
+# 4. Preview AST repairs with tsc compiler validation (--dry-run)
+repairo repair --dry-run
+
+# 5. Apply validated AST repairs to working tree (--apply)
+repairo repair --apply`} />
       </Section>
 
       <Section title="OpenAPI Diffing Engine" id="diffing-engine">
@@ -146,7 +151,7 @@ repairo init --repo owner/your-app`} />
       <Section title="Deterministic AST Transforms" id="ast-transforms">
         <p>
           Patches are rule-based, not free-form LLM rewrites. Supported safe
-          transforms include URL path bumps, required field additions where a default is unambiguous, enum rename updates in string literals, and status-code expectation updates.
+          transforms include URL path bumps, required field additions where a default is unambiguous, enum rename updates in string literals, and parameter property renames.
         </p>
       </Section>
 

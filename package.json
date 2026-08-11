@@ -1,12 +1,30 @@
 {
-  "name": "repairo",
+  "name": "repairo-cli",
   "version": "0.1.0",
-  "private": true,
+  "description": "Repairo detects breaking changes in third-party APIs, maps codebase impact, and generates validated AST repairs.",
+  "private": false,
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "repairo": "./bin/repairo.js",
+    "repairo-cli": "./bin/repairo.js"
+  },
+  "files": [
+    "bin/",
+    "src/cli/",
+    "src/lib/engine/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npx tsx tests/run-tests.ts",
+    "repairo": "npx tsx src/cli/index.ts",
     "demo:engine": "npx tsx src/lib/engine/run-demo.ts"
   },
   "dependencies": {

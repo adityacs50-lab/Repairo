@@ -1,5 +1,178 @@
+import fs from "fs";
+import path from "path";
 import { Project, SyntaxKind, SourceFile, CallExpression } from "ts-morph";
 import type { ApiChange, ConsumerFile, ImpactMatch } from "./types";
+
+export interface VendorUsage {
+  vendor: string;
+  files: string[];
+  callSites: number;
+}
+
+export interface DetailedScanResult {
+  repositoryPath: string;
+  filesScanned: number;
+  vendorsDetected: Record<string, string[]>; // vendor -> file paths
+  totalCallSites: number;
+  durationMs: number;
+  callSiteDetails: Array<{
+    file: string;
+    line: number;
+    column: number;
+    vendor: string;
+    snippet: string;
+  }>;
+}
+
+const KNOWN_VENDORS: Record<string, { name: string; packages: string[]; symbols: string[] }> = {
+  stripe: {
+    name: "Stripe",
+    packages: ["stripe", "@stripe/stripe-js"],
+    symbols: ["Stripe", "stripe", "charges", "paymentIntents", "checkout", "customers", "subscriptions", "refunds"],
+  },
+  openai: {
+    name: "OpenAI",
+    packages: ["openai"],
+    symbols: ["OpenAI", "openai", "chat", "completions", "embeddings", "images", "audio"],
+  },
+  supabase: {
+    name: "Supabase",
+    packages: ["@supabase/supabase-js"],
+    symbols: ["createClient", "supabase", "from", "auth", "storage", "rpc"],
+  },
+};
+
+/**
+ * Scans a local filesystem directory for API SDK & HTTP client usages using AST parsing.
+ */
+export function scanDirectory(targetDir: string, vendorFilter?: string[]): DetailedScanResult {
+  const startTime = Date.now();
+  const absPath = path.resolve(targetDir);
+
+  if (!fs.existsSync(absPath)) {
+    throw new Error(`Target directory does not exist: ${absPath}`);
+  }
+
+  const project = new Project({
+    skipAddingFilesFromTsConfig: true,
+    compilerOptions: { allowJs: true },
+  });
+
+  const ignoreDirs = new Set(["node_modules", ".next", ".git", "dist", "build", ".repairo"]);
+
+  function collectFiles(dir: string): string[] {
+    const results: string[] = [];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!ignoreDirs.has(entry.name)) {
+          results.push(...collectFiles(fullPath));
+        }
+      } else if (/\.(ts|tsx|js|jsx|mjs|cjs)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
+        results.push(fullPath);
+      }
+    }
+    return results;
+  }
+
+  const filePaths = collectFiles(absPath);
+  for (const file of filePaths) {
+    project.addSourceFileAtPath(file);
+  }
+
+  const vendorsDetected: Record<string, Set<string>> = {};
+  const callSiteDetails: DetailedScanResult["callSiteDetails"] = [];
+  let totalCallSites = 0;
+
+  const allowedVendors = vendorFilter && vendorFilter.length > 0
+    ? new Set(vendorFilter.map((v) => v.toLowerCase().trim()))
+    : null;
+
+  for (const sourceFile of project.getSourceFiles()) {
+    const relPath = path.relative(absPath, sourceFile.getFilePath()).replace(/\\/g, "/");
+
+    // 1. Check imports/requires for vendors
+    const importDeclarations = sourceFile.getImportDeclarations();
+    for (const imp of importDeclarations) {
+      const moduleSpecifier = imp.getModuleSpecifierValue().toLowerCase();
+      for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
+        if (allowedVendors && !allowedVendors.has(vKey)) continue;
+        if (vData.packages.some((pkg) => moduleSpecifier === pkg || moduleSpecifier.startsWith(pkg + "/"))) {
+          if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
+          vendorsDetected[vData.name].add(relPath);
+        }
+      }
+    }
+
+    // Require calls
+    const callExprs = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
+    for (const call of callExprs) {
+      const exprText = call.getExpression().getText();
+
+      if (exprText === "require") {
+        const args = call.getArguments();
+        if (args.length > 0 && SyntaxKind.StringLiteral === args[0].getKind()) {
+          const reqPath = args[0].getText().replace(/['"]/g, "").toLowerCase();
+          for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
+            if (allowedVendors && !allowedVendors.has(vKey)) continue;
+            if (vData.packages.some((pkg) => reqPath === pkg || reqPath.startsWith(pkg + "/"))) {
+              if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
+              vendorsDetected[vData.name].add(relPath);
+            }
+          }
+        }
+      }
+
+      // Check API Call Sites (fetch, axios, sdk calls)
+      let isApiCall = false;
+      let matchedVendor = "HTTP / Generic API";
+
+      if (exprText === "fetch" || exprText.startsWith("axios")) {
+        isApiCall = true;
+        matchedVendor = exprText.startsWith("axios") ? "Axios" : "Fetch API";
+      } else {
+        for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
+          if (allowedVendors && !allowedVendors.has(vKey)) continue;
+          const lowerExpr = exprText.toLowerCase();
+          if (vData.symbols.some((sym) => lowerExpr.includes(sym.toLowerCase()))) {
+            isApiCall = true;
+            matchedVendor = vData.name;
+            if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
+            vendorsDetected[vData.name].add(relPath);
+            break;
+          }
+        }
+      }
+
+      if (isApiCall) {
+        totalCallSites++;
+        const lineAndCol = sourceFile.getLineAndColumnAtPos(call.getStart());
+        callSiteDetails.push({
+          file: relPath,
+          line: lineAndCol.line,
+          column: lineAndCol.column,
+          vendor: matchedVendor,
+          snippet: call.getText().split("\n")[0].substring(0, 80),
+        });
+      }
+    }
+  }
+
+  const resultVendors: Record<string, string[]> = {};
+  for (const [vName, filesSet] of Object.entries(vendorsDetected)) {
+    resultVendors[vName] = Array.from(filesSet);
+  }
+
+  return {
+    repositoryPath: absPath,
+    filesScanned: filePaths.length,
+    vendorsDetected: resultVendors,
+    totalCallSites,
+    durationMs: Date.now() - startTime,
+    callSiteDetails,
+  };
+}
 
 export interface AstScanResult {
   impacts: ImpactMatch[];
@@ -8,13 +181,11 @@ export interface AstScanResult {
 }
 
 /**
- * Scans a given set of files to identify deprecated API calls based on a set of API changes.
- * This is a deterministic read-only operation used for the Free "API Drift" Scan.
+ * Scans in-memory consumer files for impacts based on ApiChange objects.
  */
 export function scanCodebase(files: ConsumerFile[], changes: ApiChange[]): AstScanResult {
   const project = new Project({ useInMemoryFileSystem: true });
-  
-  // Load files into the ephemeral in-memory TS project
+
   for (const file of files) {
     project.createSourceFile(file.path, file.content);
   }
@@ -23,42 +194,34 @@ export function scanCodebase(files: ConsumerFile[], changes: ApiChange[]): AstSc
   let deprecatedCalls = 0;
 
   for (const sourceFile of project.getSourceFiles()) {
-    const filePath = sourceFile.getFilePath().replace("/", ""); // Simplify path
-    
-    // Naive pass: we look for CallExpressions that might map to deprecated SDK functions.
-    // For example, finding `openai.ChatCompletion.create` vs `openai.chat.completions.create`
-    const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
-    
+    const filePath = sourceFile.getFilePath().replace(/^\//, "");
+
     for (const change of changes) {
       if (change.severity === "breaking" || change.kind === "field-required") {
-        // Just a stub logic to flag if the 'before' snippet exists as a substring for now
-        // A true AST search would inspect the property access chain.
         if (change.before && sourceFile.getFullText().includes(change.before)) {
-           const fullText = sourceFile.getFullText();
-           const pos = fullText.indexOf(change.before);
-           const linesBefore = fullText.substring(0, pos).split("\n");
-           const line = linesBefore.length;
-           const column = linesBefore[linesBefore.length - 1].length + 1;
+          const fullText = sourceFile.getFullText();
+          const pos = fullText.indexOf(change.before);
+          const lineAndCol = sourceFile.getLineAndColumnAtPos(pos);
 
-           impacts.push({
-             file: filePath,
-             line,
-             column,
-             snippet: change.before,
-             symbol: change.before,
-             changeId: change.id,
-             confidence: "high",
-             reason: `Deprecated reference to '${change.before}' detected.`
-           });
-           deprecatedCalls++;
+          impacts.push({
+            file: filePath,
+            line: lineAndCol.line,
+            column: lineAndCol.column,
+            snippet: change.before,
+            symbol: change.before,
+            changeId: change.id,
+            confidence: "high",
+            reason: `Deprecated reference to '${change.before}' detected.`,
+          });
+          deprecatedCalls++;
         }
       }
     }
   }
 
   return {
-    impacts: Array.from(new Set(impacts)), // De-duplicate
+    impacts: Array.from(new Set(impacts)),
     scannedFiles: files.length,
-    deprecatedCalls
+    deprecatedCalls,
   };
 }

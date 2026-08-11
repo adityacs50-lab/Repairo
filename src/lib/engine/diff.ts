@@ -4,6 +4,7 @@ import type {
   ChangeSeverity,
   OpenApiDocument,
   OperationObject,
+  ParameterObject,
   PathItem,
   RefObject,
   SchemaObject,
@@ -62,10 +63,6 @@ function methodsOf(item: PathItem): Array<[string, OperationObject]> {
       ["get", "post", "put", "patch", "delete"].includes(entry[0]) &&
       Boolean(entry[1]),
   );
-}
-
-function schemaKey(path: string, op: string, side: "request" | "response") {
-  return `${path}.${op}.${side}`;
 }
 
 function compareSchemas(
@@ -174,8 +171,56 @@ function compareSchemas(
       }
     }
   }
+}
 
-  void schemaKey;
+function compareParameters(
+  changes: ApiChange[],
+  path: string,
+  operation: string,
+  beforeParams: ParameterObject[] = [],
+  afterParams: ParameterObject[] = [],
+) {
+  const beforeMap = new Map(beforeParams.map((p) => [p.name, p]));
+  const afterMap = new Map(afterParams.map((p) => [p.name, p]));
+
+  for (const [name, bParam] of beforeMap) {
+    if (!afterMap.has(name)) {
+      pushChange(changes, {
+        kind: "field-removed",
+        path,
+        operation,
+        field: name,
+        summary: `Parameter removed: ${name}`,
+        before: name,
+      });
+    }
+  }
+
+  for (const [name, aParam] of afterMap) {
+    if (!beforeMap.has(name)) {
+      pushChange(changes, {
+        kind: "field-added",
+        path,
+        operation,
+        field: name,
+        summary: `Parameter added: ${name}`,
+        after: name,
+      });
+    } else {
+      const bParam = beforeMap.get(name)!;
+      if (!bParam.required && aParam.required) {
+        pushChange(changes, {
+          kind: "field-required",
+          path,
+          operation,
+          field: name,
+          summary: `Parameter "${name}" is now required on ${operation.toUpperCase()} ${path}`,
+          before: "optional",
+          after: "required",
+        });
+      }
+    }
+  }
 }
 
 export function diffOpenApi(
@@ -243,6 +288,16 @@ export function diffOpenApi(
         continue;
       }
 
+      // Compare parameters
+      compareParameters(
+        changes,
+        path,
+        method,
+        beforeOp.parameters ?? [],
+        afterOp.parameters ?? [],
+      );
+
+      // Compare request body schemas
       const beforeReq =
         beforeOp.requestBody?.content?.["application/json"]?.schema;
       const afterReq =
@@ -258,6 +313,7 @@ export function diffOpenApi(
         afterReq,
       );
 
+      // Compare response schemas
       const beforeRes =
         beforeOp.responses?.["200"]?.content?.["application/json"]?.schema ??
         beforeOp.responses?.["201"]?.content?.["application/json"]?.schema;

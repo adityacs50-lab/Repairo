@@ -1,89 +1,103 @@
-<p align="center">
-  <img src="public/logo.jpg" alt="Repairo Logo" width="180" style="border-radius: 12px;" />
-</p>
+# Repairo CLI
 
-<h1 align="center">Repairo</h1>
+> **Repairo detects breaking changes in third-party APIs, maps their impact across your codebase, and generates validated code repairs.**
 
-<p align="center">
-  <strong>Like Dependabot, built for API stability.</strong>
-</p>
-
-<p align="center">
-  <a href="https://github.com/adityacs50-lab/Repairo/actions"><img alt="Continuous integration status" src="https://img.shields.io/badge/CI-passing-10B981?style=flat-square"></a>
-  <a href="https://github.com/adityacs50-lab/Repairo/actions"><img alt="Test suite status" src="https://img.shields.io/badge/tests-100%25%20passing-10B981?style=flat-square"></a>
-  <a href="https://www.npmjs.com/package/@repairo/cli"><img alt="Latest npm package version" src="https://img.shields.io/badge/npm-v1.0.0-F97316?style=flat-square"></a>
-  <a href="https://nodejs.org"><img alt="Minimum Node.js version: 18" src="https://img.shields.io/badge/node-%3E%3D18-3B82F6?style=flat-square"></a>
-  <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-0EA5E9?style=flat-square"></a>
-</p>
-
-<hr />
-
-**Repairo** is an automated API maintenance toolchain that continuously monitors OpenAPI specifications, parses TS consumers using compiler-grade AST engines, and automatically generates verified, reviewable pull requests.
-
-## 🚀 Key Features
-
-*   **Deterministic Patches:** Unlike probabilistic coding assistants that guess, Repairo translates contract changes into compile-guaranteed code transformations using `ts-morph`. Patches either compile 100% correctly or are blocked before push.
-*   **Stateless RAM Vault:** Files and credentials stream into an ephemeral RAM buffer, apply transformations, push code, and zero out the memory block in **~24ms**. Code never touches physical disk or logs.
-*   **Fully Offline Option:** Run the open-source CLI completely locally to fit tight InfoSec, SOC 2, and GDPR policies.
-*   **Otto (AI Assistant):** An interactive developer chat assistant powered by Sarvam AI to walk you through setup, architecture, and integration issues.
-*   **Ambient Dev Workspace:** A sleek background music (BGM) loop with interactive play/pause controls to keep you in the zone.
+Repairo is a developer tool built for Node.js / TypeScript codebases. It ingests OpenAPI 3.0/3.1 specifications, performs structural spec diffing, maps impacted AST nodes across your repository using `ts-morph`, executes deterministic repairs, validates changes via TypeScript compilation & unit tests, and generates reviewable diffs or GitHub Pull Requests.
 
 ---
 
-## 🛠️ Quickstart
+## 🛠️ Installation & Usage
 
-Install the CLI globally:
+### Local Development / Quickstart
+
+Execute CLI directly using `npx`:
+
+```bash
+# 1. Scan codebase for API SDK dependencies (Stripe, OpenAI, Supabase, fetch, etc.)
+npx tsx src/cli/index.ts scan ./src --vendors stripe,openai,supabase
+
+# 2. Initialize local .repairo configuration workspace
+npx tsx src/cli/index.ts init --repo owner/repository
+
+# 3. Compare OpenAPI contract against baseline snapshot & view AST impact
+npx tsx src/cli/index.ts diff --spec ./specs/new-openapi.json
+
+# 4. Preview validated AST repairs without modifying files (--dry-run)
+npx tsx src/cli/index.ts repair --dry-run
+
+# 5. Apply validated AST repairs to working tree (--apply)
+npx tsx src/cli/index.ts repair --apply
+
+# 6. Create GitHub Pull Request (--create-pr)
+npx tsx src/cli/index.ts repair --create-pr
+```
+
+Or via global npm package:
+
 ```bash
 npm install -g @repairo/cli
+repairo scan ./src
 ```
 
-Or execute a quick scan on your directory:
+---
+
+## 🚀 End-to-End Demo Workflow
+
+Repairo ships with a real, reproducible fixture in `fixtures/breaking-api-demo/`.
+
+### Step 1: Scan Repository
 ```bash
-npx @repairo/cli scan ./src --vendors stripe,openai,supabase
+npx tsx src/cli/index.ts scan ./fixtures/breaking-api-demo/src
 ```
+*Outputs real file counts, detected vendors (OpenAI), and call site counts.*
 
-### CLI Command Reference
+### Step 2: Save Baseline Spec Snapshot
+```bash
+npx tsx src/cli/index.ts diff --spec ./fixtures/breaking-api-demo/specs/old-openapi.json
+```
+*Saves baseline snapshot to `.repairo/snapshots/openapi.json`.*
+
+### Step 3: Compute Contract Changes & Impact
+```bash
+npx tsx src/cli/index.ts diff --spec ./fixtures/breaking-api-demo/specs/new-openapi.json --target ./fixtures/breaking-api-demo/src
+```
+*Detects parameter removal (`max_tokens` → `max_output_tokens`) and maps affected call sites.*
+
+### Step 4: Dry-Run AST Repair & Validation
+```bash
+npx tsx src/cli/index.ts repair --dry-run --target ./fixtures/breaking-api-demo/src
+```
+*Generates deterministic AST transformation, runs `tsc` compilation check, displays unified code diff, and preserves files.*
+
+### Step 5: Apply Validated Repair
+```bash
+npx tsx src/cli/index.ts repair --apply --target ./fixtures/breaking-api-demo/src
+```
+*Applies validated patch to disk.*
+
+---
+
+## 🧪 Testing
+
+Run the full automated integration test suite:
 
 ```bash
-repairo init --repo owner/your-app           # link your repository
-repairo scan ./src                           # scan for API dependencies
-repairo diff --spec https://spec.url/spec    # view AST refactoring diffs
-repairo repair --create-pr                   # apply AST patches & open PR
-repairo deploy                               # setup webhook integration
+npm test
 ```
+
+Covers:
+1. OpenAPI parser test
+2. OpenAPI diff test
+3. Breaking parameter detection test
+4. AST impact analysis test
+5. AST transformation test
+6. TypeScript validation test
+7. CLI scan test
+8. CLI diff test
+9. CLI repair test
 
 ---
 
-## 📦 How it Works
+## 📄 License
 
-```
-┌───────────────────────────┐      ┌───────────────────────────┐
-│ 1. Vendor OpenAPI Poller  │ ───► │ 2. Repository Spec Scan   │
-│ (Monitors 500+ endpoints) │      │ (Detects call-site deltas)│
-└───────────────────────────┘      └─────────────┬─────────────┘
-                                                 │
-                                                 ▼
-┌───────────────────────────┐      ┌───────────────────────────┐
-│ 4. Automated PR Engine    │ ◄─── │ 3. Volatile RAM AST Engine│
-│ (Opens verified GitHub PR)│      │ (~24ms purge cycle)       │
-└───────────────────────────┘      └───────────────────────────┘
-```
-
-For a deep dive into the architecture, check out [DEPLOY.md](./DEPLOY.md) and [DESIGN.md](./DESIGN.md).
-
----
-
-## 💳 Pricing Tiers
-
-| Tier | Price | Features |
-| :--- | :--- | :--- |
-| **Developer (Free)** | $0 | CLI local scanning, manual triggers, open-source presets, 3 runs/month |
-| **Team** | $100/mo | Background OpenAPI spec monitoring, Stateless RAM vault automation, unlimited PR runs |
-| **Enterprise** | Custom | Private Spec mapping, hybrid VPC runners, SSO/RBAC controls, custom SLA |
-
----
-
-## 📄 License & Contributing
-
-Repairo is open-source under the [Apache-2.0 License](./LICENSE). Contributions are welcome!
-Feel free to read [LAUNCH.md](./LAUNCH.md) to set up a dev environment or contact us at `security@repairo.com` to report vulnerabilities.
+Repairo is open-source software under the [Apache-2.0 License](./LICENSE).

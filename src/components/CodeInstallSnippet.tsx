@@ -4,18 +4,23 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { BorderTrail } from "@/components/ui/border-trail";
 
-const CLI_SNIPPET = `# 1. Quick scan via npx (no installation required)
-npx @repairo/cli scan ./src --vendors stripe,openai,supabase
+const CLI_SNIPPET = `# 1. Scan your local codebase for third-party API dependencies
+npx repairo-cli scan ./src --vendors stripe,openai,supabase
 
-# 2. Or install globally for automated CI/CD workflows
-npm install -g @repairo/cli
-repairo init --repo owner/your-app
+# 2. Initialize local .repairo configuration workspace
+npx repairo-cli init --repo owner/your-app
 
-# 3. Preview AST refactoring diff for breaking OpenAPI spec changes
-repairo diff --spec https://api.stripe.com/v1/openapi.json
+# 3. Detect API drift & map code impact from an OpenAPI spec
+npx repairo-cli diff --spec ./specs/new-openapi.json
 
-# 4. Apply AST patches & open reviewable GitHub PR
-repairo repair --create-pr`;
+# 4. Preview AST repairs with real TypeScript compilation checks
+npx repairo-cli repair --dry-run
+
+# 5. Apply validated AST repairs to your local working tree
+npx repairo-cli repair --apply
+
+# 6. Open a reviewable GitHub Pull Request
+npx repairo-cli repair --create-pr`;
 
 export function CodeInstallSnippet() {
   const [copied, setCopied] = useState(false);
@@ -41,11 +46,26 @@ export function CodeInstallSnippet() {
             QUICKSTART
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium font-display text-ink tracking-tight mb-4">
-            Get started locally.
+            Get started locally offline.
           </h2>
-          <p className="text-sm text-mute leading-relaxed">
-            Install the CLI to test our static analyzer against your codebase before deploying to GitHub Actions.
+          <p className="text-sm text-mute leading-relaxed mb-6">
+            Run our CLI locally against your codebase—no cloud backend or third-party AI keys required.
           </p>
+
+          <div className="space-y-3 font-mono text-xs text-mute">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>100% Offline &amp; Local Static AST Engine</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent-blue"></span>
+              <span>Compiler-Grade Validation (<code className="text-ink">tsc --noEmit</code>)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent-orange"></span>
+              <span>Zero-Disk Volatile Memory Vault</span>
+            </div>
+          </div>
         </motion.div>
 
         {/* Right column (Dark Code Window) */}
@@ -91,11 +111,11 @@ export function CodeInstallSnippet() {
             <div className="space-y-2 leading-relaxed overflow-x-auto pt-2">
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">1</span>
-                <span className="text-charcoal"># 1. Quick scan via npx (no installation required)</span>
+                <span className="text-charcoal"># 1. Scan your codebase for third-party API dependencies</span>
               </div>
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">2</span>
-                <span className="text-ink font-medium">npx <span className="text-emerald-400">@repairo/cli</span> scan ./src <span className="text-accent-blue">--vendors</span> <span className="text-accent-orange">stripe,openai,supabase</span></span>
+                <span className="text-ink font-medium">npx <span className="text-emerald-400">repairo-cli</span> scan ./src <span className="text-accent-blue">--vendors</span> <span className="text-accent-orange">stripe,openai,supabase</span></span>
               </div>
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">3</span>
@@ -103,39 +123,47 @@ export function CodeInstallSnippet() {
               </div>
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">4</span>
-                <span className="text-charcoal"># 2. Or install globally for automated CI/CD workflows</span>
+                <span className="text-charcoal"># 2. Initialize local workspace config</span>
               </div>
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">5</span>
-                <span className="text-ink font-medium">npm install <span className="text-accent-blue">-g</span> <span className="text-emerald-400">@repairo/cli</span></span>
-              </div>
-              <div className="flex gap-4">
-                <span className="text-charcoal select-none w-4 text-right">6</span>
                 <span className="text-ink font-medium">repairo init <span className="text-accent-blue">--repo</span> <span className="text-accent-orange">owner/your-app</span></span>
               </div>
               <div className="flex gap-4">
-                <span className="text-charcoal select-none w-4 text-right">7</span>
+                <span className="text-charcoal select-none w-4 text-right">6</span>
                 <span></span>
+              </div>
+              <div className="flex gap-4">
+                <span className="text-charcoal select-none w-4 text-right">7</span>
+                <span className="text-charcoal"># 3. Detect API contract drift &amp; map code impact</span>
               </div>
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">8</span>
-                <span className="text-charcoal"># 3. Preview AST refactoring diff for breaking OpenAPI spec changes</span>
+                <span className="text-ink font-medium">repairo diff <span className="text-accent-blue">--spec</span> <span className="text-accent-orange">./specs/new-openapi.json</span></span>
               </div>
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">9</span>
-                <span className="text-ink font-medium">repairo diff <span className="text-accent-blue">--spec</span> <span className="text-accent-orange">https://api.stripe.com/v1/openapi.json</span></span>
-              </div>
-              <div className="flex gap-4">
-                <span className="text-charcoal select-none w-4 text-right">10</span>
                 <span></span>
               </div>
               <div className="flex gap-4">
+                <span className="text-charcoal select-none w-4 text-right">10</span>
+                <span className="text-charcoal"># 4. Preview AST repairs with tsc compiler validation</span>
+              </div>
+              <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">11</span>
-                <span className="text-charcoal"># 4. Apply AST patches & open reviewable GitHub PR</span>
+                <span className="text-ink font-medium">repairo repair <span className="text-accent-blue">--dry-run</span></span>
               </div>
               <div className="flex gap-4">
                 <span className="text-charcoal select-none w-4 text-right">12</span>
-                <span className="text-ink font-medium">repairo repair <span className="text-accent-blue">--create-pr</span></span>
+                <span></span>
+              </div>
+              <div className="flex gap-4">
+                <span className="text-charcoal select-none w-4 text-right">13</span>
+                <span className="text-charcoal"># 5. Apply validated AST repairs or open GitHub PR</span>
+              </div>
+              <div className="flex gap-4">
+                <span className="text-charcoal select-none w-4 text-right">14</span>
+                <span className="text-ink font-medium">repairo repair <span className="text-accent-blue">--apply</span> <span className="text-charcoal"># or --create-pr</span></span>
               </div>
             </div>
           </div>
