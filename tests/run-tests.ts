@@ -88,6 +88,47 @@ client.createCharge({ amount: 100 });
 const impacts = findImpactedCode(diffChanges, [{ path: "src/payment.ts", content: sampleCode }]);
 assert(impacts.length > 0 && impacts[0].file === "src/payment.ts", "Locates exact file and line of removed parameter symbol");
 
+// Test 4b: Symbol-resolution regression test
+console.log("\nTest 4b: ts-morph symbol-resolution regression test");
+const symbolResolutionCode = `
+interface ChargeInput { amount: number; }
+const note = "amount should remain documented";
+const cachedPayload = { amount: 100 };
+const client = { createCharge: (input: ChargeInput) => input };
+client.createCharge({ amount: 100 });
+`;
+const amountRemoval = [{
+  id: "chg_symbol_resolution",
+  kind: "field-removed" as const,
+  severity: "breaking" as const,
+  path: "/v1/charge",
+  operation: "post",
+  field: "amount",
+  before: "amount",
+  summary: "amount removed",
+}];
+const symbolImpacts = findImpactedCode(amountRemoval, [{ path: "src/payment.ts", content: symbolResolutionCode }]);
+assert(symbolImpacts.length === 1, "Ignores matching names in types, strings, and non-call objects");
+assert(symbolImpacts[0]?.line === 6 && symbolImpacts[0]?.snippet.includes("createCharge"), "Resolves the removed field to its request call argument");
+
+// Test 4c: Call-alias symbol-resolution regression test
+console.log("\nTest 4c: call-alias symbol-resolution regression test");
+const aliasedCallCode = `
+const client = { createCharge: (input: { amount: number }) => input };
+const submit = client.createCharge;
+submit({ amount: 100 });
+`;
+const aliasedImpacts = findImpactedCode(amountRemoval, [
+  { path: "src/aliased-payment.ts", content: aliasedCallCode },
+]);
+assert(
+  aliasedImpacts.length === 1,
+  "Follows a call alias back to the API operation symbol",
+);
+assert(
+  aliasedImpacts[0]?.line === 4,
+  "Reports the removed field at the aliased request call",
+);
 // Test 5: AST transformation test
 console.log("\nTest 5: AST transformation test");
 const openaiBeforeCode = `
