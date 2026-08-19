@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 /** Set on Railway/Docker builds. Vercel should leave this unset. */
 const useStandalone =
@@ -12,6 +13,10 @@ const useStandalone =
 const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["192.168.0.7", "192.168.0.6", "localhost"],
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   ...(useStandalone ? { output: "standalone" as const } : {}),
   serverExternalPackages: ["better-sqlite3"],
   poweredByHeader: false,

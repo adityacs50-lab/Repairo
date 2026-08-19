@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import type { RepairRunResult } from "@/lib/engine/types";
 import { HeroEnter, PixelCluster } from "@/components/Motion";
 
+import { MigrationResults } from "@/components/MigrationResults";
+
 type FixtureSources = {
   beforeSpec: string;
   afterSpec: string;
@@ -79,8 +81,8 @@ export function DemoWorkspace() {
   const [step, setStep] = useState(0);
   const [apiReady, setApiReady] = useState(false);
   const [tab, setTab] = useState<
-    "inputs" | "changes" | "impact" | "diff" | "pr"
-  >("inputs");
+    "results" | "inputs" | "changes" | "impact" | "diff" | "pr"
+  >("results");
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export function DemoWorkspace() {
     if (!apiReady) return;
     const timeout = window.setTimeout(() => {
       setPhase("done");
-      setTab("pr");
+      setTab("results");
     }, 350);
     return () => window.clearTimeout(timeout);
   }, [phase, step, apiReady]);
@@ -258,7 +260,7 @@ export function DemoWorkspace() {
   if (!fixtures || !result) {
     return (
       <div className="border border-line bg-bg-panel p-10 text-muted">
-        Loading repair engine…
+        Loading Repairo engine…
       </div>
     );
   }
@@ -278,18 +280,18 @@ export function DemoWorkspace() {
               Working prototype
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
-              Paste specs · run repair · download PR
+              Paste specs · run Repairo · download PR
             </h1>
             <p className="mt-1 text-sm text-muted">
               Live OpenAPI diff → impact → safe patches. Defaults load the
               Payments {result.fromVersion} → {result.toVersion} scenario.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <motion.button
               type="button"
               onClick={resetFixtures}
-              className="btn-ghost !py-2.5 !text-sm"
+              className="inline-flex items-center justify-center rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 shadow-sm transition-all hover:bg-neutral-50 hover:border-neutral-400 hover:text-neutral-900"
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -299,11 +301,11 @@ export function DemoWorkspace() {
               type="button"
               onClick={runRepair}
               disabled={phase === "running" || pending}
-              className="btn-primary !py-2.5 !text-sm disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow transition-all hover:bg-neutral-800 disabled:opacity-50"
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
             >
-              {phase === "running" ? "Repairing…" : "Run repair"}
+              {phase === "running" ? "Running Repairo…" : "Run Repairo"}
             </motion.button>
           </div>
         </div>
@@ -404,27 +406,36 @@ export function DemoWorkspace() {
 
       <HeroEnter delay={0.1}>
         <div className="overflow-hidden border border-line bg-bg-panel">
-          <div className="flex flex-wrap gap-1 border-b border-line bg-bg p-2">
+          <div className="flex flex-wrap gap-1.5 border-b border-line bg-bg p-2.5">
             {(
               [
+                ["results", "Migration Results"],
                 ["inputs", "Inputs"],
                 ["changes", "Changes"],
                 ["impact", "Impact"],
                 ["diff", "Patch"],
                 ["pr", "Pull request"],
               ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTab(id)}
-                className={`px-3 py-2 text-sm font-medium transition ${
-                  tab === id ? "bg-fg text-bg" : "text-muted hover:text-fg"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            ).map(([id, label]) => {
+              const isActive = tab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTab(id)}
+                  className={`relative px-4 py-2 text-sm font-semibold transition-all rounded ${
+                    isActive
+                      ? "bg-fg text-bg font-bold shadow-md"
+                      : "text-muted hover:text-fg hover:bg-bg-panel/60"
+                  }`}
+                >
+                  {label}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent-bright rounded-full" />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="p-5 sm:p-6">
@@ -436,6 +447,10 @@ export function DemoWorkspace() {
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.25 }}
               >
+                {tab === "results" && (
+                  <MigrationResults data={result} />
+                )}
+
                 {tab === "inputs" && (
                   <div className="space-y-6">
                     <div className="grid gap-4 lg:grid-cols-2">
