@@ -1,17 +1,44 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPage, Section } from "@/components/ContentPage";
+import { JsonLd } from "@/components/JsonLd";
+import { formatPostDate, requireBlogPost } from "@/lib/blog";
+import { articleJsonLd, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "How we built a deterministic AST engine — Repairo Blog",
-  description: "Building an Abstract Syntax Tree transformer that understands TypeScript safely.",
-};
+// Slug must match this route folder name.
+const post = requireBlogPost("how-we-built-the-ast-engine");
+
+export const metadata = pageMetadata({
+  title: post.title,
+  description: post.description,
+  path: `/blog/${post.slug}`,
+  type: "article",
+  publishedTime: post.datePublished,
+  modifiedTime: post.dateModified,
+  keywords: ["AST engine", "ts-morph", "TypeScript compiler API", "codemod"],
+});
 
 export default function BlogPost() {
   return (
+    <>
+    <JsonLd
+      data={[
+        articleJsonLd({
+          title: post.title,
+          description: post.description,
+          path: `/blog/${post.slug}`,
+          datePublished: post.datePublished,
+          dateModified: post.dateModified,
+        }),
+        breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Blog", path: "/blog" },
+          { name: post.title, path: `/blog/${post.slug}` },
+        ]),
+      ]}
+    />
     <ContentPage
-      eyebrow="August 12, 2026 • Engineering"
-      title="How we built a deterministic AST engine to fix breaking changes"
+      eyebrow={`${formatPostDate(post)} • ${post.category}`}
+      title={post.title}
       description="Building a string-replacement tool is easy. Building an Abstract Syntax Tree transformer that understands TypeScript safely is hard. Here is how we did it."
       activeHref="/blog"
     >
@@ -57,5 +84,6 @@ export default function BlogPost() {
         </Link>
       </div>
     </ContentPage>
+    </>
   );
 }

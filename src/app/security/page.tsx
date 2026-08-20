@@ -1,12 +1,14 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { BulletList, ContentPage, Section } from "@/components/ContentPage";
 
-export const metadata: Metadata = {
-  title: "Security — Repairo",
+export const metadata = pageMetadata({
+  title: "Security",
   description:
-    "GitHub permissions, data storage, encryption, and trust posture for Repairo.",
-};
+    "Repairo security posture: GitHub App permissions, encrypted token storage, in-memory code processing, and compiler-validated patches.",
+  path: "/security",
+  keywords: ["security", "zero retention", "GitHub permissions"],
+});
 
 export default function SecurityPage() {
   return (

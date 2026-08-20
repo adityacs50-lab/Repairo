@@ -1,21 +1,22 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
+import { BLOG_POSTS, formatPostDate } from "@/lib/blog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
-export const metadata: Metadata = {
-  title: "Blog — Repairo",
-  description: "Thoughts on ASTs, OpenAPI, and automating breaking changes.",
-};
+export const metadata = pageMetadata({
+  title: "Blog",
+  description:
+    "Engineering writing from Repairo on ASTs, OpenAPI diffing, SDK migrations, and automating breaking API changes.",
+  path: "/blog",
+});
 
-const POSTS = [
-  {
-    title: "How we built a deterministic AST engine to fix breaking changes",
-    slug: "how-we-built-the-ast-engine",
-    date: "August 12, 2026",
-    excerpt: "Building a string-replacement tool is easy. Building an Abstract Syntax Tree transformer that understands TypeScript safely is hard. Here is how we did it.",
-  }
-];
+const POSTS = BLOG_POSTS.map((p) => ({
+  title: p.title,
+  slug: p.slug,
+  date: formatPostDate(p),
+  excerpt: p.description,
+}));
 
 export default function BlogIndex() {
   return (

@@ -74,25 +74,25 @@ function renderMarkdown(text: string) {
 
           if (isH1) {
             return (
-              <h1 key={lineIdx} className="text-white font-bold text-base mt-2.5 mb-1">
+              <p role="heading" aria-level={4} key={lineIdx} className="text-white font-bold text-base mt-2.5 mb-1">
                 {formatted}
-              </h1>
+              </p>
             );
           }
 
           if (isH2) {
             return (
-              <h2 key={lineIdx} className="text-white font-semibold text-[14px] mt-2 mb-1">
+              <p role="heading" aria-level={5} key={lineIdx} className="text-white font-semibold text-[14px] mt-2 mb-1">
                 {formatted}
-              </h2>
+              </p>
             );
           }
 
           if (isH3) {
             return (
-              <h3 key={lineIdx} className="text-white font-medium text-[13.5px] mt-1.5 mb-0.5">
+              <p role="heading" aria-level={6} key={lineIdx} className="text-white font-medium text-[13.5px] mt-1.5 mb-0.5">
                 {formatted}
-              </h3>
+              </p>
             );
           }
 

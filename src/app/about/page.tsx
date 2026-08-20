@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { ContentPage, Section } from "@/components/ContentPage";
 
-export const metadata: Metadata = {
-  title: "About — Repairo",
+export const metadata = pageMetadata({
+  title: "About",
   description:
-    "Building self-maintaining APIs — Dependabot for OpenAPI contracts and consumer codebases.",
-};
+    "Repairo is building self-maintaining APIs: automated detection of breaking third-party API changes and compiler-validated AST repairs for TypeScript codebases. Meet the team.",
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

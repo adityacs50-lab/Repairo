@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { ContentPage, Section } from "@/components/ContentPage";
 import { ContactForm } from "@/components/ContactForm";
 
-export const metadata: Metadata = {
-  title: "Contact — Repairo",
+export const metadata = pageMetadata({
+  title: "Contact",
   description:
-    "Enterprise, security reviews, and design-partner questions for Repairo.",
-};
+    "Contact Repairo for enterprise plans, security reviews, design-partner programs, and product demos.",
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (
