@@ -141,7 +141,7 @@ When Stripe deprecated `stripe.charges.create` in favor of `stripe.paymentIntent
 
 ## Security
 
-Please report security vulnerabilities directly to our response team at [security@repairo.com](mailto:info@heyrepairo.com). Do not file public GitHub issues.
+Please report security vulnerabilities directly to our response team at [info@heyrepairo.in](mailto:info@heyrepairo.in). Do not file public GitHub issues.
 
 ---
 
