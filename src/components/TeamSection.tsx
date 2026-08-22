@@ -15,7 +15,7 @@ const team = [
   },
   {
     name: "Sanjay",
-    role: "Co-Founder",
+    role: "CTO",
     bio: "Scaling infrastructure and developer experience.",
     twitter: "https://x.com/Repairoai",
     linkedin: "https://www.linkedin.com/in/sanjaynandanj/",
