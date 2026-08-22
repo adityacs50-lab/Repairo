@@ -1,12 +1,14 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { ContentPage, Section } from "@/components/ContentPage";
 
-export const metadata: Metadata = {
-  title: "Use cases — Repairo",
+export const metadata = pageMetadata({
+  title: "Use cases",
   description:
-    "How teams use Repairo for payment APIs, microservices, and partner OpenAPI contracts.",
-};
+    "How engineering teams use Repairo to survive breaking changes in payment APIs, AI model deprecations, microservice contracts, and partner OpenAPI specs.",
+  path: "/use-cases",
+  keywords: ["use cases", "payment API migration", "AI model deprecation"],
+});
 
 const cases = [
   {

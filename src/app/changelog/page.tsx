@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
 import { ContentPage, Section } from "@/components/ContentPage";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Changelog — Repairo",
-  description: "Product updates, fixes, and shipping notes for Repairo.",
-};
+export const metadata = pageMetadata({
+  title: "Changelog",
+  description:
+    "Repairo product updates, fixes, and shipping notes: vendor polling, AST repair engine improvements, GitHub integration, and billing.",
+  path: "/changelog",
+});
 
 const entries = [
   {

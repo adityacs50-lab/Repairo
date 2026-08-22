@@ -1,11 +1,13 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { ContentPage, Section } from "@/components/ContentPage";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy — Repairo",
-  description: "How Repairo handles your GitHub data and source code.",
-};
+export const metadata = pageMetadata({
+  title: "Privacy Policy",
+  description:
+    "How Repairo handles your GitHub data and source code: in-memory processing, encrypted tokens, and no code retention.",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

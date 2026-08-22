@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
 import { ContentPage, Section } from "@/components/ContentPage";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Terms of Service — Repairo",
-  description: "Terms of use for Repairo.",
-};
+export const metadata = pageMetadata({
+  title: "Terms of Service",
+  description:
+    "Terms of use for the Repairo CLI and hosted service.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

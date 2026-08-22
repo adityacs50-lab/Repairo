@@ -1,13 +1,15 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { ContentPage } from "@/components/ContentPage";
 import { listVendors } from "@/lib/catalog/vendors";
 
-export const metadata: Metadata = {
-  title: "Vendor agents — Repairo",
+export const metadata = pageMetadata({
+  title: "Vendor update agents",
   description:
-    "Install Dependabot-style update agents for Stripe, GitHub, and more.",
-};
+    "Install Dependabot-style update agents that watch Stripe, OpenAI, Supabase, Clerk, Gemini, and Anthropic OpenAPI specs and open AST repair PRs when breaking changes ship.",
+  path: "/agents",
+  keywords: ["vendor agents", "Stripe API changes", "OpenAI API changes"],
+});
 
 export default function AgentsIndexPage() {
   const vendors = listVendors();

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BulletList, ContentPage, Section } from "@/components/ContentPage";
 import { getVendor, listVendors } from "@/lib/catalog/vendors";
+import { JsonLd } from "@/components/JsonLd";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata, softwareApplicationJsonLd } from "@/lib/seo";
 
 type Props = { params: Promise<{ vendorId: string }> };
 
@@ -13,11 +15,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { vendorId } = await params;
   const vendor = getVendor(vendorId);
-  if (!vendor) return { title: "Agent not found" };
-  return {
-    title: `Install ${vendor.name} agent — Repairo`,
-    description: vendor.description,
-  };
+  if (!vendor) return { title: "Agent not found", robots: { index: false } };
+  return pageMetadata({
+    title: `${vendor.name} update agent`,
+    description: `${vendor.description} Repairo watches the ${vendor.name} OpenAPI spec and opens compiler-validated AST repair PRs when breaking changes ship.`,
+    path: `/agents/${vendor.id}`,
+    keywords: [`${vendor.name} breaking changes`, `${vendor.name} SDK migration`, ...vendor.tags],
+  });
 }
 
 export default async function VendorAgentPage({ params }: Props) {
@@ -26,6 +30,21 @@ export default async function VendorAgentPage({ params }: Props) {
   if (!vendor) notFound();
 
   return (
+    <>
+    <JsonLd
+      data={[
+        softwareApplicationJsonLd({
+          name: `Repairo ${vendor.name} update agent`,
+          description: vendor.description,
+          url: absoluteUrl(`/agents/${vendor.id}`),
+        }),
+        breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Vendor agents", path: "/agents" },
+          { name: vendor.name, path: `/agents/${vendor.id}` },
+        ]),
+      ]}
+    />
     <ContentPage
       eyebrow="Install agent"
       title={`${vendor.name} update agent`}
@@ -104,5 +123,6 @@ export default async function VendorAgentPage({ params }: Props) {
         </p>
       </Section>
     </ContentPage>
+    </>
   );
 }
