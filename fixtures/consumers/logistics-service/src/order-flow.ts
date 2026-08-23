@@ -15,7 +15,8 @@ export async function placeOrder(order: {
     destZip: order.destZip,
     weightKg: order.weightKg,
     carrier: "ups",
-  };
+      recipientEmail: ""
+};
 
   const shipment = await submitShipment(request);
 
