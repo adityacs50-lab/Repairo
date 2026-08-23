@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { Spotlight } from "@/components/ui/spotlight";
 import { BorderTrail } from "@/components/ui/border-trail";
+import { PLANS } from "@/lib/billing/plans";
 
 export function PricingCard({
   tier,
@@ -119,48 +120,21 @@ export function PricingCard({
 
 export function PricingSection() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <PricingCard
         tier="Free"
-        price="$0"
+        price={PLANS.free.priceLabel}
         description="Evaluate Repairo's deterministic AST engine on a single repository."
         buttonText="Get started for free"
-        features={[
-          "1 connected repository",
-          "Manual / On-Demand API scans (CLI or Web UI)",
-          "Visual impact mapping & diffing",
-          "View OpenAPI drift alerts (No automated PRs)",
-          "Standard community support (Discord)",
-        ]}
+        features={PLANS.free.features}
       />
       <PricingCard
         tier="Pro"
-        price="$20/mo"
+        price={`${PLANS.pro.priceLabel}/mo`}
         description="Automated API maintenance and PR generation for growing engineering teams."
         buttonText="Start free trial"
-        features={[
-          "Up to 10 connected repositories",
-          "Auto-generated fix PRs (The core feature)",
-          "Scheduled daily scans",
-          "AST safety scoring on PRs",
-          "Basic CI/CD pipeline integration (GitHub Actions)",
-          "Email notifications",
-        ]}
-      />
-      <PricingCard
-        tier="Business"
-        price="$100/mo"
-        description="Real-time CI/CD automation, detailed audit logs, and priority support for scaling teams."
-        buttonText="Start free trial"
         highlighted={true}
-        features={[
-          "Up to 50 connected repositories",
-          "Real-time webhook scans (Instantly catches updates on release)",
-          "Auto-merge enabled for 100% safe patches",
-          "Detailed PR history & audit logs",
-          "Slack / Microsoft Teams webhook integrations",
-          "Priority email support",
-        ]}
+        features={PLANS.pro.features}
       />
       <PricingCard
         tier="Enterprise"
