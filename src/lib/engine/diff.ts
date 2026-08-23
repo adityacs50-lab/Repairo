@@ -83,6 +83,13 @@ function compareSchemas(
   const afterProps = after?.properties ?? {};
   const beforeRequired = new Set(before?.required ?? []);
   const afterRequired = new Set(after?.required ?? []);
+  const relatedFields = Array.from(
+    new Set([...Object.keys(beforeProps), ...Object.keys(afterProps)]),
+  );
+
+  function tsTypeFor(schema: SchemaObject | undefined): string | undefined {
+    return schema?.type;
+  }
 
   for (const key of Object.keys(beforeProps)) {
     if (!(key in afterProps)) {
@@ -93,6 +100,9 @@ function compareSchemas(
         field: key,
         summary: `Removed ${side} field "${key}" on ${operation.toUpperCase()} ${path}`,
         before: key,
+        relatedFields,
+        fieldType: tsTypeFor(resolveSchema(beforeDoc, beforeProps[key])),
+        side,
       });
     }
   }
@@ -106,6 +116,9 @@ function compareSchemas(
         field: key,
         summary: `Added ${side} field "${key}" on ${operation.toUpperCase()} ${path}`,
         after: key,
+        relatedFields,
+        fieldType: tsTypeFor(resolveSchema(afterDoc, afterProps[key])),
+        side,
       });
     }
   }
@@ -120,6 +133,9 @@ function compareSchemas(
         summary: `Field "${key}" is now required on ${operation.toUpperCase()} ${path} ${side}`,
         before: "optional",
         after: "required",
+        relatedFields,
+        fieldType: tsTypeFor(resolveSchema(afterDoc, afterProps[key])),
+        side,
       });
     }
   }
@@ -139,6 +155,8 @@ function compareSchemas(
         summary: `Type changed for "${key}" on ${path}`,
         before: b.type,
         after: a.type,
+        relatedFields,
+        side,
       });
     }
 
@@ -154,6 +172,9 @@ function compareSchemas(
           field: key,
           summary: `Enum value "${value}" removed from "${key}"`,
           before: value,
+          relatedFields,
+          fieldType: "string",
+          side,
         });
       }
     }
@@ -167,6 +188,9 @@ function compareSchemas(
           field: key,
           summary: `Enum value "${value}" added to "${key}"`,
           after: value,
+          relatedFields,
+          fieldType: "string",
+          side,
         });
       }
     }
@@ -182,6 +206,9 @@ function compareParameters(
 ) {
   const beforeMap = new Map(beforeParams.map((p) => [p.name, p]));
   const afterMap = new Map(afterParams.map((p) => [p.name, p]));
+  const relatedFields = Array.from(
+    new Set([...beforeMap.keys(), ...afterMap.keys()]),
+  );
 
   for (const [name, bParam] of beforeMap) {
     if (!afterMap.has(name)) {
@@ -192,6 +219,9 @@ function compareParameters(
         field: name,
         summary: `Parameter removed: ${name}`,
         before: name,
+        relatedFields,
+        fieldType: bParam.schema && !("$ref" in bParam.schema) ? bParam.schema.type : undefined,
+        side: "request",
       });
     }
   }
@@ -205,6 +235,9 @@ function compareParameters(
         field: name,
         summary: `Parameter added: ${name}`,
         after: name,
+        relatedFields,
+        fieldType: aParam.schema && !("$ref" in aParam.schema) ? aParam.schema.type : undefined,
+        side: "request",
       });
     } else {
       const bParam = beforeMap.get(name)!;
@@ -215,8 +248,11 @@ function compareParameters(
           operation,
           field: name,
           summary: `Parameter "${name}" is now required on ${operation.toUpperCase()} ${path}`,
+          relatedFields,
+          fieldType: aParam.schema && !("$ref" in aParam.schema) ? aParam.schema.type : undefined,
           before: "optional",
           after: "required",
+          side: "request",
         });
       }
     }

@@ -22,6 +22,16 @@ export interface ApiChange {
   before?: string;
   after?: string;
   summary: string;
+  /** Full set of property/parameter names on the affected schema (before ∪ after), used to
+   * structurally identify the corresponding TS interface/object literal when the changed
+   * field itself doesn't exist anywhere in consumer code yet (e.g. a brand-new required field). */
+  relatedFields?: string[];
+  /** JSON Schema `type` of the affected field, when known, used to pick a TS type for inserted properties. */
+  fieldType?: string;
+  /** Whether this change affects the request or response schema of the operation — request and
+   * response shapes often share field names by design (a response echoes the request), so this
+   * disambiguates which TS type structural matching should prefer. */
+  side?: "request" | "response";
 }
 
 export interface ImpactMatch {
@@ -66,6 +76,7 @@ export interface RepairRunResult {
   fixes: SuggestedFix[];
   pullRequest: PullRequestDraft;
   sbom?: any;
+  typecheck: { passed: boolean; errors: string[] };
   summary: {
     breaking: number;
     nonBreaking: number;
