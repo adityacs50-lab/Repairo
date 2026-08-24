@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
+import { handleCheckCommand } from "./commands/check";
 import { handleDiffCommand } from "./commands/diff";
 import { handleInitCommand } from "./commands/init";
 import { handleRepairCommand } from "./commands/repair";
 import { handleScanCommand } from "./commands/scan";
+import pkg from "../../package.json";
 
 function printHelp(): void {
   console.log(`
@@ -18,6 +20,9 @@ Commands:
 
   init                   Initialize local .repairo configuration directory
                          Options: --repo owner/repository, --vendors stripe,openai
+
+  check                  Fetch live vendor specs, diff against snapshot, exit 1 on breaking changes
+                         Options: --vendors stripe,openai, --target ./src, --json, --update-snapshot
 
   diff                   Compare OpenAPI specification against snapshot and map codebase impact
                          Options: --spec ./specs/new-openapi.json, --target ./src
@@ -40,7 +45,7 @@ async function main() {
   }
 
   if (args.includes("--version") || args.includes("-v")) {
-    console.log("@repairo/cli v0.1.0");
+    console.log(`repairo-cli v${pkg.version}`);
     return;
   }
 
@@ -89,6 +94,18 @@ async function main() {
       const vendorsStr = typeof flags.vendors === "string" ? flags.vendors : undefined;
       const vendors = vendorsStr ? vendorsStr.split(",") : undefined;
       handleInitCommand({ repo, vendors });
+      break;
+    }
+
+    case "check": {
+      const vendorsStr = typeof flags.vendors === "string" ? flags.vendors : undefined;
+      const target = typeof flags.target === "string" ? flags.target : positional[0];
+      await handleCheckCommand({
+        vendors: vendorsStr ? vendorsStr.split(",") : undefined,
+        target,
+        json: Boolean(flags.json),
+        updateSnapshot: Boolean(flags["update-snapshot"]),
+      });
       break;
     }
 

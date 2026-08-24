@@ -1,5 +1,6 @@
 import { parse } from "yaml";
 import { diffOpenApi } from "./diff";
+import { convertDiscoveryToOpenApi, isDiscoveryDocument } from "./discovery";
 import { findImpactedCode } from "./impact";
 import { buildPullRequest, generateFixes } from "./repair";
 import type {
@@ -9,7 +10,11 @@ import type {
 } from "./types";
 
 export function parseOpenApi(source: string): OpenApiDocument {
-  return parse(source) as OpenApiDocument;
+  const doc = parse(source);
+  if (isDiscoveryDocument(doc)) {
+    return convertDiscoveryToOpenApi(doc);
+  }
+  return doc as OpenApiDocument;
 }
 
 export function generateSbom(
@@ -179,3 +184,6 @@ export { applyAstTransforms } from "./ast-transformer";
 export { validateCodebase } from "./validation";
 export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";
 export { getGitStatus, createGitHubPR } from "./github";
+export { VENDOR_CATALOG, getVendor, listVendors, type VendorCatalogEntry } from "./catalog";
+export { fetchSpecText, resolveSpecIndirection } from "./fetch-spec";
+export { convertDiscoveryToOpenApi, isDiscoveryDocument } from "./discovery";

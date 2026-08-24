@@ -53,6 +53,23 @@ export function findImpactedCode(
 
   for (const change of changes) {
     for (const file of files) {
+      if (change.kind === "endpoint-removed" && change.path) {
+        // Match the literal URL prefix before any {template} segment,
+        // e.g. /v1/apps/{appId}/keys -> /v1/apps/
+        const literalPrefix = change.path.split("{")[0].replace(/\/+$/, "");
+        if (literalPrefix.length >= 5) {
+          impacts.push(
+            ...findSymbolHits(
+              file,
+              [literalPrefix],
+              change.id,
+              `Calls removed endpoint ${change.operation ? change.operation.toUpperCase() + " " : ""}${change.path}`,
+              "high",
+            ),
+          );
+        }
+      }
+
       if (change.kind === "server-url-changed" && change.before) {
         const urlSymbols = [
           change.before,
