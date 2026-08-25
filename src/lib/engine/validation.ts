@@ -1,12 +1,23 @@
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
-import { Project } from "ts-morph";
+import { Project, ts } from "ts-morph";
+
+export interface TypeDiagnostic {
+  file: string;
+  line: number;
+  code: number;
+  message: string;
+}
 
 export interface ValidationResult {
   passed: boolean;
   typecheckPassed: boolean;
   typecheckOutput: string;
+  /** Errors present before the repair was applied (ignored for pass/fail) */
+  preexistingErrorCount: number;
+  /** Errors introduced by the repair (these fail validation) */
+  newErrors: TypeDiagnostic[];
   testsPassed: boolean | null; // null if skipped / no test script
   testsOutput?: string;
   errors: string[];
@@ -23,107 +34,112 @@ function findProjectRoot(dir: string): string {
   return path.resolve(dir);
 }
 
+function collectTsFiles(dir: string): string[] {
+  const res: string[] = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (!["node_modules", ".next", ".git", "dist", ".repairo"].includes(entry.name)) {
+        res.push(...collectTsFiles(p));
+      }
+    } else if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
+      res.push(p);
+    }
+  }
+  return res;
+}
+
+/**
+ * Collects TypeScript diagnostics for the project containing targetDir,
+ * using tsconfig.json when present or an ad-hoc program otherwise.
+ * Run this BEFORE applying repairs to establish the pre-existing error
+ * baseline, so validation only fails on errors a repair introduces.
+ */
+export function collectTypeDiagnostics(targetDir: string): TypeDiagnostic[] {
+  const rootDir = findProjectRoot(targetDir);
+  const tsconfigPath = path.join(rootDir, "tsconfig.json");
+
+  let project: Project;
+  if (fs.existsSync(tsconfigPath)) {
+    project = new Project({ tsConfigFilePath: tsconfigPath });
+  } else {
+    project = new Project({
+      skipAddingFilesFromTsConfig: true,
+      compilerOptions: { noEmit: true, strict: false, skipLibCheck: true },
+    });
+    for (const f of collectTsFiles(rootDir)) {
+      project.addSourceFileAtPath(f);
+    }
+  }
+
+  return project.getPreEmitDiagnostics().map((d) => ({
+    file: d.getSourceFile()?.getFilePath() ?? "",
+    line: d.getLineNumber() ?? 0,
+    code: d.getCode(),
+    message: ts.flattenDiagnosticMessageText(d.compilerObject.messageText, " "),
+  }));
+}
+
+/**
+ * Line numbers are intentionally excluded: repairs shift lines, and a
+ * pre-existing error that moved must not be counted as a new error.
+ */
+function diagnosticKey(d: TypeDiagnostic): string {
+  return `${d.file}|${d.code}|${d.message}`;
+}
+
 /**
  * Validates a repository target directory after code transformations.
- * Performs real TypeScript compilation and optionally executes workspace tests.
+ * When a baseline (collected via collectTypeDiagnostics before the repair)
+ * is provided, only newly introduced errors fail validation — so repos
+ * with pre-existing type errors can still receive repairs.
  */
 export function validateCodebase(
   targetDir: string,
-  options: { runTests?: boolean } = {}
+  options: { runTests?: boolean; baseline?: TypeDiagnostic[] } = {}
 ): ValidationResult {
   const rootDir = findProjectRoot(targetDir);
   const errors: string[] = [];
   let typecheckPassed = false;
   let typecheckOutput = "";
+  let preexistingErrorCount = 0;
+  let newErrors: TypeDiagnostic[] = [];
   let testsPassed: boolean | null = null;
   let testsOutput = "";
 
-  // 1. Run TypeScript Typechecking
-  const tsconfigPath = path.join(rootDir, "tsconfig.json");
+  // 1. TypeScript diagnostics, compared against the pre-repair baseline
+  try {
+    const diagnostics = collectTypeDiagnostics(targetDir);
+    const baselineKeys = new Set((options.baseline ?? []).map(diagnosticKey));
+    newErrors = diagnostics.filter((d) => !baselineKeys.has(diagnosticKey(d)));
+    preexistingErrorCount = diagnostics.length - newErrors.length;
 
-  if (fs.existsSync(tsconfigPath)) {
-    try {
-      const output = execSync("npx tsc --noEmit --project ./tsconfig.json", {
-        cwd: rootDir,
-        encoding: "utf-8",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+    if (newErrors.length === 0) {
       typecheckPassed = true;
-      typecheckOutput = output || "No TypeScript errors found.";
-    } catch (err: any) {
-      try {
-        const project = new Project({ tsConfigFilePath: tsconfigPath });
-        const diagnostics = project.getPreEmitDiagnostics();
-        if (diagnostics.length === 0) {
-          typecheckPassed = true;
-          typecheckOutput = "Validated with ts-morph AST program (0 errors).";
-        } else {
-          typecheckPassed = false;
-          typecheckOutput = diagnostics
-            .slice(0, 10)
-            .map((d) => `${d.getSourceFile()?.getFilePath()}:${d.getLineNumber()}: ${d.getMessageText()}`)
-            .join("\n");
-          errors.push(`Typecheck failed with ${diagnostics.length} diagnostic errors.`);
-        }
-      } catch (tsMorphErr: any) {
-        typecheckPassed = false;
-        typecheckOutput = (err.stdout || "") + "\n" + (err.stderr || "");
-        errors.push(`TypeScript compilation failed with status ${err.status}`);
-      }
-    }
-  } else {
-    // Fallback: Validate using in-memory ts-morph program diagnostics
-    try {
-      const project = new Project({
-        skipAddingFilesFromTsConfig: true,
-        compilerOptions: {
-          noEmit: true,
-          strict: false,
-          skipLibCheck: true,
-        },
-      });
-
-      function collectTsFiles(dir: string): string[] {
-        const res: string[] = [];
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-          const p = path.join(dir, entry.name);
-          if (entry.isDirectory()) {
-            if (!["node_modules", ".next", ".git", "dist", ".repairo"].includes(entry.name)) {
-              res.push(...collectTsFiles(p));
-            }
-          } else if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
-            res.push(p);
-          }
-        }
-        return res;
-      }
-
-      const files = collectTsFiles(rootDir);
-      for (const f of files) {
-        project.addSourceFileAtPath(f);
-      }
-
-      const diagnostics = project.getPreEmitDiagnostics();
-      if (diagnostics.length === 0) {
-        typecheckPassed = true;
-        typecheckOutput = `Validated ${files.length} TypeScript files with ts-morph (0 errors).`;
-      } else {
-        typecheckPassed = false;
-        typecheckOutput = diagnostics
-          .slice(0, 10)
-          .map((d) => `${d.getSourceFile()?.getFilePath()}:${d.getLineNumber()}: ${d.getMessageText()}`)
-          .join("\n");
-        errors.push(`Typecheck failed with ${diagnostics.length} diagnostic errors.`);
-      }
-    } catch (e: any) {
+      typecheckOutput =
+        preexistingErrorCount > 0
+          ? `No new TypeScript errors (${preexistingErrorCount} pre-existing error${preexistingErrorCount !== 1 ? "s" : ""} ignored).`
+          : "No TypeScript errors found.";
+    } else {
       typecheckPassed = false;
-      typecheckOutput = e.message || String(e);
-      errors.push("Typecheck execution error.");
+      typecheckOutput = newErrors
+        .slice(0, 10)
+        .map((d) => `${d.file}:${d.line}: TS${d.code}: ${d.message}`)
+        .join("\n");
+      errors.push(
+        `Typecheck failed with ${newErrors.length} new diagnostic error${newErrors.length !== 1 ? "s" : ""}` +
+          (preexistingErrorCount > 0 ? ` (${preexistingErrorCount} pre-existing ignored)` : "") +
+          ".",
+      );
     }
+  } catch (e: unknown) {
+    typecheckPassed = false;
+    typecheckOutput = e instanceof Error ? e.message : String(e);
+    errors.push("Typecheck execution error.");
   }
 
-  // 2. Run Tests if package.json has a test script and runTests is enabled
+  // 2. Run tests if package.json has a test script and runTests is enabled
   if (options.runTests) {
     const pkgPath = path.join(rootDir, "package.json");
     if (fs.existsSync(pkgPath)) {
@@ -134,6 +150,7 @@ export function validateCodebase(
             cwd: rootDir,
             encoding: "utf-8",
             stdio: ["ignore", "pipe", "pipe"],
+            timeout: 300_000,
           });
           testsPassed = true;
           testsOutput = testOut;
@@ -154,6 +171,8 @@ export function validateCodebase(
     passed,
     typecheckPassed,
     typecheckOutput,
+    preexistingErrorCount,
+    newErrors,
     testsPassed,
     testsOutput,
     errors,
