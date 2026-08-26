@@ -1,7 +1,9 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import {
   applyAstTransforms,
+  collectTypeDiagnostics,
   diffOpenApi,
   findImpactedCode,
   parseOpenApi,
@@ -152,6 +154,41 @@ const scopeTestResult = applyAstTransforms(codeWithInterfaceAndCall, openaiChang
 assert(scopeTestResult.content.includes("max_tokens?: number;"), "Interface declaration max_tokens?: number; remains 100% UNCHANGED");
 assert(scopeTestResult.content.includes("max_output_tokens: 500"), "Call site max_tokens: 500 is renamed to max_output_tokens: 500");
 assert(!scopeTestResult.content.includes("max_tokens: 500"), "Old max_tokens: 500 property is removed from call site");
+
+// Test 11: Baseline-aware validation for repos with pre-existing type errors
+console.log("\nTest 11: Baseline-aware validation for repos with pre-existing type errors");
+const baselineFixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-baseline-"));
+fs.writeFileSync(
+  path.join(baselineFixtureDir, "tsconfig.json"),
+  JSON.stringify({ compilerOptions: { strict: true, noEmit: true, skipLibCheck: true } }),
+);
+fs.writeFileSync(path.join(baselineFixtureDir, "legacy.ts"), 'export const broken: number = "not a number";\n');
+fs.writeFileSync(path.join(baselineFixtureDir, "repaired.ts"), "export const fine: number = 1;\n");
+
+const noBaselineResult = validateCodebase(baselineFixtureDir);
+assert(noBaselineResult.typecheckPassed === false, "Without a baseline, pre-existing errors fail validation");
+
+const baselineDiagnostics = collectTypeDiagnostics(baselineFixtureDir);
+assert(baselineDiagnostics.length > 0, "Collects pre-existing diagnostics as baseline");
+
+const baselineResult = validateCodebase(baselineFixtureDir, { baseline: baselineDiagnostics });
+assert(baselineResult.typecheckPassed === true, "With a baseline, pre-existing errors are ignored");
+assert(baselineResult.preexistingErrorCount > 0, "Reports how many pre-existing errors were ignored");
+
+fs.writeFileSync(path.join(baselineFixtureDir, "repaired.ts"), 'export const fine: number = "introduced by repair";\n');
+const newErrorResult = validateCodebase(baselineFixtureDir, { baseline: baselineDiagnostics });
+assert(newErrorResult.typecheckPassed === false, "Errors introduced after the baseline fail validation");
+assert(newErrorResult.newErrors.some((d) => d.file.includes("repaired.ts")), "New error is attributed to the repaired file");
+
+fs.writeFileSync(path.join(baselineFixtureDir, "repaired.ts"), "export const fine: number = 1;\n");
+fs.writeFileSync(
+  path.join(baselineFixtureDir, "legacy.ts"),
+  '// repair inserted lines above the old error\n// shifting it down\nexport const broken: number = "not a number";\n',
+);
+const shiftedResult = validateCodebase(baselineFixtureDir, { baseline: baselineDiagnostics });
+assert(shiftedResult.typecheckPassed === true, "Pre-existing errors shifted to new lines are still recognized as pre-existing");
+
+fs.rmSync(baselineFixtureDir, { recursive: true, force: true });
 
 console.log("\n==================================================");
 console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);

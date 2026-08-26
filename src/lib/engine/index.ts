@@ -176,6 +176,6 @@ export { findImpactedCode } from "./impact";
 export { buildPullRequest, generateFixes } from "./repair";
 export { scanDirectory, scanCodebase } from "./ast-parser";
 export { applyAstTransforms } from "./ast-transformer";
-export { validateCodebase } from "./validation";
+export { validateCodebase, collectTypeDiagnostics, type TypeDiagnostic } from "./validation";
 export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";
 export { getGitStatus, createGitHubPR } from "./github";
