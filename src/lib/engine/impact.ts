@@ -21,9 +21,53 @@ function binaryReferencesField(node: Node, field: string): boolean {
   return false;
 }
 
+function operationTokens(change: ApiChange): string[] {
+  if (!change.path) return [];
+  const segments = change.path.split("/").filter(Boolean).filter((segment) => !/^v?\d+(?:\.\d+)?$/i.test(segment));
+  const lastSegment = segments.at(-1)?.replace(/[{}]/g, "") ?? "";
+  if (!lastSegment) return [];
+  const singular = lastSegment.endsWith("s") ? lastSegment.slice(0, -1) : lastSegment;
+  const camel = (value: string) => value.replace(/[-_ ]+(.)/g, (_, char: string) => char.toUpperCase());
+  return [lastSegment, singular, camel(lastSegment), camel(singular)].filter(Boolean);
+}
+
+function resolvedOperationNames(expression: Node, seen = new Set<string>()): string[] {
+  const names = new Set<string>([expression.getText()]);
+  const symbol = expression.getSymbol()?.getAliasedSymbol() ?? expression.getSymbol();
+  if (!symbol) return [...names];
+  names.add(symbol.getName());
+  for (const declaration of symbol.getDeclarations()) {
+    const key = `${declaration.getSourceFile().getFilePath()}:${declaration.getStart()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (Node.isVariableDeclaration(declaration)) {
+      const initializer = declaration.getInitializer();
+      if (initializer) {
+        for (const name of resolvedOperationNames(initializer, seen)) {
+          names.add(name);
+        }
+      }
+    }
+  }
+  return [...names];
+}
+
+function callMatchesOperation(call: Node, change: ApiChange): boolean {
+  if (!Node.isCallExpression(call)) return false;
+  const tokens = operationTokens(change);
+  if (tokens.length === 0) return true;
+  const names = resolvedOperationNames(call.getExpression());
+  return tokens.some((token) => {
+    const lowerToken = token.toLowerCase();
+    return names.some((name) => name.toLowerCase().includes(lowerToken));
+  });
+}
+
 function lineSnippetAndPos(node: Node) {
-  const sf = node.getSourceFile();
-  const pos = sf.getLineAndColumnAtPos(node.getStart());
+  const call = node.getFirstAncestorByKind(SyntaxKind.CallExpression);
+  const target = call ?? node;
+  const sf = target.getSourceFile();
+  const pos = sf.getLineAndColumnAtPos(target.getStart());
   const lines = sf.getFullText().split(/\r?\n/);
   return { line: pos.line, column: pos.column, snippet: (lines[pos.line - 1] ?? "").trim() };
 }
@@ -164,19 +208,33 @@ export function findImpactedCode(changes: ApiChange[], files: ConsumerFile[]): I
           break;
         }
 
-        case "field-removed":
+        case "field-removed": {
+          if (!change.field) break;
+          const reason = `References removed field "${change.field}"`;
+          for (const prop of propertyAssignments) {
+            if (prop.getName() !== change.field) continue;
+            const parentObj = prop.getFirstAncestorByKind(SyntaxKind.ObjectLiteralExpression);
+            if (!parentObj) continue;
+            const call = parentObj.getFirstAncestorByKind(SyntaxKind.CallExpression);
+            if (call && change.path) {
+              if (callMatchesOperation(call, change)) {
+                impacts.push(match(prop, file.path, change, change.field, "high", reason));
+              }
+            } else if (!change.path) {
+              impacts.push(match(prop, file.path, change, change.field, "high", reason));
+            }
+          }
+          break;
+        }
+
         case "field-added": {
           if (!change.field) break;
-          const confidence = change.kind === "field-removed" ? "high" : "low";
-          const reason =
-            change.kind === "field-removed"
-              ? `References removed field "${change.field}"`
-              : `Optional new field "${change.field}" available for adoption`;
+          const reason = `Optional new field "${change.field}" available for adoption`;
           for (const sig of propertySignatures) {
-            if (sig.getName() === change.field) impacts.push(match(sig, file.path, change, change.field, confidence, reason));
+            if (sig.getName() === change.field) impacts.push(match(sig, file.path, change, change.field, "low", reason));
           }
           for (const prop of propertyAssignments) {
-            if (prop.getName() === change.field) impacts.push(match(prop, file.path, change, change.field, confidence, reason));
+            if (prop.getName() === change.field) impacts.push(match(prop, file.path, change, change.field, "low", reason));
           }
           break;
         }
