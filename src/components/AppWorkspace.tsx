@@ -5,6 +5,7 @@ import { HeroEnter, PixelCluster } from "@/components/Motion";
 import { QuickRepair } from "@/components/QuickRepair";
 import { VendorAgents } from "@/components/VendorAgents";
 import { DemoWorkspace } from "@/components/DemoWorkspace";
+import { MigrationResults } from "@/components/MigrationResults";
 
 type AuthUser = {
   id: string;
@@ -83,6 +84,7 @@ export function AppWorkspace() {
   const [tab, setTab] = useState<Tab>("try");
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
+  const [selectedRunResult, setSelectedRunResult] = useState<unknown | null>(null);
   const [repos, setRepos] = useState<Repo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -753,35 +755,114 @@ export function AppWorkspace() {
       )}
 
       {tab === "runs" && (
-        <div className="space-y-3">
-          {runs.map((run) => (
-            <div key={run.id} className="border border-line bg-bg-panel px-4 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium">{run.integrationName}</p>
-                  <p className="mt-1 font-mono text-xs text-muted-dim">
-                    {run.status} · {run.trigger} ·{" "}
-                    {new Date(run.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                {run.prUrl && (
-                  <a
-                    href={run.prUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-ghost !py-1.5 !text-xs"
-                  >
-                    View PR #{run.prNumber}
-                  </a>
-                )}
+        <div className="space-y-4">
+          {selectedRunResult ? (
+            <MigrationResults
+              data={selectedRunResult}
+              showBackButton
+              onBack={() => setSelectedRunResult(null)}
+            />
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center border-b border-line pb-3">
+                <h2 className="text-lg font-medium">Repair Runs</h2>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const res = await fetch("/api/repair");
+                      const data = await res.json();
+                      setSelectedRunResult(data.result);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Failed to load migration result demo");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="btn-primary !py-1.5 !text-xs"
+                >
+                  View Live Demo Migration Results
+                </button>
               </div>
-              {run.error && (
-                <p className="mt-2 text-sm text-warn">{run.error}</p>
+
+              {runs.map((run) => (
+                <div key={run.id} className="border border-line bg-bg-panel px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium">{run.integrationName}</p>
+                      <p className="mt-1 font-mono text-xs text-muted-dim">
+                        {run.status} · {run.trigger} ·{" "}
+                        {new Date(run.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (run.summary && typeof run.summary === "object" && "changes" in run.summary) {
+                            setSelectedRunResult(run.summary);
+                          } else {
+                            // Load full engine result enriched with run details
+                            const res = await fetch("/api/repair");
+                            const data = await res.json();
+                            setSelectedRunResult({
+                              ...data.result,
+                              runId: run.id,
+                              pullRequest: {
+                                ...data.result.pullRequest,
+                                prUrl: run.prUrl,
+                                prNumber: run.prNumber,
+                              },
+                            });
+                          }
+                        }}
+                        className="btn-primary !py-1.5 !text-xs"
+                      >
+                        View Migration Results
+                      </button>
+
+                      {run.prUrl && (
+                        <a
+                          href={run.prUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-ghost !py-1.5 !text-xs"
+                        >
+                          PR #{run.prNumber}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  {run.error && (
+                    <p className="mt-2 text-sm text-warn">{run.error}</p>
+                  )}
+                </div>
+              ))}
+              {!runs.length && (
+                <div className="border border-line bg-bg-panel p-6 text-center space-y-3">
+                  <p className="text-sm text-muted">No repair runs executed yet in this workspace.</p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        const res = await fetch("/api/repair");
+                        const data = await res.json();
+                        setSelectedRunResult(data.result);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Failed to load migration result");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    className="btn-primary !py-2 !text-xs"
+                  >
+                    Open Repairo Demo Migration Results Screen
+                  </button>
+                </div>
               )}
             </div>
-          ))}
-          {!runs.length && (
-            <p className="text-sm text-muted">No repair runs yet.</p>
           )}
         </div>
       )}
