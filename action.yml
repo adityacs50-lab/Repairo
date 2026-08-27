@@ -1,0 +1,39 @@
+name: "Repairo API Check"
+description: "Detect breaking changes in third-party API contracts (Stripe, OpenAI, Anthropic, Gemini, Supabase, GitHub) before they break production"
+author: "Repairo"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  vendors:
+    description: "Comma-separated vendor ids to check (e.g. stripe,openai). Defaults to vendors in .repairo/config.json"
+    required: false
+    default: ""
+  target:
+    description: "Source directory to map impact against"
+    required: false
+    default: "./src"
+  update-snapshot:
+    description: "Update the committed baseline snapshot when changes are detected (set to 'true' with a follow-up commit step)"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Run repairo check
+      shell: bash
+      run: |
+        ARGS=""
+        if [ -n "${{ inputs.vendors }}" ]; then
+          ARGS="$ARGS --vendors ${{ inputs.vendors }}"
+        fi
+        if [ "${{ inputs.update-snapshot }}" = "true" ]; then
+          ARGS="$ARGS --update-snapshot"
+        fi
+        npx --yes repairo-cli@latest check $ARGS --target "${{ inputs.target }}"

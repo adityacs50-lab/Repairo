@@ -7,6 +7,7 @@ import {
   diffOpenApi,
   findImpactedCode,
   parseOpenApi,
+  resolveSpecIndirection,
   scanCodebase,
   scanDirectory,
   validateCodebase,
@@ -288,6 +289,88 @@ const removalOnlyChanges = [
 ];
 const removalOnlyResult = applyAstTransforms(openaiBeforeCode, removalOnlyChanges, "src/ai.ts");
 assert(removalOnlyResult.content.includes("max_tokens: 500"), "Removed field is NOT renamed to a field added on a different endpoint");
+
+// Test 17: Google Discovery document conversion
+console.log("\nTest 17: Google Discovery document conversion");
+const discoveryJson = JSON.stringify({
+  kind: "discovery#restDescription",
+  discoveryVersion: "v1",
+  name: "generativelanguage",
+  title: "Generative Language API",
+  version: "v1beta",
+  baseUrl: "https://generativelanguage.googleapis.com/",
+  schemas: {
+    GenerateContentRequest: {
+      id: "GenerateContentRequest",
+      type: "object",
+      properties: {
+        model: { type: "string", description: "Required. The model name." },
+        contents: { type: "array", items: { $ref: "Content" } },
+      },
+    },
+    Content: { id: "Content", type: "object", properties: { role: { type: "string", enum: ["user", "model"] } } },
+  },
+  resources: {
+    models: {
+      methods: {
+        generateContent: {
+          id: "generativelanguage.models.generateContent",
+          path: "v1beta/{+model}:generateContent",
+          flatPath: "v1beta/models/{modelsId}:generateContent",
+          httpMethod: "POST",
+          parameters: { model: { location: "path", required: true, type: "string" } },
+          request: { $ref: "GenerateContentRequest" },
+          response: { $ref: "GenerateContentRequest" },
+        },
+      },
+    },
+  },
+});
+const convertedDoc = parseOpenApi(discoveryJson);
+assert(convertedDoc.openapi === "3.0.0", "Detects discovery document and converts to OpenAPI");
+assert(Boolean(convertedDoc.paths?.["/v1beta/models/{modelsId}:generateContent"]?.post), "Maps discovery methods to OpenAPI paths and operations");
+assert(convertedDoc.components?.schemas?.GenerateContentRequest?.required?.includes("model") === true, "Maps 'Required.' annotations into required fields");
+assert((convertedDoc.components?.schemas?.Content?.properties?.role as any)?.enum?.length === 2, "Preserves enum values through conversion");
+
+// Test 18: Discovery-converted specs are diffable
+console.log("\nTest 18: Discovery-converted specs are diffable");
+const discoveryAfter = JSON.parse(discoveryJson);
+delete discoveryAfter.resources.models.methods.generateContent;
+discoveryAfter.resources.models.methods.createContent = {
+  id: "generativelanguage.models.createContent",
+  flatPath: "v1beta/models/{modelsId}:createContent",
+  httpMethod: "POST",
+};
+const discoveryDiff = diffOpenApi(convertedDoc, parseOpenApi(JSON.stringify(discoveryAfter)));
+assert(discoveryDiff.some((c) => c.kind === "endpoint-removed" && c.severity === "breaking"), "Detects breaking endpoint removal across discovery snapshots");
+
+// Test 19: Stainless .stats.yml spec URL indirection
+console.log("\nTest 19: Stainless .stats.yml spec URL indirection");
+const statsYml = "configured_endpoints: 144\nopenapi_spec_url: https://example.com/spec.yml\nopenapi_spec_hash: abc\n";
+assert(resolveSpecIndirection(statsYml) === "https://example.com/spec.yml", "Extracts openapi_spec_url from Stainless stats file");
+assert(resolveSpecIndirection("openapi: 3.0.0\ninfo:\n  title: X\n") === null, "Does not treat a real OpenAPI document as indirection");
+assert(resolveSpecIndirection('{"openapi": "3.0.0"}') === null, "Does not treat JSON OpenAPI as indirection");
+
+// Test 20: Removed endpoint impact via URL path matching
+console.log("\nTest 20: Removed endpoint impact via URL path matching");
+const endpointChange = [
+  {
+    id: "chg_020",
+    kind: "endpoint-removed" as const,
+    severity: "breaking" as const,
+    path: "/pet/findByStatus",
+    operation: "get",
+    summary: "Removed GET /pet/findByStatus",
+  },
+];
+const fetchCode = 'const res = await fetch("https://petstore3.swagger.io/api/v3/pet/findByStatus?status=sold");\n';
+const endpointImpacts = findImpactedCode(endpointChange, [{ path: "src/pets.ts", content: fetchCode }]);
+assert(endpointImpacts.some((i) => i.confidence === "high"), "Flags fetch calls to removed endpoint URLs as high-confidence impact");
+const templatedChange = [{ ...endpointChange[0], path: "/v1/apps/{appId}/keys" }];
+const templatedImpacts = findImpactedCode(templatedChange, [
+  { path: "src/keys.ts", content: 'await api.get("/v1/apps/" + id + "/keys");\n' },
+]);
+assert(templatedImpacts.length > 0, "Matches literal prefix of templated endpoint paths");
 
 console.log("\n==================================================");
 console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);
