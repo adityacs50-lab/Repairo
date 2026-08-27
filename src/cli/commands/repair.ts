@@ -94,19 +94,10 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
   }
 
   if (changes.length === 0) {
-    changes = [
-      {
-        id: "chg_001",
-        kind: "field-removed",
-        severity: "breaking",
-        path: "/v1/chat/completions",
-        operation: "post",
-        field: "max_tokens",
-        summary: 'Parameter "max_tokens" replaced by "max_output_tokens"',
-        before: "max_tokens",
-        after: "max_output_tokens",
-      },
-    ];
+    console.log("No API changes detected — nothing to repair.\n");
+    console.log("To detect changes first, run:");
+    console.log("  repairo diff --spec ./path/to/new-openapi.json\n");
+    return;
   }
 
   function collectFiles(dir: string): ConsumerFile[] {
