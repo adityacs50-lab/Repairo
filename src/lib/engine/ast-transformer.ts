@@ -376,7 +376,7 @@ export function applyAstTransforms(
               ? [parent.getLeft(), parent.getRight()].find(
                   (side) =>
                     (Node.isPropertyAccessExpression(side) && side.getName() === change.field) ||
-                    side.getText().includes(change.field),
+                    (change.field ? side.getText().includes(change.field) : false),
                 )
               : undefined;
           if (!inMatchingProperty && !comparisonAccess) continue;
