@@ -178,3 +178,38 @@ export function validateCodebase(
     errors,
   };
 }
+
+/**
+ * Validates a set of in-memory files without touching disk — for callers (like the hosted
+ * GitHub-PR flow) that never have a real checkout to run `tsc` against. This can't see the
+ * project's actual node_modules types, so it won't catch every error `validateCodebase`
+ * would, but it does catch same-project inconsistencies (e.g. a rewritten comparison that
+ * no longer type-checks against its own interfaces) using the real TypeScript compiler.
+ */
+export function validateInMemory(
+  files: { path: string; content: string }[],
+): { passed: boolean; errors: string[] } {
+  const project = new Project({
+    useInMemoryFileSystem: true,
+    compilerOptions: { allowJs: true, jsx: 2, skipLibCheck: true, strict: false, noEmit: true },
+  });
+
+  for (const file of files) {
+    if (!/\.(ts|tsx)$/i.test(file.path)) continue;
+    try {
+      project.createSourceFile(file.path, file.content);
+    } catch {
+      // Unparseable content is reported as a diagnostic-shaped error below instead.
+    }
+  }
+
+  try {
+    const diagnostics = project.getPreEmitDiagnostics();
+    const errors = diagnostics
+      .slice(0, 20)
+      .map((d) => `${d.getSourceFile()?.getFilePath() ?? "?"}:${d.getLineNumber() ?? "?"}: ${d.getMessageText()}`);
+    return { passed: errors.length === 0, errors };
+  } catch (e: any) {
+    return { passed: false, errors: [e.message || String(e)] };
+  }
+}

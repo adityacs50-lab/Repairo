@@ -3,6 +3,7 @@ import { diffOpenApi } from "./diff";
 import { convertDiscoveryToOpenApi, isDiscoveryDocument } from "./discovery";
 import { findImpactedCode } from "./impact";
 import { buildPullRequest, generateFixes } from "./repair";
+import { validateInMemory } from "./validation";
 import type {
   ConsumerFile,
   OpenApiDocument,
@@ -139,12 +140,13 @@ export function runRepair(options: {
   );
   const fromVersion = before.info?.version ?? "unknown";
   const toVersion = after.info?.version ?? "unknown";
+  const specTitle = after.info?.title ?? before.info?.title;
   const pullRequest = buildPullRequest(
     changes,
     fixes,
     options.consumerFiles,
     updatedFiles,
-    { fromVersion, toVersion },
+    { fromVersion, toVersion, specTitle },
     impacts,
   );
 
@@ -154,6 +156,19 @@ export function runRepair(options: {
     after.info?.title ?? before.info?.title,
     toVersion,
   );
+
+  // Validate the full resulting workspace (updated files layered over the originals) with
+  // an in-memory TypeScript program before this PR is ever proposed as auto-merge eligible.
+  // This can't see node_modules types, but it does catch same-project inconsistencies a
+  // transform might introduce — the one real safety net available to the hosted GitHub-PR
+  // flow, which never has an on-disk checkout to run the CLI's full `tsc` validation against.
+  const updatedByPath = new Map(updatedFiles.map((f) => [f.path, f]));
+  const mergedFiles = options.consumerFiles.map((f) => updatedByPath.get(f.path) ?? f);
+  const typecheck = validateInMemory(mergedFiles);
+  if (!typecheck.passed) {
+    pullRequest.autoMergeEligible = false;
+    pullRequest.safetyScore = Math.min(pullRequest.safetyScore, 40);
+  }
 
   return {
     runId: `run_${Date.now().toString(36)}`,
@@ -165,6 +180,7 @@ export function runRepair(options: {
     fixes,
     pullRequest,
     sbom,
+    typecheck,
     summary: {
       breaking: changes.filter((c) => c.severity === "breaking").length,
       nonBreaking: changes.filter((c) => c.severity === "non-breaking").length,

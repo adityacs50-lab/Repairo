@@ -1,3 +1,4 @@
+import { applyAstTransforms } from "./ast-transformer";
 import type {
   ApiChange,
   ConsumerFile,
@@ -6,16 +7,13 @@ import type {
   SuggestedFix,
 } from "./types";
 
-function replaceAll(source: string, search: string, replacement: string) {
-  return source.split(search).join(replacement);
-}
+const TS_LIKE = /\.(ts|tsx|js|jsx|mts|cts)$/i;
 
 function makePatch(before: string, after: string, path: string): string {
   const beforeLines = before.split(/\r?\n/);
   const afterLines = after.split(/\r?\n/);
   const hunks: string[] = [`--- a/${path}`, `+++ b/${path}`];
 
-  // Simplified unified-ish patch for demo readability
   let i = 0;
   let j = 0;
   while (i < beforeLines.length || j < afterLines.length) {
@@ -34,7 +32,6 @@ function makePatch(before: string, after: string, path: string): string {
       i < beforeLines.length &&
       (j >= afterLines.length || beforeLines[i] !== afterLines[j])
     ) {
-      // Look ahead for resync
       const nextMatch = afterLines.indexOf(beforeLines[i], j);
       if (nextMatch !== -1 && nextMatch - j < 6) break;
       removed.push(`-${beforeLines[i]}`);
@@ -64,258 +61,60 @@ function makePatch(before: string, after: string, path: string): string {
   return hunks.join("\n");
 }
 
-function applySafeTransforms(
+/** Narrow, honestly-labeled fallback for non-JS/TS consumer files (no AST available for
+ * Python/Go/etc): a deterministic constant reassignment for base-URL changes only. */
+function applyNonJsFallback(
   content: string,
   changes: ApiChange[],
-  filePath = "",
-): { content: string; fixes: SuggestedFix[]; pathHints: string[] } {
+  filePath: string,
+): { content: string; fixes: SuggestedFix[] } {
   let next = content;
   const fixes: SuggestedFix[] = [];
-  const pathHints: string[] = [];
   const isPy = /\.py$/i.test(filePath);
   const isGo = /\.go$/i.test(filePath);
 
   for (const change of changes) {
-    if (change.kind === "server-url-changed" && change.before && change.after) {
-      if (next.includes(change.before)) {
-        const beforeSnippet = change.before;
-        next = replaceAll(next, change.before, change.after);
-        fixes.push({
-          changeId: change.id,
-          file: "",
-          description: "Update API base URL",
-          before: beforeSnippet,
-          after: change.after,
-          safe: true,
-          safetyNotes: [
-            "Deterministic string replacement of known base URL",
-            isPy || isGo
-              ? `Applied in ${isPy ? "Python" : "Go"} source`
-              : "Applied in TypeScript/JS source",
-          ],
-        });
-        pathHints.push("BASE_URL");
-      }
+    if (change.kind !== "server-url-changed" || !change.before || !change.after) continue;
 
-      // Python / Go common constant names
-      if (isPy || isGo) {
-        const constNames = isPy
-          ? ["BASE_URL", "API_BASE", "API_URL", "STRIPE_API_BASE"]
-          : ["BaseURL", "APIBase", "apiBase"];
-        for (const name of constNames) {
-          const pyRe = new RegExp(
-            `(${name}\\s*=\\s*[\"'])([^\"']+)([\"'])`,
-          );
-          const goRe = new RegExp(
-            `(${name}\\s*=\\s*[\"'])([^\"']+)([\"'])`,
-          );
-          const re = isPy ? pyRe : goRe;
-          if (re.test(next) && change.after) {
-            const before = next;
-            next = next.replace(re, `$1${change.after}$3`);
-            if (next !== before) {
-              fixes.push({
-                changeId: change.id,
-                file: "",
-                description: `Update ${name} constant to new API URL`,
-                before: name,
-                after: change.after,
-                safe: true,
-                safetyNotes: ["Constant reassignment only"],
-              });
-              pathHints.push(name);
-            }
-          }
-        }
-      }
+    if (next.includes(change.before)) {
+      next = next.split(change.before).join(change.after);
+      fixes.push({
+        changeId: change.id,
+        file: filePath,
+        description: "Update API base URL",
+        before: change.before,
+        after: change.after,
+        safe: true,
+        safetyNotes: ["Deterministic string replacement of known base URL"],
+      });
     }
 
-    if (
-      change.kind === "enum-value-removed" &&
-      change.field === "status" &&
-      change.before &&
-      change.after
-    ) {
-      const needles = [`"${change.before}"`, `'${change.before}'`];
-      for (const needle of needles) {
-        if (next.includes(needle)) {
-          const replacement = needle.startsWith('"')
-            ? `"${change.after}"`
-            : `'${change.after}'`;
-          next = replaceAll(next, needle, replacement);
+    const constNames = isPy
+      ? ["BASE_URL", "API_BASE", "API_URL"]
+      : isGo
+        ? ["BaseURL", "APIBase", "apiBase"]
+        : [];
+    for (const name of constNames) {
+      const re = new RegExp(`(${name}\\s*=\\s*["'])([^"']+)(["'])`);
+      if (re.test(next)) {
+        const before = next;
+        next = next.replace(re, `$1${change.after}$3`);
+        if (next !== before) {
           fixes.push({
             changeId: change.id,
-            file: "",
-            description: `Rename status enum "${change.before}" → "${change.after}"`,
-            before: needle,
-            after: replacement,
+            file: filePath,
+            description: `Update ${name} constant to new API URL`,
+            before: name,
+            after: change.after,
             safe: true,
-            safetyNotes: [
-              "Mapped removed enum to documented replacement value",
-              isPy || isGo
-                ? "Language-agnostic string literal update"
-                : "TypeScript string literal update",
-            ],
+            safetyNotes: ["Constant reassignment only"],
           });
-          pathHints.push(change.before);
         }
-      }
-    }
-
-    // Legacy Payments-demo TS transforms (fixture) when pending→processing
-    if (
-      change.kind === "enum-value-removed" &&
-      change.field === "status" &&
-      change.before === "pending" &&
-      !change.after
-    ) {
-      if (next.includes('"pending"') || next.includes("'pending'")) {
-        const before = next;
-        next = next
-          .replaceAll('"pending"', '"processing"')
-          .replaceAll("'pending'", "'processing'");
-        if (next.includes("isChargePending")) {
-          next = next.replace(
-            /return charge\.status === ["']processing["'];/,
-            'return charge.status === "processing";',
-          );
-        }
-        fixes.push({
-          changeId: change.id,
-          file: "",
-          description: 'Rename status enum "pending" → "processing"',
-          before: 'status: "pending"',
-          after: 'status: "processing"',
-          safe: true,
-          safetyNotes: [
-            "Mapped removed enum to documented replacement value",
-            "No control-flow semantics changed beyond rename",
-          ],
-        });
-        if (before !== next) pathHints.push("ChargeStatus");
-      }
-
-      if (next.includes("ChargeStatus")) {
-        next = next.replace(
-          /export type ChargeStatus = "pending" \| "succeeded" \| "failed";/,
-          'export type ChargeStatus = "processing" | "succeeded" | "declined" | "canceled";',
-        );
-      }
-    }
-
-    if (
-      change.kind === "enum-value-removed" &&
-      change.field === "status" &&
-      change.before === "failed"
-    ) {
-      if (next.includes('"failed"') && next.includes("ChargeStatus")) {
-        next = next.replaceAll('"failed"', '"declined"');
-        fixes.push({
-          changeId: change.id,
-          file: "",
-          description: 'Rename status enum "failed" → "declined"',
-          before: '"failed"',
-          after: '"declined"',
-          safe: true,
-          safetyNotes: ["Mapped removed enum to documented replacement"],
-        });
-      }
-    }
-
-    if (
-      change.kind === "field-required" &&
-      change.field === "idempotencyKey" &&
-      next.includes("CreateChargeInput")
-    ) {
-      if (!next.includes("idempotencyKey")) {
-        next = next.replace(
-          /export interface CreateChargeInput \{[\s\S]*?customerId: string;/,
-          (block) =>
-            block.includes("idempotencyKey")
-              ? block
-              : block.replace(
-                  "customerId: string;",
-                  "customerId: string;\n  idempotencyKey: string;",
-                ),
-        );
-
-        next = next.replace(
-          /const payload: CreateChargeInput = \{[\s\S]*?customerId: order\.customerId,/,
-          (block) =>
-            block.includes("idempotencyKey")
-              ? block
-              : `${block}\n    idempotencyKey: crypto.randomUUID(),`,
-        );
-
-        // Also ensure interface in payments-client gets the field via simpler insert
-        if (
-          next.includes("export interface CreateChargeInput") &&
-          !/idempotencyKey: string;/.test(next)
-        ) {
-          next = next.replace(
-            "customerId: string;\n  description?: string;",
-            "customerId: string;\n  idempotencyKey: string;\n  description?: string;",
-          );
-        }
-
-        fixes.push({
-          changeId: change.id,
-          file: "",
-          description: "Add required idempotencyKey to charge requests",
-          before: "customerId: string;",
-          after: "customerId: string;\n  idempotencyKey: string;",
-          safe: true,
-          safetyNotes: [
-            "Uses crypto.randomUUID() for unique keys",
-            "Does not alter payment amounts or currency logic",
-          ],
-        });
-      }
-    }
-
-    if (
-      change.kind === "field-required" &&
-      change.field === "reason" &&
-      (next.includes("CreateRefundInput") || next.includes("createRefund"))
-    ) {
-      if (!next.includes("reason:")) {
-        next = next.replace(
-          /export interface CreateRefundInput \{[\s\S]*?amount: number;\n\}/,
-          `export interface CreateRefundInput {
-  chargeId: string;
-  amount: number;
-  reason: "requested_by_customer" | "duplicate" | "fraudulent";
-}`,
-        );
-
-        next = next.replace(
-          /return createRefund\(\{ chargeId, amount \}\);/,
-          'return createRefund({ chargeId, amount, reason: "requested_by_customer" });',
-        );
-
-        next = next.replace(
-          /body: JSON\.stringify\(input\),/,
-          "body: JSON.stringify(input),",
-        );
-
-        fixes.push({
-          changeId: change.id,
-          file: "",
-          description: "Add required refund reason with safe default",
-          before: "createRefund({ chargeId, amount })",
-          after:
-            'createRefund({ chargeId, amount, reason: "requested_by_customer" })',
-          safe: true,
-          safetyNotes: [
-            "Default reason is the least destructive documented value",
-            "Marked for human review on fraud/duplicate cases",
-          ],
-        });
       }
     }
   }
 
-  return { content: next, fixes, pathHints };
+  return { content: next, fixes };
 }
 
 export function generateFixes(
@@ -328,15 +127,22 @@ export function generateFixes(
   const impactedPaths = new Set(impacts.map((i) => i.file));
 
   for (const file of files) {
-    if (!impactedPaths.has(file.path) && !file.path.includes("payments")) {
+    if (!impactedPaths.has(file.path)) {
       updatedFiles.push(file);
       continue;
     }
 
-    const result = applySafeTransforms(file.content, changes, file.path);
-    const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
-    fixes.push(...fileFixes);
-    updatedFiles.push({ path: file.path, content: result.content });
+    if (TS_LIKE.test(file.path)) {
+      const fileImpacts = impacts.filter((i) => i.file === file.path);
+      const result = applyAstTransforms(file.content, changes, file.path, fileImpacts);
+      const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
+      fixes.push(...fileFixes);
+      updatedFiles.push({ path: file.path, content: result.content });
+    } else {
+      const result = applyNonJsFallback(file.content, changes, file.path);
+      fixes.push(...result.fixes);
+      updatedFiles.push({ path: file.path, content: result.content });
+    }
   }
 
   return { fixes, updatedFiles };
@@ -347,7 +153,7 @@ export function buildPullRequest(
   fixes: SuggestedFix[],
   originalFiles: ConsumerFile[],
   updatedFiles: ConsumerFile[],
-  meta: { fromVersion: string; toVersion: string },
+  meta: { fromVersion: string; toVersion: string; specTitle?: string },
   impacts: ImpactMatch[] = [],
 ): PullRequestDraft {
   const changed = updatedFiles.filter((file) => {
@@ -359,21 +165,17 @@ export function buildPullRequest(
   const unsafeFixes = fixes.length - safeFixes.length;
   const patchedPaths = new Set(changed.map((f) => f.path));
   const highImpacts = impacts.filter((i) => i.confidence === "high");
-  const uncoveredHigh = highImpacts.filter(
-    (i) => !patchedPaths.has(i.file),
-  ).length;
-  const consumerBreaking = changes.filter(
-    (c) =>
-      c.severity === "breaking" &&
-      (c.kind === "server-url-changed" ||
-        c.kind === "field-required" ||
-        (c.kind === "enum-value-removed" && c.field === "status")),
-  );
-  const addressedKinds = new Set(safeFixes.map((f) => f.description));
+  const uncoveredHigh = highImpacts.filter((i) => !patchedPaths.has(i.file)).length;
+  const breakingChanges = changes.filter((c) => c.severity === "breaking");
+  const addressedChangeIds = new Set(safeFixes.map((f) => f.changeId));
   const coverageRatio =
-    consumerBreaking.length === 0
+    breakingChanges.length === 0
       ? 1
-      : Math.min(1, addressedKinds.size / Math.max(consumerBreaking.length, 1));
+      : Math.min(
+          1,
+          breakingChanges.filter((c) => addressedChangeIds.has(c.id)).length /
+            Math.max(breakingChanges.length, 1),
+        );
 
   // Score the PR on patch coverage + deterministic-only transforms.
   const safetyScore = Math.max(
@@ -399,15 +201,16 @@ export function buildPullRequest(
     };
   });
 
+  const specLabel = meta.specTitle ? `${meta.specTitle} ` : "API ";
+
   const body = [
     "## Repairo automatic integration repair",
     "",
-    `Detected breaking and additive changes from **Payments API ${meta.fromVersion} → ${meta.toVersion}**.`,
+    `Detected breaking and additive changes from **${specLabel}${meta.fromVersion} → ${meta.toVersion}**.`,
     "",
     "### Changes detected",
     ...changes.map(
-      (c) =>
-        `- \`${c.severity}\` ${c.summary}${c.field ? ` (\`${c.field}\`)` : ""}`,
+      (c) => `- \`${c.severity}\` ${c.summary}${c.field ? ` (\`${c.field}\`)` : ""}`,
     ),
     "",
     "### Safe fixes applied",
@@ -415,8 +218,7 @@ export function buildPullRequest(
     "",
     "### Safety checks",
     `- Safety score: **${safetyScore}/100**`,
-    `- Deterministic transforms only (no speculative refactors)`,
-    `- Default values chosen from documented enums`,
+    `- Deterministic AST transforms only (no speculative refactors)`,
     `- CI should run contract + unit tests before merge`,
     "",
     safetyScore >= 75
@@ -425,13 +227,13 @@ export function buildPullRequest(
   ].join("\n");
 
   return {
-    title: `fix(integrations): adapt to Payments API ${meta.toVersion}`,
-    branch: `repairo/payments-${meta.toVersion.replace(/\./g, "-")}`,
+    title: `fix(integrations): adapt to ${specLabel}${meta.toVersion}`.trim(),
+    branch: `repairo/${(meta.specTitle ?? "api").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${meta.toVersion.replace(/\./g, "-")}`,
     body,
     labels: ["repairo", "api-repair", "safe-auto-pr"],
     commits: [
       {
-        message: `fix: update consumer for Payments API ${meta.toVersion}`,
+        message: `fix: update consumer for ${specLabel}${meta.toVersion}`,
         files: files.map((f) => f.path),
       },
     ],

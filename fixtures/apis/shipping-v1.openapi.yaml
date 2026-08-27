@@ -1,0 +1,60 @@
+openapi: 3.0.3
+info:
+  title: Shipping API
+  version: 1.0.0
+  description: Shipment creation for logistics integrations
+servers:
+  - url: https://api.acme-shipping.com/v1
+paths:
+  /shipments:
+    post:
+      operationId: createShipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShipmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentRecord'
+components:
+  schemas:
+    CreateShipmentRequest:
+      type: object
+      required:
+        - originZip
+        - destZip
+        - weightKg
+        - carrier
+      properties:
+        originZip:
+          type: string
+        destZip:
+          type: string
+        weightKg:
+          type: number
+        carrier:
+          type: string
+          enum: [ups, fedex, dhl]
+    ShipmentRecord:
+      type: object
+      required:
+        - id
+        - status
+        - carrier
+        - weightKg
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [queued, in_transit, delivered]
+        carrier:
+          type: string
+        weightKg:
+          type: number

@@ -8,6 +8,7 @@ import {
   findImpactedCode,
   parseOpenApi,
   resolveSpecIndirection,
+  runRepair,
   scanCodebase,
   scanDirectory,
   validateCodebase,
@@ -371,6 +372,64 @@ const templatedImpacts = findImpactedCode(templatedChange, [
   { path: "src/keys.ts", content: 'await api.get("/v1/apps/" + id + "/keys");\n' },
 ]);
 assert(templatedImpacts.length > 0, "Matches literal prefix of templated endpoint paths");
+
+// Test 21: Cross-domain generality regression test — a second, independently-designed
+// fixture (a Shipping API) with no naming overlap with the payments fixture at all, to
+// prove the engine repairs codebases generically rather than being tuned to one demo.
+console.log("\nTest 21: Cross-domain generality regression test (Shipping API fixture)");
+const shippingBeforeSpec = fs.readFileSync(path.resolve("./fixtures/apis/shipping-v1.openapi.yaml"), "utf-8");
+const shippingAfterSpec = fs.readFileSync(path.resolve("./fixtures/apis/shipping-v2.openapi.yaml"), "utf-8");
+const shippingConsumerPaths = [
+  "fixtures/consumers/logistics-service/src/shipments-client.ts",
+  "fixtures/consumers/logistics-service/src/order-flow.ts",
+];
+const shippingConsumerFiles = shippingConsumerPaths.map((p) => ({
+  path: p,
+  content: fs.readFileSync(path.resolve(p), "utf-8"),
+}));
+const shippingResult = runRepair({
+  beforeSpec: shippingBeforeSpec,
+  afterSpec: shippingAfterSpec,
+  consumerFiles: shippingConsumerFiles,
+});
+const shippingClientFile = shippingResult.pullRequest.files.find((f) => f.path.endsWith("shipments-client.ts"));
+const shippingFlowFile = shippingResult.pullRequest.files.find((f) => f.path.endsWith("order-flow.ts"));
+
+assert(
+  shippingClientFile?.content.includes("https://api.acme-shipping.com/v2") ?? false,
+  "Base URL updated to v2 in an unrelated (Shipping) API's consumer code",
+);
+assert(
+  shippingClientFile?.content.includes("recipientEmail: string;") ?? false,
+  "New required field added to the request interface (side-correct, request)",
+);
+assert(
+  shippingClientFile?.content.includes("estimatedDelivery: string;") ?? false,
+  "New required field added to the response interface, not the request interface",
+);
+assert(
+  !(shippingClientFile?.content.includes("CreateShipmentRequest") &&
+    /CreateShipmentRequest\s*\{[^}]*estimatedDelivery/.test(shippingClientFile.content)),
+  "Response-only field is never inserted into the request interface",
+);
+assert(
+  shippingClientFile?.content.includes('"ups" | "fedex" | "dhl" | "usps"') ?? false,
+  "Purely-additive enum member appended without disturbing an unrelated rename",
+);
+assert(
+  (shippingClientFile?.content.match(/"pending" \| "in_transit" \| "delivered"/) ?? null) !== null,
+  "Unambiguous 1:1 enum rename applied to the status union type",
+);
+assert(
+  shippingClientFile?.content.includes('record.status === "pending"') ?? false,
+  "Enum rename also applied to the matching comparison, not just the type declaration",
+);
+assert(
+  shippingFlowFile?.content.includes("recipientEmail:") ?? false,
+  "Required field also added at the object-literal call site in a different file",
+);
+assert(shippingResult.typecheck.passed, "Repaired Shipping API consumer code compiles cleanly");
+assert(shippingResult.pullRequest.autoMergeEligible, "Unambiguous cross-domain repair is auto-merge eligible");
 
 console.log("\n==================================================");
 console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);
