@@ -137,25 +137,17 @@ export function applyAstTransforms(
   }
 
   for (const change of changes) {
-    // 1. Property renames — only when the diff pairs an explicit before/after (e.g. a
-    // hand-authored "field renamed" change), or when a field-removed and field-added
-    // change share the exact same path+operation (a real rename signal, not a guess
-    // across unrelated changes elsewhere in the diff).
+    // 1. Property renames — only when the change itself carries an explicit before AND
+    // after (a rename confirmed by some authoritative source — a human, a vendor
+    // deprecation notice, or an agent that read the changelog — never inferred by pairing
+    // an unrelated field-removed with a field-added that merely happen to share a path and
+    // operation. A real API operation routinely drops and gains several unrelated fields
+    // in the same release; guessing a pairing from bare co-occurrence produced wrong
+    // "renames" (payment_intent -> amount_overpaid, price -> customer_account) the very
+    // first time this ran against a real, actively-evolving API instead of a toy fixture.
     if (change.kind === "field-removed" || change.kind === "field-added") {
       const oldField = change.kind === "field-removed" ? change.before ?? change.field : undefined;
-      let newField = change.after;
-
-      if (change.kind === "field-removed" && !newField && oldField) {
-        const paired = changes.find(
-          (c) =>
-            c.kind === "field-added" &&
-            c.field &&
-            c.field !== oldField &&
-            c.path === change.path &&
-            c.operation === change.operation,
-        );
-        if (paired?.field) newField = paired.field;
-      }
+      const newField = change.after;
 
       if (oldField && newField && oldField !== newField) {
         const propertyAssignments = sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAssignment);
@@ -372,16 +364,41 @@ export function applyAstTransforms(
       } else if (addedGroup.length > 0) {
         // Ambiguous: multiple removed and/or added values for the same field — which
         // replacement a given removed value means can't be determined from the spec
-        // diff alone. Flag it rather than guess.
-        fixes.push({
-          changeId: change.id,
-          file: filePath,
-          description: `Enum value "${oldVal}" was removed but ${addedGroup.length} replacement candidates exist (${addedGroup.map((c) => c.after).join(", ")}) — ambiguous, needs manual review`,
-          before: `"${oldVal}"`,
-          after: "(ambiguous — not auto-applied)",
-          safe: false,
-          safetyNotes: ["Spec diff alone cannot determine which added value replaces this one"],
-        });
+        // diff alone. Flag it rather than guess — but only in files that actually
+        // reference this value for this field; otherwise every file touched by *any*
+        // change in a large diff gets a warning about a value it never uses at all.
+        const { unions: resolvedUnions } = resolveEnumScope(change);
+        const isReferenced =
+          resolvedUnions.some((u) =>
+            u.getDescendantsOfKind(SyntaxKind.LiteralType).some((lt) => {
+              const lit = lt.getLiteral();
+              return Node.isStringLiteral(lit) && lit.getLiteralText() === oldVal;
+            }),
+          ) ||
+          sourceFile.getDescendantsOfKind(SyntaxKind.StringLiteral).some((lit) => {
+            if (lit.getLiteralText() !== oldVal) return false;
+            const parent = lit.getParent();
+            return (
+              (parent && Node.isPropertyAssignment(parent) && parent.getName() === change.field) ||
+              (parent && Node.isBinaryExpression(parent) &&
+                [parent.getLeft(), parent.getRight()].some(
+                  (side) => Node.isPropertyAccessExpression(side) && side.getName() === change.field,
+                )) ||
+              (resolvedUnions.length === 0 && parent && Node.isLiteralTypeNode(parent))
+            );
+          });
+
+        if (isReferenced) {
+          fixes.push({
+            changeId: change.id,
+            file: filePath,
+            description: `Enum value "${oldVal}" was removed but ${addedGroup.length} replacement candidates exist (${addedGroup.map((c) => c.after).join(", ")}) — ambiguous, needs manual review`,
+            before: `"${oldVal}"`,
+            after: "(ambiguous — not auto-applied)",
+            safe: false,
+            safetyNotes: ["Spec diff alone cannot determine which added value replaces this one"],
+          });
+        }
       }
     }
 
