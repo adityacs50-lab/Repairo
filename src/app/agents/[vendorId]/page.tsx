@@ -58,7 +58,9 @@ export default async function VendorAgentPage({ params }: Props) {
       <Section title="What it does">
         <BulletList
           items={[
-            `Fetches ${vendor.name} OpenAPI from the public spec URL`,
+            vendor.openapiUrl
+              ? `Fetches ${vendor.name} OpenAPI from the public spec URL`
+              : `${vendor.name} has no public spec — bring your own from your repo`,
             "Scans your GitHub repo for TypeScript / JS / Python clients",
             "Diffs against the last-seen baseline when the contract moves",
             "Opens a reviewable repair PR — never auto-merges",
@@ -67,15 +69,25 @@ export default async function VendorAgentPage({ params }: Props) {
       </Section>
 
       <Section title="OpenAPI source">
-        <p className="break-all font-mono text-xs text-fg">{vendor.openapiUrl}</p>
-        {vendor.previousOpenapiUrl ? (
-          <p className="mt-2 text-sm">
-            First install can seed a previous pin for an immediate demo diff.
-          </p>
+        {vendor.openapiUrl ? (
+          <>
+            <p className="break-all font-mono text-xs text-fg">{vendor.openapiUrl}</p>
+            {vendor.previousOpenapiUrl ? (
+              <p className="mt-2 text-sm">
+                First install can seed a previous pin for an immediate demo diff.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm">
+                Baseline starts at live. Cron / Run now picks up the next vendor
+                publish.
+              </p>
+            )}
+          </>
         ) : (
-          <p className="mt-2 text-sm">
-            Baseline starts at live. Cron / Run now picks up the next vendor
-            publish.
+          <p className="text-sm">
+            {vendor.name} doesn&apos;t publish a public OpenAPI 3 spec, so this
+            agent can&apos;t watch it remotely. Point a manual integration at a
+            spec file in your own repo instead.
           </p>
         )}
         <p className="mt-3">

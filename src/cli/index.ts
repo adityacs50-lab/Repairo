@@ -1,9 +1,19 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { handleDiffCommand } from "./commands/diff";
 import { handleInitCommand } from "./commands/init";
 import { handleRepairCommand } from "./commands/repair";
 import { handleScanCommand } from "./commands/scan";
+
+function getPackageInfo(): { name: string; version: string } {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const pkgPath = join(here, "../../package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+  return { name: pkg.name, version: pkg.version };
+}
 
 function printHelp(): void {
   console.log(`
@@ -40,7 +50,8 @@ async function main() {
   }
 
   if (args.includes("--version") || args.includes("-v")) {
-    console.log("@repairo/cli v0.1.0");
+    const { name, version } = getPackageInfo();
+    console.log(`${name} v${version}`);
     return;
   }
 

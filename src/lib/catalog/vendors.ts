@@ -2,8 +2,9 @@ export type VendorCatalogEntry = {
   id: string;
   name: string;
   description: string;
-  /** Live OpenAPI URL (after / current) */
-  openapiUrl: string;
+  /** Live OpenAPI URL (after / current). Absent when the vendor has no public
+   * OpenAPI 3 spec to poll — those vendors require a manually-supplied spec instead. */
+  openapiUrl?: string;
   /** Optional pinned older spec for first-run diff demos */
   previousOpenapiUrl?: string;
   homepage: string;
@@ -29,9 +30,7 @@ export const VENDOR_CATALOG: VendorCatalogEntry[] = [
     id: "gemini",
     name: "Google Gemini",
     description:
-      "Auto-patch Gemini AI model name updates, parameter shifts, and Google Generative AI SDK breaking changes.",
-    openapiUrl:
-      "https://raw.githubusercontent.com/google/generative-ai-js/main/docs/openapi.yaml",
+      "Auto-patch Gemini AI model name updates, parameter shifts, and Google Generative AI SDK breaking changes. Google doesn't publish a public OpenAPI 3 spec for this API (only a Discovery Document, a different, incompatible format) — bring your own spec to watch it here.",
     homepage: "https://ai.google.dev/docs",
     tags: ["ai", "google"],
   },
@@ -40,8 +39,11 @@ export const VENDOR_CATALOG: VendorCatalogEntry[] = [
     name: "Anthropic Claude",
     description:
       "Monitor and auto-repair Messages API parameter changes and Anthropic SDK breaking updates.",
+    // Content-addressed (Stainless-generated) spec URL, not a stable "latest" alias — it
+    // will go stale whenever Anthropic regenerates their SDK. Discovered via the current
+    // anthropic-sdk-typescript repo's .stats.yml; re-check that file if this 404s.
     openapiUrl:
-      "https://raw.githubusercontent.com/anthropic/anthropic-sdk-typescript/main/openapi.json",
+      "https://storage.googleapis.com/stainless-sdk-openapi-specs/anthropic/anthropic-893a61e9c1cd6c69a70d1043c626ed02d12d6a492eb6ca6ef7a84c64cfb15393.yml",
     homepage: "https://docs.anthropic.com/",
     tags: ["ai", "claude"],
   },
@@ -61,9 +63,7 @@ export const VENDOR_CATALOG: VendorCatalogEntry[] = [
     id: "razorpay",
     name: "Razorpay",
     description:
-      "Automated payment gateway contract tracking and SDK refactoring for Indian startup tech stacks.",
-    openapiUrl:
-      "https://raw.githubusercontent.com/razorpay/openapi-specs/main/openapi.yaml",
+      "Automated payment gateway contract tracking and SDK refactoring for Indian startup tech stacks. Razorpay only publishes docs and a Postman collection, no public OpenAPI 3 spec — bring your own spec to watch it here.",
     homepage: "https://razorpay.com/docs",
     tags: ["payments", "india"],
   },
@@ -73,7 +73,7 @@ export const VENDOR_CATALOG: VendorCatalogEntry[] = [
     description:
       "Detect client query & Auth method breaking changes (@supabase/supabase-js v1 -> v2 AST refactoring).",
     openapiUrl:
-      "https://raw.githubusercontent.com/supabase/supabase/master/apps/docs/public/spec/supabase_v1.yml",
+      "https://raw.githubusercontent.com/supabase/supabase/master/apps/docs/spec/api_v1_openapi.json",
     homepage: "https://supabase.com/docs",
     tags: ["database", "auth"],
   },

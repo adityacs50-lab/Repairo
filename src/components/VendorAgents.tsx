@@ -14,7 +14,7 @@ type Vendor = {
   id: string;
   name: string;
   description: string;
-  openapiUrl: string;
+  openapiUrl?: string;
   homepage: string;
   tags: string[];
 };
@@ -62,6 +62,7 @@ export function VendorAgents({
   }, [repos]);
 
   const selected = repos.find((r) => r.fullName === repoFullName) ?? repos[0];
+  const selectedVendor = vendors.find((v) => v.id === vendorId);
 
   async function scanRepo() {
     if (!selected) return;
@@ -205,10 +206,15 @@ export function VendorAgents({
           ))}
         </select>
       </label>
-      {vendors.find((v) => v.id === vendorId) && (
-        <p className="text-xs text-muted">
-          {vendors.find((v) => v.id === vendorId)?.description}
-        </p>
+      {selectedVendor && (
+        <p className="text-xs text-muted">{selectedVendor.description}</p>
+      )}
+      {selectedVendor && !selectedVendor.openapiUrl && (
+        <div className="border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
+          {selectedVendor.name} has no public OpenAPI spec to watch remotely —
+          this vendor can&apos;t be installed as a remote-polling agent. Point
+          a manual integration at a spec file in your own repo instead.
+        </div>
       )}
 
       <label className="block space-y-1 text-sm">
@@ -256,7 +262,7 @@ export function VendorAgents({
         <button
           type="button"
           onClick={install}
-          disabled={installing}
+          disabled={installing || !selectedVendor?.openapiUrl}
           className="btn-primary !py-2 !text-sm disabled:opacity-50"
         >
           {installing ? "Installing…" : "Install agent"}
