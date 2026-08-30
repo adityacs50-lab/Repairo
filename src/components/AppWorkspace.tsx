@@ -388,7 +388,47 @@ export function AppWorkspace() {
   }
 
   if (!configured || !user) {
-    return <DemoWorkspace />;
+    return (
+      <div className="space-y-6">
+        {(error || message) && (
+          <div
+            className={`border px-4 py-3 text-sm ${
+              error
+                ? "border-warn/40 bg-warn/10 text-warn"
+                : "border-safe/30 bg-safe/10 text-safe"
+            }`}
+          >
+            {error || message}
+          </div>
+        )}
+        {configured && (
+          <div className="flex flex-col gap-3 border border-line bg-bg-panel p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
+                Scan your own repo
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Sign in with GitHub to run Repairo against your real
+                repository and open pull requests. The playground below uses
+                fixture data.
+              </p>
+            </div>
+            <a
+              href="/api/auth/github"
+              className="btn-primary !py-2.5 !text-sm whitespace-nowrap"
+            >
+              Continue with GitHub
+            </a>
+          </div>
+        )}
+        {!configured && configError && (
+          <div className="border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+            {configError}
+          </div>
+        )}
+        <DemoWorkspace />
+      </div>
+    );
   }
 
   return (
