@@ -96,7 +96,10 @@ export async function createSession(user: {
 
 export async function clearSession() {
   const jar = await cookies();
-  jar.delete(SESSION_COOKIE);
+  // Expire it with the same attributes it was set with rather than relying on
+  // delete()'s implicit defaults, so the deletion cookie is guaranteed to match
+  // the Path=/ session cookie regardless of the request path it is sent from.
+  jar.set(SESSION_COOKIE, "", { ...sessionCookieOptions(), maxAge: 0 });
 }
 
 export async function getSessionPayload(): Promise<SessionPayload | null> {

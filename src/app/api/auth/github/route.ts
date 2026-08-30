@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGitHubOAuthConfig } from "@/lib/auth/config";
+import { getExplicitRedirectUri, getGitHubOAuthConfig } from "@/lib/auth/config";
 import { createOAuthState } from "@/lib/auth/oauth-state";
 import { assertRateLimit, clientIp } from "@/lib/rate-limit";
 
@@ -32,11 +32,13 @@ export async function GET(request: NextRequest) {
   const state = createOAuthState(config.sessionSecret);
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", config.clientId);
-  
-  // Only set redirect_uri if explicitly requested; omitting it lets GitHub auto-use the registered callback URL
-  if (process.env.EXPLICIT_REDIRECT_URI === "true") {
-    const callbackUrl = process.env.GITHUB_CALLBACK_URL?.trim() || `${request.nextUrl.origin}/api/auth/callback`;
-    url.searchParams.set("redirect_uri", callbackUrl);
+
+  // Omitted by default so GitHub uses the callback URL registered on the OAuth
+  // App. Must stay identical to what the token exchange sends, so both read it
+  // from getExplicitRedirectUri().
+  const redirectUri = getExplicitRedirectUri();
+  if (redirectUri) {
+    url.searchParams.set("redirect_uri", redirectUri);
   }
 
   url.searchParams.set("scope", config.scopes);
