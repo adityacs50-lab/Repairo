@@ -1,13 +1,16 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import {
   applyAstTransforms,
   buildPullRequest,
+  collectTypeDiagnostics,
   diffOpenApi,
   findImpactedCode,
   normalizeMaxAgentResolutions,
   parseOpenApi,
   resolveAmbiguousEnums,
+  resolveSpecIndirection,
   runRepair,
   scanCodebase,
   scanDirectory,
@@ -95,6 +98,47 @@ client.createCharge({ amount: 100 });
 const impacts = findImpactedCode(diffChanges, [{ path: "src/payment.ts", content: sampleCode }]);
 assert(impacts.length > 0 && impacts[0].file === "src/payment.ts", "Locates exact file and line of removed parameter symbol");
 
+// Test 4b: Symbol-resolution regression test
+console.log("\nTest 4b: ts-morph symbol-resolution regression test");
+const symbolResolutionCode = `
+interface ChargeInput { amount: number; }
+const note = "amount should remain documented";
+const cachedPayload = { amount: 100 };
+const client = { createCharge: (input: ChargeInput) => input };
+client.createCharge({ amount: 100 });
+`;
+const amountRemoval = [{
+  id: "chg_symbol_resolution",
+  kind: "field-removed" as const,
+  severity: "breaking" as const,
+  path: "/v1/charge",
+  operation: "post",
+  field: "amount",
+  before: "amount",
+  summary: "amount removed",
+}];
+const symbolImpacts = findImpactedCode(amountRemoval, [{ path: "src/payment.ts", content: symbolResolutionCode }]);
+assert(symbolImpacts.length === 1, "Ignores matching names in types, strings, and non-call objects");
+assert(symbolImpacts[0]?.line === 6 && symbolImpacts[0]?.snippet.includes("createCharge"), "Resolves the removed field to its request call argument");
+
+// Test 4c: Call-alias symbol-resolution regression test
+console.log("\nTest 4c: call-alias symbol-resolution regression test");
+const aliasedCallCode = `
+const client = { createCharge: (input: { amount: number }) => input };
+const submit = client.createCharge;
+submit({ amount: 100 });
+`;
+const aliasedImpacts = findImpactedCode(amountRemoval, [
+  { path: "src/aliased-payment.ts", content: aliasedCallCode },
+]);
+assert(
+  aliasedImpacts.length === 1,
+  "Follows a call alias back to the API operation symbol",
+);
+assert(
+  aliasedImpacts[0]?.line === 4,
+  "Reports the removed field at the aliased request call",
+);
 // Test 5: AST transformation test
 console.log("\nTest 5: AST transformation test");
 const openaiBeforeCode = `
@@ -160,10 +204,226 @@ assert(scopeTestResult.content.includes("max_tokens?: number;"), "Interface decl
 assert(scopeTestResult.content.includes("max_output_tokens: 500"), "Call site max_tokens: 500 is renamed to max_output_tokens: 500");
 assert(!scopeTestResult.content.includes("max_tokens: 500"), "Old max_tokens: 500 property is removed from call site");
 
-// Test 11: Cross-domain generality regression test — a second, independently-designed
+// Test 11: Baseline-aware validation for repos with pre-existing type errors
+console.log("\nTest 11: Baseline-aware validation for repos with pre-existing type errors");
+const baselineFixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-baseline-"));
+fs.writeFileSync(
+  path.join(baselineFixtureDir, "tsconfig.json"),
+  JSON.stringify({ compilerOptions: { strict: true, noEmit: true, skipLibCheck: true } }),
+);
+fs.writeFileSync(path.join(baselineFixtureDir, "legacy.ts"), 'export const broken: number = "not a number";\n');
+fs.writeFileSync(path.join(baselineFixtureDir, "repaired.ts"), "export const fine: number = 1;\n");
+
+const noBaselineResult = validateCodebase(baselineFixtureDir);
+assert(noBaselineResult.typecheckPassed === false, "Without a baseline, pre-existing errors fail validation");
+
+const baselineDiagnostics = collectTypeDiagnostics(baselineFixtureDir);
+assert(baselineDiagnostics.length > 0, "Collects pre-existing diagnostics as baseline");
+
+const baselineResult = validateCodebase(baselineFixtureDir, { baseline: baselineDiagnostics });
+assert(baselineResult.typecheckPassed === true, "With a baseline, pre-existing errors are ignored");
+assert(baselineResult.preexistingErrorCount > 0, "Reports how many pre-existing errors were ignored");
+
+fs.writeFileSync(path.join(baselineFixtureDir, "repaired.ts"), 'export const fine: number = "introduced by repair";\n');
+const newErrorResult = validateCodebase(baselineFixtureDir, { baseline: baselineDiagnostics });
+assert(newErrorResult.typecheckPassed === false, "Errors introduced after the baseline fail validation");
+assert(newErrorResult.newErrors.some((d) => d.file.includes("repaired.ts")), "New error is attributed to the repaired file");
+
+fs.writeFileSync(path.join(baselineFixtureDir, "repaired.ts"), "export const fine: number = 1;\n");
+fs.writeFileSync(
+  path.join(baselineFixtureDir, "legacy.ts"),
+  '// repair inserted lines above the old error\n// shifting it down\nexport const broken: number = "not a number";\n',
+);
+const shiftedResult = validateCodebase(baselineFixtureDir, { baseline: baselineDiagnostics });
+assert(shiftedResult.typecheckPassed === true, "Pre-existing errors shifted to new lines are still recognized as pre-existing");
+
+fs.rmSync(baselineFixtureDir, { recursive: true, force: true });
+
+// Test 12: Transform scoping — unrelated object literals untouched
+console.log("\nTest 12: Transform scoping — unrelated object literals untouched");
+const unrelatedObjectCode = `
+const config = { max_tokens: 500, retries: 3 };
+console.log({ max_tokens: 1 });
+const response = await openai.chat.completions.create({ max_tokens: 500 });
+`;
+const scopedRename = applyAstTransforms(unrelatedObjectCode, openaiChanges, "src/scoped.ts");
+assert(scopedRename.content.includes("const config = { max_tokens: 500, retries: 3 };"), "Plain config object literal is NOT renamed");
+assert(scopedRename.content.includes("console.log({ max_tokens: 1 });"), "Non-API call argument is NOT renamed");
+assert(scopedRename.content.includes("create({ max_output_tokens: 500 })"), "API call-site property IS renamed");
+
+// Test 13: Required field insertion scoped to API request objects
+console.log("\nTest 13: Required field insertion scoped to API request objects");
+const requiredFieldCode = `
+const uiState = { open: true };
+function render(props: { title: string }) {}
+render({ title: "Refunds" });
+await paymentsClient.createRefund({ chargeId: "ch_1", amount: 100 });
+`;
+const requiredChange = [
+  {
+    id: "chg_010",
+    kind: "field-required" as const,
+    severity: "breaking" as const,
+    path: "/v1/refunds",
+    operation: "post",
+    field: "reason",
+    summary: 'Field "reason" is now required',
+    before: "optional",
+    after: "required",
+  },
+];
+const requiredResult = applyAstTransforms(requiredFieldCode, requiredChange, "src/refunds.ts");
+assert(requiredResult.content.includes("const uiState = { open: true };"), "Unrelated state object does NOT receive the required field");
+assert(requiredResult.content.includes('render({ title: "Refunds" })'), "Non-API function call argument does NOT receive the required field");
+assert(/createRefund\(\{ chargeId: "ch_1", amount: 100,\s*\n?\s*reason: "requested_by_customer"/.test(requiredResult.content.replace(/\r\n/g, "\n")), "API request object DOES receive the required field with default");
+assert((requiredResult.content.match(/reason:/g) || []).length === 1, "Required field is inserted exactly once");
+
+// Test 14: Enum rename scoped to usages of the changed field
+console.log("\nTest 14: Enum rename scoped to usages of the changed field");
+const enumCode = `
+console.log("pending");
+const label = "pending approval";
+if (charge.status === "pending") retry();
+await paymentsClient.createCharge({ amount: 5, status: "pending" });
+`;
+const enumChange = [
+  {
+    id: "chg_011",
+    kind: "enum-value-removed" as const,
+    severity: "breaking" as const,
+    path: "/v1/charges",
+    operation: "post",
+    field: "status",
+    summary: 'Enum value "pending" removed from "status"',
+    before: "pending",
+    after: "processing",
+  },
+];
+const enumResult = applyAstTransforms(enumCode, enumChange, "src/status.ts");
+assert(enumResult.content.includes('console.log("pending");'), "Unrelated string literal is NOT rewritten");
+assert(enumResult.content.includes('const label = "pending approval";'), "Partial string match is NOT rewritten");
+assert(enumResult.content.includes('charge.status === "processing"'), "Comparison against changed field IS rewritten");
+assert(enumResult.content.includes('status: "processing"'), "API call argument enum value IS rewritten");
+
+// Test 15: Enum rename without documented replacement is skipped
+console.log("\nTest 15: Enum rename without documented replacement is skipped");
+const noReplacementChange = [{ ...enumChange[0], after: undefined }];
+const noReplacementResult = applyAstTransforms(enumCode, noReplacementChange, "src/status.ts");
+assert(noReplacementResult.content === enumCode, "No speculative enum mapping is invented when spec has no replacement");
+
+// Test 16: Removed field with no paired addition is not renamed speculatively
+console.log("\nTest 16: Removed field with no paired addition is not renamed speculatively");
+const removalOnlyChanges = [
+  {
+    id: "chg_012",
+    kind: "field-removed" as const,
+    severity: "breaking" as const,
+    path: "/v1/chat/completions",
+    operation: "post",
+    field: "max_tokens",
+    summary: "Parameter max_tokens removed",
+    before: "max_tokens",
+  },
+  {
+    id: "chg_013",
+    kind: "field-added" as const,
+    severity: "additive" as const,
+    path: "/v1/other",
+    operation: "post",
+    field: "unrelated_field",
+    summary: "Added unrelated_field",
+    after: "unrelated_field",
+  },
+];
+const removalOnlyResult = applyAstTransforms(openaiBeforeCode, removalOnlyChanges, "src/ai.ts");
+assert(removalOnlyResult.content.includes("max_tokens: 500"), "Removed field is NOT renamed to a field added on a different endpoint");
+
+// Test 17: Google Discovery document conversion
+console.log("\nTest 17: Google Discovery document conversion");
+const discoveryJson = JSON.stringify({
+  kind: "discovery#restDescription",
+  discoveryVersion: "v1",
+  name: "generativelanguage",
+  title: "Generative Language API",
+  version: "v1beta",
+  baseUrl: "https://generativelanguage.googleapis.com/",
+  schemas: {
+    GenerateContentRequest: {
+      id: "GenerateContentRequest",
+      type: "object",
+      properties: {
+        model: { type: "string", description: "Required. The model name." },
+        contents: { type: "array", items: { $ref: "Content" } },
+      },
+    },
+    Content: { id: "Content", type: "object", properties: { role: { type: "string", enum: ["user", "model"] } } },
+  },
+  resources: {
+    models: {
+      methods: {
+        generateContent: {
+          id: "generativelanguage.models.generateContent",
+          path: "v1beta/{+model}:generateContent",
+          flatPath: "v1beta/models/{modelsId}:generateContent",
+          httpMethod: "POST",
+          parameters: { model: { location: "path", required: true, type: "string" } },
+          request: { $ref: "GenerateContentRequest" },
+          response: { $ref: "GenerateContentRequest" },
+        },
+      },
+    },
+  },
+});
+const convertedDoc = parseOpenApi(discoveryJson);
+assert(convertedDoc.openapi === "3.0.0", "Detects discovery document and converts to OpenAPI");
+assert(Boolean(convertedDoc.paths?.["/v1beta/models/{modelsId}:generateContent"]?.post), "Maps discovery methods to OpenAPI paths and operations");
+assert(convertedDoc.components?.schemas?.GenerateContentRequest?.required?.includes("model") === true, "Maps 'Required.' annotations into required fields");
+assert((convertedDoc.components?.schemas?.Content?.properties?.role as any)?.enum?.length === 2, "Preserves enum values through conversion");
+
+// Test 18: Discovery-converted specs are diffable
+console.log("\nTest 18: Discovery-converted specs are diffable");
+const discoveryAfter = JSON.parse(discoveryJson);
+delete discoveryAfter.resources.models.methods.generateContent;
+discoveryAfter.resources.models.methods.createContent = {
+  id: "generativelanguage.models.createContent",
+  flatPath: "v1beta/models/{modelsId}:createContent",
+  httpMethod: "POST",
+};
+const discoveryDiff = diffOpenApi(convertedDoc, parseOpenApi(JSON.stringify(discoveryAfter)));
+assert(discoveryDiff.some((c) => c.kind === "endpoint-removed" && c.severity === "breaking"), "Detects breaking endpoint removal across discovery snapshots");
+
+// Test 19: Stainless .stats.yml spec URL indirection
+console.log("\nTest 19: Stainless .stats.yml spec URL indirection");
+const statsYml = "configured_endpoints: 144\nopenapi_spec_url: https://example.com/spec.yml\nopenapi_spec_hash: abc\n";
+assert(resolveSpecIndirection(statsYml) === "https://example.com/spec.yml", "Extracts openapi_spec_url from Stainless stats file");
+assert(resolveSpecIndirection("openapi: 3.0.0\ninfo:\n  title: X\n") === null, "Does not treat a real OpenAPI document as indirection");
+assert(resolveSpecIndirection('{"openapi": "3.0.0"}') === null, "Does not treat JSON OpenAPI as indirection");
+
+// Test 20: Removed endpoint impact via URL path matching
+console.log("\nTest 20: Removed endpoint impact via URL path matching");
+const endpointChange = [
+  {
+    id: "chg_020",
+    kind: "endpoint-removed" as const,
+    severity: "breaking" as const,
+    path: "/pet/findByStatus",
+    operation: "get",
+    summary: "Removed GET /pet/findByStatus",
+  },
+];
+const fetchCode = 'const res = await fetch("https://petstore3.swagger.io/api/v3/pet/findByStatus?status=sold");\n';
+const endpointImpacts = findImpactedCode(endpointChange, [{ path: "src/pets.ts", content: fetchCode }]);
+assert(endpointImpacts.some((i) => i.confidence === "high"), "Flags fetch calls to removed endpoint URLs as high-confidence impact");
+const templatedChange = [{ ...endpointChange[0], path: "/v1/apps/{appId}/keys" }];
+const templatedImpacts = findImpactedCode(templatedChange, [
+  { path: "src/keys.ts", content: 'await api.get("/v1/apps/" + id + "/keys");\n' },
+]);
+assert(templatedImpacts.length > 0, "Matches literal prefix of templated endpoint paths");
+
+// Test 21: Cross-domain generality regression test — a second, independently-designed
 // fixture (a Shipping API) with no naming overlap with the payments fixture at all, to
 // prove the engine repairs codebases generically rather than being tuned to one demo.
-console.log("\nTest 11: Cross-domain generality regression test (Shipping API fixture)");
+console.log("\nTest 21: Cross-domain generality regression test (Shipping API fixture)");
 const shippingBeforeSpec = fs.readFileSync(path.resolve("./fixtures/apis/shipping-v1.openapi.yaml"), "utf-8");
 const shippingAfterSpec = fs.readFileSync(path.resolve("./fixtures/apis/shipping-v2.openapi.yaml"), "utf-8");
 const shippingConsumerPaths = [
@@ -218,10 +478,10 @@ assert(
 assert(shippingResult.typecheck.passed, "Repaired Shipping API consumer code compiles cleanly");
 assert(shippingResult.pullRequest.autoMergeEligible, "Unambiguous cross-domain repair is auto-merge eligible");
 
-// Test 12: Ambiguous-enum baseline regression test — 2 removed / 2 added values for the
+// Test 22: Ambiguous-enum baseline regression test — 2 removed / 2 added values for the
 // same field, with no agent resolution supplied at all. Locks in today's exact behavior:
 // both removed values are flagged for manual review, and the source is left untouched.
-console.log("\nTest 12: Ambiguous-enum baseline regression test");
+console.log("\nTest 22: Ambiguous-enum baseline regression test");
 const ambiguousEnumCode = `
 export interface Order {
   status: "pending" | "processing" | "shipped";
@@ -242,10 +502,10 @@ assert(baselineFix1?.safe === false && baselineFix1.description.includes("ambigu
 assert(baselineFix2?.safe === false && baselineFix2.description.includes("ambiguous"), "Ambiguous removed value 'processing' is flagged, not guessed");
 assert(baselineResult.content === ambiguousEnumCode, "Source is left byte-for-byte unchanged when ambiguous and no agent resolution is supplied");
 
-// Test 13: No-key no-op test — resolveAmbiguousEnums must never attempt a network call (and
+// Test 23: No-key no-op test — resolveAmbiguousEnums must never attempt a network call (and
 // must return an empty map) when ANTHROPIC_API_KEY isn't set, even if the caller explicitly
 // opted in via `enabled: true`. The resulting repair output must be identical to the baseline.
-console.log("\nTest 13: No-key no-op test");
+console.log("\nTest 23: No-key no-op test");
 const savedApiKey13 = process.env.ANTHROPIC_API_KEY;
 delete process.env.ANTHROPIC_API_KEY;
 const noKeyMap = await resolveAmbiguousEnums(ambiguousEnumChanges, { enabled: true });
@@ -254,9 +514,9 @@ const noKeyTransform = applyAstTransforms(ambiguousEnumCode, ambiguousEnumChange
 assert(noKeyTransform.content === baselineResult.content, "Output is identical to the baseline when no key is present (flag-off path is byte-for-byte unchanged)");
 if (savedApiKey13 !== undefined) process.env.ANTHROPIC_API_KEY = savedApiKey13;
 
-// Test 14: Agent-proposed pairing flows through the real deterministic AST-rename path —
+// Test 24: Agent-proposed pairing flows through the real deterministic AST-rename path —
 // this tests the seam (a hand-built resolution map), not the live API integration.
-console.log("\nTest 14: Agent-proposed pairing flows through the deterministic path");
+console.log("\nTest 24: Agent-proposed pairing flows through the deterministic path");
 const agentMap = new Map([
   ["amb_rm_1", { target: "queued", confidence: 0.87, reasoning: "Historically pending orders map to the new queued state" }],
 ]);
@@ -270,8 +530,8 @@ const agentFix2 = agentResult.fixes.find((f) => f.changeId === "amb_rm_2");
 assert(agentFix2?.safe === false, "A second, unresolved removed value in the same ambiguous group still gets flagged — a partial resolution doesn't short-circuit the rest of the group");
 assert(agentResult.content.includes('x.status === "processing"'), "The unresolved value's comparison usage is left untouched");
 
-// Test 15: validateProposal unit tests (pure, network-free).
-console.log("\nTest 15: validateProposal unit tests");
+// Test 25: validateProposal unit tests (pure, network-free).
+console.log("\nTest 25: validateProposal unit tests");
 const candidates15 = ["queued", "in_progress"];
 assert(validateProposal({ target: "queued", confidence: 0.8, reasoning: "clear mapping" }, candidates15) !== null, "Valid proposal is accepted");
 assert(validateProposal({ target: "cancelled", confidence: 0.9, reasoning: "x" }, candidates15) === null, "Out-of-candidate target is rejected");
@@ -292,7 +552,7 @@ assert(validateProposal({ target: "queued", confidence: NaN, reasoning: "x" }, c
 assert(validateProposal({ target: "queued", confidence: Infinity, reasoning: "x" }, candidates15) === null, "Infinity confidence is rejected");
 
 // normalizeMaxAgentResolutions unit tests — the exact policy the cap-bypass bug requires.
-console.log("\nTest 15b: normalizeMaxAgentResolutions unit tests");
+console.log("\nTest 26: normalizeMaxAgentResolutions unit tests");
 assert(normalizeMaxAgentResolutions(undefined) === 20, "Missing value falls back to the default (20)");
 assert(normalizeMaxAgentResolutions(NaN) === 20, "NaN falls back to the default — never disables the cap");
 assert(normalizeMaxAgentResolutions(Infinity) === 20, "Infinity falls back to the default");
@@ -304,11 +564,11 @@ assert(normalizeMaxAgentResolutions(0) === 0, "0 is honored as-is (explicit 'res
 assert(normalizeMaxAgentResolutions(5) === 5, "A valid positive integer is honored as-is");
 assert(normalizeMaxAgentResolutions(1_000_000) === 1_000_000, "An extremely large valid integer is honored as-is (an explicit, informed choice)");
 
-// Test 16: maxAgentResolutions cap / fail-closed test — 5 independent ambiguous cases with
+// Test 27: maxAgentResolutions cap / fail-closed test — 5 independent ambiguous cases with
 // a cap of 2. No real network call: global fetch is monkey-patched for the duration of this
 // test only, to return a canned successful tool_use response (the standard no-mocking-
 // framework approach already used implicitly elsewhere in this suite).
-console.log("\nTest 16: maxAgentResolutions cap / fail-closed test");
+console.log("\nTest 27: maxAgentResolutions cap / fail-closed test");
 const capChanges: ApiChange[] = [];
 for (let g = 1; g <= 5; g++) {
   capChanges.push({ id: `cap_rm_${g}`, kind: "enum-value-removed", severity: "breaking", path: "/v1/widgets", operation: "post", field: `field${g}`, before: `old${g}`, summary: `Enum value "old${g}" removed` });
@@ -371,11 +631,11 @@ const resolvedFixes = capTransform.fixes.filter((f) => capMap.has(f.changeId));
 const resolvedChangeIds = new Set(resolvedFixes.map((f) => f.changeId));
 assert(resolvedChangeIds.size === 2 && resolvedFixes.every((f) => f.origin === "agent-proposed"), "The 2 cases within the cap are actually resolved via the agent-proposed path, compile-verifiable like any other fix");
 
-// Test 17: Duplicate-target conflict fail-closed test — two removed values in the SAME
+// Test 28: Duplicate-target conflict fail-closed test — two removed values in the SAME
 // ambiguous group independently proposed to map to the SAME target. Neither proposal
 // should be applied; the whole group must fall back to the existing ambiguous/manual-
 // review path, with no source mutation and no guessing which one to keep.
-console.log("\nTest 17: Duplicate-target conflict fail-closed test");
+console.log("\nTest 28: Duplicate-target conflict fail-closed test");
 const dupCode = `
 export interface Ticket {
   status: "alpha" | "beta" | "gamma" | "delta";
@@ -432,10 +692,10 @@ assert(dupFix1?.safe === false, "Removed value 'alpha' remains eligible for the 
 assert(dupFix2?.safe === false, "Removed value 'beta' remains eligible for the existing ambiguous/manual-review path");
 assert(dupFix1?.origin === undefined && dupFix2?.origin === undefined, "Neither conflicting case is ever labeled agent-proposed");
 
-// Test 18: autoMergeEligible must be false whenever any fix in the PR is agent-proposed,
+// Test 29: autoMergeEligible must be false whenever any fix in the PR is agent-proposed,
 // and the PR body must clearly separate and label AI-proposed fixes — end to end through
 // the real buildPullRequest function (not just inferred from the origin field in isolation).
-console.log("\nTest 18: autoMergeEligible=false and PR body labeling for agent-proposed fixes");
+console.log("\nTest 29: autoMergeEligible=false and PR body labeling for agent-proposed fixes");
 const amOriginalFiles = [{ path: "src/orders.ts", content: ambiguousEnumCode }];
 const amUpdatedFiles = [{ path: "src/orders.ts", content: agentResult.content }];
 const amFixes = agentResult.fixes.map((f) => ({ ...f, file: "src/orders.ts" }));

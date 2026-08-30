@@ -1,20 +1,12 @@
 #!/usr/bin/env node
 
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 import { normalizeMaxAgentResolutions } from "../lib/engine";
+import { handleCheckCommand } from "./commands/check";
 import { handleDiffCommand } from "./commands/diff";
 import { handleInitCommand } from "./commands/init";
 import { handleRepairCommand } from "./commands/repair";
 import { handleScanCommand } from "./commands/scan";
-
-function getPackageInfo(): { name: string; version: string } {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const pkgPath = join(here, "../../package.json");
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-  return { name: pkg.name, version: pkg.version };
-}
+import pkg from "../../package.json";
 
 function printHelp(): void {
   console.log(`
@@ -29,6 +21,9 @@ Commands:
 
   init                   Initialize local .repairo configuration directory
                          Options: --repo owner/repository, --vendors stripe,openai
+
+  check                  Fetch live vendor specs, diff against snapshot, exit 1 on breaking changes
+                         Options: --vendors stripe,openai, --target ./src, --json, --update-snapshot
 
   diff                   Compare OpenAPI specification against snapshot and map codebase impact
                          Options: --spec ./specs/new-openapi.json, --target ./src
@@ -61,8 +56,7 @@ async function main() {
   }
 
   if (args.includes("--version") || args.includes("-v")) {
-    const { name, version } = getPackageInfo();
-    console.log(`${name} v${version}`);
+    console.log(`${pkg.name} v${pkg.version}`);
     return;
   }
 
@@ -111,6 +105,18 @@ async function main() {
       const vendorsStr = typeof flags.vendors === "string" ? flags.vendors : undefined;
       const vendors = vendorsStr ? vendorsStr.split(",") : undefined;
       handleInitCommand({ repo, vendors });
+      break;
+    }
+
+    case "check": {
+      const vendorsStr = typeof flags.vendors === "string" ? flags.vendors : undefined;
+      const target = typeof flags.target === "string" ? flags.target : positional[0];
+      await handleCheckCommand({
+        vendors: vendorsStr ? vendorsStr.split(",") : undefined,
+        target,
+        json: Boolean(flags.json),
+        updateSnapshot: Boolean(flags["update-snapshot"]),
+      });
       break;
     }
 

@@ -13,6 +13,31 @@ import {
   usagePositionOf,
 } from "./schema-match";
 
+const API_CALL_RE =
+  /\b(fetch|axios|client|api|sdk|http|request|stripe|openai|anthropic|gemini|supabase|razorpay|octokit|github|paymentsClient|submitShipment|createShipment)\b/i;
+
+function isApiCallExpression(call: Node): boolean {
+  if (!Node.isCallExpression(call)) return false;
+  const text = call.getExpression().getText().replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+  return API_CALL_RE.test(text);
+}
+
+function enclosingApiCall(node: Node): Node | undefined {
+  let child: Node = node;
+  let parent = node.getParent();
+  while (parent) {
+    if (
+      Node.isCallExpression(parent) &&
+      parent.getArguments().some((arg) => arg === child)
+    ) {
+      if (isApiCallExpression(parent)) return parent;
+    }
+    child = parent;
+    parent = parent.getParent();
+  }
+  return undefined;
+}
+
 export interface AstTransformResult {
   content: string;
   fixes: SuggestedFix[];
@@ -179,6 +204,8 @@ export function applyAstTransforms(
           if (prop.getName() !== oldField) continue;
           const parentObj = prop.getFirstAncestorByKind(SyntaxKind.ObjectLiteralExpression);
           if (!parentObj) continue;
+          const inApiCall = enclosingApiCall(parentObj) !== undefined;
+          if (!inApiCall && impacts.length === 0) continue;
           prop.getNameNode().replaceWithText(newField);
           fixes.push({
             changeId: change.id,
@@ -286,11 +313,12 @@ export function applyAstTransforms(
         const literalLine = lineOf(literal);
         const isImpacted = impacts.length > 0 && impacts.some((i) => i.changeId === change.id && i.line === literalLine);
         const originalProps = originalObjectLiteralProps.get(literal) ?? objectLiteralPropertyNames(literal);
+        if (originalProps.has("method") && (originalProps.has("headers") || originalProps.has("body"))) {
+          continue;
+        }
         const isStructural = related.size > 0 && structurallyMatches(originalProps, related);
-        // With no impact data supplied at all (standalone/test usage), fall back to
-        // "any object literal missing the field" only when we have no other signal.
-        const noSignalAvailable = impacts.length === 0 && related.size === 0;
-        if (!isImpacted && !isStructural && !noSignalAvailable) continue;
+        const inApiCall = enclosingApiCall(literal) !== undefined;
+        if (!isImpacted && !isStructural && !inApiCall) continue;
         // A response value is never a hand-authored object literal (it comes back from
         // `.json()`), so a structural-only match against a response-side change is almost
         // certainly the wrong object — skip unless impact analysis directly confirmed it.
@@ -320,7 +348,9 @@ export function applyAstTransforms(
       const removedGroup = enumRemovedByGroup.get(key) ?? [];
       const addedGroup = enumAddedByGroup.get(key) ?? [];
       const oldVal = change.before;
-      const unambiguousTarget = removedGroup.length === 1 && addedGroup.length === 1 ? addedGroup[0].after : undefined;
+      const unambiguousTarget =
+        change.after ??
+        (removedGroup.length === 1 && addedGroup.length === 1 ? addedGroup[0].after : undefined);
       // Only consult an agent proposal when the spec diff itself couldn't resolve the case,
       // and only trust it if the proposed target is actually one of this group's real
       // candidates (defense in depth — `validateProposal` in agent-resolve.ts should already
@@ -376,7 +406,9 @@ export function applyAstTransforms(
           const comparisonAccess =
             parent && Node.isBinaryExpression(parent)
               ? [parent.getLeft(), parent.getRight()].find(
-                  (side) => Node.isPropertyAccessExpression(side) && side.getName() === change.field,
+                  (side) =>
+                    (Node.isPropertyAccessExpression(side) && side.getName() === change.field) ||
+                    (change.field ? side.getText().includes(change.field) : false),
                 )
               : undefined;
           if (!inMatchingProperty && !comparisonAccess) continue;

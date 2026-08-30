@@ -1,6 +1,18 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { Octokit } from "@octokit/rest";
 import path from "path";
+
+function runGit(
+  args: string[],
+  cwd: string,
+  encoding?: BufferEncoding,
+): string {
+  return execFileSync("git", args, {
+    cwd,
+    encoding: encoding ?? "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
 
 export interface GitRepoStatus {
   isGitRepo: boolean;
@@ -11,25 +23,16 @@ export interface GitRepoStatus {
 export function getGitStatus(targetDir: string = "."): GitRepoStatus {
   const absPath = path.resolve(targetDir);
   try {
-    const isGit = execSync("git rev-parse --is-inside-work-tree", {
-      cwd: absPath,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim() === "true";
-
+    const isGit =
+      runGit(["rev-parse", "--is-inside-work-tree"], absPath).trim() === "true";
     if (!isGit) return { isGitRepo: false };
 
-    const branch = execSync("git rev-parse --abbrev-ref HEAD", {
-      cwd: absPath,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
+    const branch = runGit(
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      absPath,
+    ).trim();
 
-    const status = execSync("git status --porcelain", {
-      cwd: absPath,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    const status = runGit(["status", "--porcelain"], absPath);
 
     const modifiedFiles = status
       .split("\n")
@@ -64,12 +67,15 @@ export interface CreatePrResult {
  * Handles creation of a GitHub Pull Request for validated code repairs.
  * Fails gracefully with actionable guidance if credentials or git setup are missing.
  */
-export async function createGitHubPR(options: CreatePrOptions): Promise<CreatePrResult> {
+export async function createGitHubPR(
+  options: CreatePrOptions,
+): Promise<CreatePrResult> {
   const status = getGitStatus(options.targetDir);
   if (!status.isGitRepo) {
     return {
       success: false,
-      message: "Target directory is not a Git repository. Cannot create a Pull Request.",
+      message:
+        "Target directory is not a Git repository. Cannot create a Pull Request.",
     };
   }
 
@@ -82,25 +88,38 @@ export async function createGitHubPR(options: CreatePrOptions): Promise<CreatePr
         "No PR was created.\n\n" +
         "To enable PR creation, set environment variable GITHUB_TOKEN:\n" +
         "  export GITHUB_TOKEN=ghp_xxxx  (Linux/macOS)\n" +
-        "  $env:GITHUB_TOKEN=\"ghp_xxxx\" (PowerShell)\n",
+        '  $env:GITHUB_TOKEN="ghp_xxxx" (PowerShell)\n',
     };
   }
 
-  const branchName = options.branchName || `repairo/repair-${Date.now().toString(36)}`;
+  const branchName =
+    options.branchName || `repairo/repair-${Date.now().toString(36)}`;
   const absPath = path.resolve(options.targetDir);
 
   try {
     // 1. Create and switch to new branch
-    execSync(`git checkout -b ${branchName}`, { cwd: absPath, stdio: "pipe" });
+    execFileSync("git", ["checkout", "-b", branchName], {
+      cwd: absPath,
+      stdio: "pipe",
+    });
 
     // 2. Stage changes
-    execSync("git add .", { cwd: absPath, stdio: "pipe" });
+    execFileSync("git", ["add", "."], {
+      cwd: absPath,
+      stdio: "pipe",
+    });
 
     // 3. Commit
-    execSync(`git commit -m "${options.title.replace(/"/g, '\\"')}"`, { cwd: absPath, stdio: "pipe" });
+    execFileSync("git", ["commit", "-m", options.title], {
+      cwd: absPath,
+      stdio: "pipe",
+    });
 
     // 4. Push branch
-    execSync(`git push origin ${branchName}`, { cwd: absPath, stdio: "pipe" });
+    execFileSync("git", ["push", "origin", branchName], {
+      cwd: absPath,
+      stdio: "pipe",
+    });
 
     // 5. Open PR via Octokit
     let owner = "";
@@ -109,7 +128,14 @@ export async function createGitHubPR(options: CreatePrOptions): Promise<CreatePr
     if (options.repoOwnerAndName && options.repoOwnerAndName.includes("/")) {
       [owner, repo] = options.repoOwnerAndName.split("/");
     } else {
-      const remoteUrl = execSync("git config --get remote.origin.url", { cwd: absPath, encoding: "utf-8" }).trim();
+      const remoteUrl = execFileSync(
+        "git",
+        ["config", "--get", "remote.origin.url"],
+        {
+          cwd: absPath,
+          encoding: "utf-8",
+        },
+      ).trim();
       const match = remoteUrl.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
       if (match) {
         owner = match[1];
@@ -120,7 +146,8 @@ export async function createGitHubPR(options: CreatePrOptions): Promise<CreatePr
     if (!owner || !repo) {
       return {
         success: false,
-        message: "Could not determine GitHub repository owner/name from git remotes or configuration.",
+        message:
+          "Could not determine GitHub repository owner/name from git remotes or configuration.",
       };
     }
 

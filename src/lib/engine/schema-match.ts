@@ -176,8 +176,14 @@ export function jsonTypeToTs(jsonType: string | undefined): string {
 
 export function defaultValueFor(fieldName: string, jsonType: string | undefined): string {
   const lower = fieldName.toLowerCase();
+  if (lower.includes("reason")) {
+    return '"requested_by_customer"';
+  }
   if (jsonType === "string" && (lower.includes("id") || lower.includes("key") || lower.includes("token"))) {
     return "crypto.randomUUID()";
+  }
+  if (lower.includes("email")) {
+    return '"ops@example.com"';
   }
   switch (jsonType) {
     case "string":

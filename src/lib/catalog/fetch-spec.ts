@@ -1,23 +1,8 @@
-import { getVendor } from "@/lib/catalog/vendors";
-
-const MAX_BYTES = 8_000_000;
+import { getVendor } from "@/lib/engine/catalog";
+import { fetchSpecText } from "@/lib/engine/fetch-spec";
 
 export async function fetchRemoteOpenApi(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json, application/yaml, text/yaml, text/plain, */*",
-      "User-Agent": "Repairo-Catalog/1.0",
-    },
-    next: { revalidate: 0 },
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch OpenAPI (${res.status}): ${url}`);
-  }
-  const buf = await res.arrayBuffer();
-  if (buf.byteLength > MAX_BYTES) {
-    throw new Error("OpenAPI document too large (>8MB)");
-  }
-  return new TextDecoder("utf-8").decode(buf);
+  return fetchSpecText(url);
 }
 
 export async function resolveVendorSpecs(options: {
@@ -33,12 +18,12 @@ export async function resolveVendorSpecs(options: {
     );
   }
 
-  const after = await fetchRemoteOpenApi(vendor.openapiUrl);
+  const after = await fetchSpecText(vendor.openapiUrl);
   let before = options.baselineSpec?.trim() || "";
 
   if (!before) {
     if (vendor.previousOpenapiUrl) {
-      before = await fetchRemoteOpenApi(vendor.previousOpenapiUrl);
+      before = await fetchSpecText(vendor.previousOpenapiUrl);
     } else {
       // First install with no previous pin: treat current as both (empty diff until next poll)
       before = after;

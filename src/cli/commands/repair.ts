@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import {
   applyAstTransforms,
+  collectTypeDiagnostics,
   createGitHubPR,
   diffOpenApi,
   findImpactedCode,
@@ -99,19 +100,10 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
   }
 
   if (changes.length === 0) {
-    changes = [
-      {
-        id: "chg_001",
-        kind: "field-removed",
-        severity: "breaking",
-        path: "/v1/chat/completions",
-        operation: "post",
-        field: "max_tokens",
-        summary: 'Parameter "max_tokens" replaced by "max_output_tokens"',
-        before: "max_tokens",
-        after: "max_output_tokens",
-      },
-    ];
+    console.log("No API changes detected — nothing to repair.\n");
+    console.log("To detect changes first, run:");
+    console.log("  repairo diff --spec ./path/to/new-openapi.json\n");
+    return;
   }
 
   function collectFiles(dir: string): ConsumerFile[] {
@@ -188,6 +180,13 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
   console.log("REPAIRO VALIDATION");
   console.log("──────────────────────────────");
 
+  // Baseline BEFORE writing repairs: pre-existing type errors are the
+  // user's, not ours — validation only fails on errors the repair adds.
+  const baseline = collectTypeDiagnostics(targetDir);
+  if (baseline.length > 0) {
+    console.log(`Pre-existing type errors: ${baseline.length} (ignored — validating new errors only)`);
+  }
+
   const backupMap = new Map<string, string>();
   try {
     for (const mod of modifiedFiles) {
@@ -195,7 +194,7 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
       fs.writeFileSync(path.resolve(mod.file.path), mod.updatedContent, "utf-8");
     }
 
-    const validation = validateCodebase(targetDir, { runTests: true });
+    const validation = validateCodebase(targetDir, { runTests: true, baseline });
 
     console.log(`AST transformation      PASS`);
     console.log(`TypeScript compilation  ${validation.typecheckPassed ? "PASS" : "FAIL"}`);

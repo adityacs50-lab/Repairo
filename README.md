@@ -81,9 +81,44 @@ Set up Repairo in your repository:
 ```bash
 repairo init --repo owner/your-app           # Link your repository
 repairo scan ./src                           # Scan for API dependencies
-repairo diff --spec https://spec.url/spec    # View AST refactoring diffs
+repairo check --vendors stripe,openai        # Diff live vendor specs vs snapshot
+repairo diff --spec ./specs/new-openapi.json # View AST refactoring diffs
 repairo repair --create-pr                   # Apply AST patches & open PR
 ```
+
+### Run in CI (the Dependabot way)
+
+`repairo check` fetches each vendor's live OpenAPI spec, diffs it against the
+baseline snapshot committed in `.repairo/snapshots/`, and exits non-zero when a
+breaking change lands — so your pipeline knows before production does.
+
+```bash
+repairo check --vendors stripe,openai --json   # machine-readable report
+```
+
+Or use the GitHub Action on a schedule:
+
+```yaml
+# .github/workflows/repairo.yml
+name: API contract check
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: adityacs50-lab/Repairo@main
+        with:
+          vendors: stripe,openai
+          target: ./src
+```
+
+The first run saves baselines (commit them); subsequent runs fail the job on
+breaking contract changes and write an impact report to `.repairo/reports/`.
 
 ---
 
