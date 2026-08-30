@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const result = getDemoRepairResult();
+    const result = await getDemoRepairResult();
     const fixtures = getFixtureSources();
     return NextResponse.json({ result, fixtures });
   } catch (error) {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const result = runRepair({ beforeSpec, afterSpec, consumerFiles });
+    const result = await runRepair({ beforeSpec, afterSpec, consumerFiles });
     return NextResponse.json({ result });
   } catch (error) {
     const message =

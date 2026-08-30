@@ -58,6 +58,14 @@ export async function POST(request: NextRequest) {
     if (!vendor) {
       return NextResponse.json({ error: "Unknown vendor" }, { status: 404 });
     }
+    if (!vendor.openapiUrl) {
+      return NextResponse.json(
+        {
+          error: `${vendor.name} has no public OpenAPI spec to watch remotely. Point this integration at a spec file in your own repo instead of installing it as a vendor agent.`,
+        },
+        { status: 400 },
+      );
+    }
 
     const repoMeta = await getRepo(
       session.accessToken,

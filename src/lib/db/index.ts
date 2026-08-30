@@ -106,6 +106,21 @@ function createDb() {
       created_at INTEGER NOT NULL,
       finished_at INTEGER
     );
+    CREATE TABLE IF NOT EXISTS repair_fixes (
+      id TEXT PRIMARY KEY NOT NULL,
+      repair_run_id TEXT NOT NULL REFERENCES repair_runs(id),
+      change_id TEXT NOT NULL,
+      file TEXT NOT NULL,
+      description TEXT NOT NULL,
+      before TEXT NOT NULL,
+      after TEXT NOT NULL,
+      safe INTEGER NOT NULL,
+      origin TEXT NOT NULL DEFAULT 'deterministic',
+      agent_confidence REAL,
+      agent_reasoning TEXT,
+      safety_notes_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS subscriptions (
       id TEXT PRIMARY KEY NOT NULL,
       workspace_id TEXT NOT NULL REFERENCES workspaces(id),

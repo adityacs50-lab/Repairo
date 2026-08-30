@@ -12,6 +12,11 @@ export async function resolveVendorSpecs(options: {
 }) {
   const vendor = getVendor(options.vendorId);
   if (!vendor) throw new Error(`Unknown vendor: ${options.vendorId}`);
+  if (!vendor.openapiUrl) {
+    throw new Error(
+      `${vendor.name} has no public OpenAPI spec to watch remotely. Use a manual spec (beforePath/afterPath in your own repo) instead.`,
+    );
+  }
 
   const after = await fetchSpecText(vendor.openapiUrl);
   let before = options.baselineSpec?.trim() || "";

@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import {
   integer,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -134,6 +135,43 @@ export const repairRuns = sqliteTable("repair_runs", {
   finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
 });
 
+/**
+ * Permanent, queryable record of every fix a repair run produced — including fixes that
+ * were flagged unsafe/ambiguous and never applied. This is the durable audit trail for
+ * *why* a specific decision was made: once a run finishes, its in-memory SuggestedFix[]
+ * is gone and the GitHub PR description (free-text, editable, deletable) is the only
+ * other place this ever existed. `origin` distinguishes deterministic fixes from
+ * agent-proposed ones; `agentConfidence`/`agentReasoning` are populated only for the
+ * latter (see SuggestedFix in src/lib/engine/types.ts, which this table mirrors).
+ */
+export const repairFixes = sqliteTable("repair_fixes", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  repairRunId: text("repair_run_id")
+    .notNull()
+    .references(() => repairRuns.id),
+  changeId: text("change_id").notNull(),
+  file: text("file").notNull(),
+  description: text("description").notNull(),
+  before: text("before").notNull(),
+  after: text("after").notNull(),
+  safe: integer("safe", { mode: "boolean" }).notNull(),
+  origin: text("origin", { enum: ["deterministic", "agent-proposed"] })
+    .notNull()
+    .default("deterministic"),
+  /** Model self-reported, NOT a calibrated probability — see the agentConfidence
+   * doc-comment in src/lib/engine/types.ts. Null for deterministic fixes. */
+  agentConfidence: real("agent_confidence"),
+  agentReasoning: text("agent_reasoning"),
+  safetyNotesJson: text("safety_notes_json", { mode: "json" })
+    .$type<string[]>()
+    .notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
 export const subscriptions = sqliteTable("subscriptions", {
   id: text("id")
     .primaryKey()
@@ -200,3 +238,4 @@ export type User = typeof users.$inferSelect;
 export type Workspace = typeof workspaces.$inferSelect;
 export type Integration = typeof integrations.$inferSelect;
 export type RepairRun = typeof repairRuns.$inferSelect;
+export type RepairFix = typeof repairFixes.$inferSelect;

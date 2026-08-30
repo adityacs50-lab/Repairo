@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/adityacs50-lab/Repairo/actions"><img alt="Build Status" src="https://img.shields.io/badge/CI-passing-10B981?style=flat-square"></a>
   <a href="https://github.com/adityacs50-lab/Repairo/actions"><img alt="Test Status" src="https://img.shields.io/badge/tests-100%25%20passing-10B981?style=flat-square"></a>
-  <a href="https://www.npmjs.com/package/@repairo/cli"><img alt="npm version" src="https://img.shields.io/badge/npm-v1.0.0-F97316?style=flat-square"></a>
+  <a href="https://www.npmjs.com/package/repairo-cli"><img alt="npm version" src="https://img.shields.io/npm/v/repairo-cli?style=flat-square&color=F97316&label=npm"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-0EA5E9?style=flat-square"></a>
 </p>
 

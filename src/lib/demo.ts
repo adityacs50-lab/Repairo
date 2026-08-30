@@ -3,10 +3,10 @@ import { runRepair, type RepairRunResult } from "@/lib/engine";
 
 let cached: RepairRunResult | null = null;
 
-export function getDemoRepairResult(): RepairRunResult {
+export async function getDemoRepairResult(): Promise<RepairRunResult> {
   if (cached) return cached;
   const fixtures = loadDemoFixtures();
-  cached = runRepair({
+  cached = await runRepair({
     beforeSpec: fixtures.beforeSpec,
     afterSpec: fixtures.afterSpec,
     consumerFiles: fixtures.consumerFiles,

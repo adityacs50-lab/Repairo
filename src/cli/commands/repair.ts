@@ -12,7 +12,9 @@ import {
   initRepairoConfig,
   loadRepairoConfig,
   parseOpenApi,
+  resolveAmbiguousEnums,
   validateCodebase,
+  type AgentEnumResolution,
   type ApiChange,
   type ConsumerFile,
 } from "../../lib/engine";
@@ -23,6 +25,10 @@ export interface RepairOptions {
   dryRun?: boolean;
   apply?: boolean;
   createPr?: boolean;
+  /** Off by default. Also requires ANTHROPIC_API_KEY — neither gate alone is sufficient. */
+  agentResolve?: boolean;
+  agentModel?: string;
+  maxAgentResolutions?: number;
 }
 
 function makeConsoleDiff(beforeContent: string, afterContent: string, filePath: string): string {
@@ -126,15 +132,29 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
     return;
   }
 
-  const modifiedFiles: Array<{ file: ConsumerFile; updatedContent: string; diffText: string }> = [];
+  let agentResolutions: Map<string, AgentEnumResolution> = new Map();
+  if (options.agentResolve) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.log("⚠️ --agent-resolve was passed but ANTHROPIC_API_KEY is not set — falling back to flagging ambiguous cases for manual review.\n");
+    } else {
+      agentResolutions = await resolveAmbiguousEnums(changes, {
+        enabled: true,
+        model: options.agentModel,
+        maxAgentResolutions: options.maxAgentResolutions,
+      });
+    }
+  }
+
+  const modifiedFiles: Array<{ file: ConsumerFile; updatedContent: string; diffText: string; agentFixes: number }> = [];
 
   for (const f of files) {
-    const transformResult = applyAstTransforms(f.content, changes, f.path);
+    const transformResult = applyAstTransforms(f.content, changes, f.path, [], agentResolutions);
     if (transformResult.content !== f.content) {
       modifiedFiles.push({
         file: f,
         updatedContent: transformResult.content,
         diffText: makeConsoleDiff(f.content, transformResult.content, f.path),
+        agentFixes: transformResult.fixes.filter((fix) => fix.origin === "agent-proposed").length,
       });
     }
   }
@@ -148,6 +168,9 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
   for (const mod of modifiedFiles) {
     console.log(`Proposed repair: ${mod.file.path}`);
     console.log(mod.diffText);
+    if (mod.agentFixes > 0) {
+      console.log(`  🤖 ${mod.agentFixes} AI-proposed, compile-verified fix${mod.agentFixes > 1 ? "es" : ""} — spec diff alone was ambiguous; review before merging`);
+    }
     console.log();
   }
 

@@ -1,4 +1,4 @@
-import { applyAstTransforms } from "./ast-transformer";
+import { applyAstTransforms, type AgentEnumResolution } from "./ast-transformer";
 import type {
   ApiChange,
   ConsumerFile,
@@ -121,6 +121,7 @@ export function generateFixes(
   changes: ApiChange[],
   files: ConsumerFile[],
   impacts: ImpactMatch[],
+  agentResolutions: Map<string, AgentEnumResolution> = new Map(),
 ): { fixes: SuggestedFix[]; updatedFiles: ConsumerFile[] } {
   const updatedFiles: ConsumerFile[] = [];
   const fixes: SuggestedFix[] = [];
@@ -134,7 +135,7 @@ export function generateFixes(
 
     if (TS_LIKE.test(file.path)) {
       const fileImpacts = impacts.filter((i) => i.file === file.path);
-      const result = applyAstTransforms(file.content, changes, file.path, fileImpacts);
+      const result = applyAstTransforms(file.content, changes, file.path, fileImpacts, agentResolutions);
       const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
       fixes.push(...fileFixes);
       updatedFiles.push({ path: file.path, content: result.content });
@@ -163,6 +164,8 @@ export function buildPullRequest(
 
   const safeFixes = fixes.filter((f) => f.safe);
   const unsafeFixes = fixes.length - safeFixes.length;
+  const deterministicSafeFixes = safeFixes.filter((f) => f.origin !== "agent-proposed");
+  const agentSafeFixes = safeFixes.filter((f) => f.origin === "agent-proposed");
   const patchedPaths = new Set(changed.map((f) => f.path));
   const highImpacts = impacts.filter((i) => i.confidence === "high");
   const uncoveredHigh = highImpacts.filter((i) => !patchedPaths.has(i.file)).length;
@@ -214,7 +217,18 @@ export function buildPullRequest(
     ),
     "",
     "### Safe fixes applied",
-    ...safeFixes.map((f) => `- ${f.description} in \`${f.file}\``),
+    ...deterministicSafeFixes.map((f) => `- ${f.description} in \`${f.file}\``),
+    ...(agentSafeFixes.length > 0
+      ? [
+          "",
+          "### AI-proposed, compile-verified fixes",
+          "These fill in genuinely ambiguous mappings (the spec diff alone had more than one candidate). The AI never writes to your code — it proposes, Repairo verifies via the same deterministic AST transform and TypeScript compile check as every other fix. **These require manual review before merging regardless of confidence.**",
+          ...agentSafeFixes.map(
+            (f) =>
+              `- ${f.description} in \`${f.file}\` (confidence ${f.agentConfidence?.toFixed(2) ?? "?"}) — ${f.agentReasoning ?? ""}`,
+          ),
+        ]
+      : []),
     "",
     "### Safety checks",
     `- Safety score: **${safetyScore}/100**`,
@@ -239,6 +253,9 @@ export function buildPullRequest(
     ],
     files,
     safetyScore,
-    autoMergeEligible: safetyScore >= 75 && safeFixes.length === fixes.length,
+    // A compile-verified guess is still a guess: any AI-proposed fix forces manual review
+    // regardless of safetyScore, deliberately reinforcing "off by default, always reviewed."
+    autoMergeEligible:
+      agentSafeFixes.length === 0 && safetyScore >= 75 && safeFixes.length === fixes.length,
   };
 }

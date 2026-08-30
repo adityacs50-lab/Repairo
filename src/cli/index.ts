@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { normalizeMaxAgentResolutions } from "../lib/engine";
 import { handleCheckCommand } from "./commands/check";
 import { handleDiffCommand } from "./commands/diff";
 import { handleInitCommand } from "./commands/init";
@@ -29,6 +30,16 @@ Commands:
 
   repair                 Generate validated AST repairs for breaking API changes
                          Options: --dry-run (default), --apply, --create-pr, --spec ./specs/new.json
+                         --agent-resolve       Ask an LLM to propose mappings for genuinely
+                                               ambiguous enum-value renames (never writes
+                                               code directly — proposals still go through the
+                                               same deterministic AST transform + compile
+                                               check as every other fix, and always need
+                                               manual review). Requires ANTHROPIC_API_KEY.
+                         --agent-model <id>    Anthropic model id (default: claude-opus-5)
+                         --max-agent-resolutions <n>
+                                               Cap on ambiguous cases resolved per run
+                                               (default: 20)
 
 Flags:
   --help, -h             Show help documentation
@@ -45,7 +56,7 @@ async function main() {
   }
 
   if (args.includes("--version") || args.includes("-v")) {
-    console.log(`repairo-cli v${pkg.version}`);
+    console.log(`${pkg.name} v${pkg.version}`);
     return;
   }
 
@@ -122,6 +133,20 @@ async function main() {
       const dryRun = Boolean(flags["dry-run"]);
       const apply = Boolean(flags.apply);
       const createPr = Boolean(flags["create-pr"]);
+      const agentResolve = Boolean(flags["agent-resolve"]);
+      const agentModel = typeof flags["agent-model"] === "string" ? flags["agent-model"] : undefined;
+      const maxAgentResolutionsStr = typeof flags["max-agent-resolutions"] === "string" ? flags["max-agent-resolutions"] : undefined;
+      let maxAgentResolutions: number | undefined;
+      if (maxAgentResolutionsStr !== undefined) {
+        const parsed = Number(maxAgentResolutionsStr);
+        const normalized = normalizeMaxAgentResolutions(parsed);
+        if (normalized !== parsed) {
+          console.error(
+            `⚠️ Invalid --max-agent-resolutions value "${maxAgentResolutionsStr}" — must be a non-negative whole number. Falling back to the default (${normalized}).\n`,
+          );
+        }
+        maxAgentResolutions = normalized;
+      }
 
       await handleRepairCommand({
         spec,
@@ -129,6 +154,9 @@ async function main() {
         dryRun,
         apply,
         createPr,
+        agentResolve,
+        agentModel,
+        maxAgentResolutions,
       });
       break;
     }

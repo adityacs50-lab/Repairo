@@ -1,17 +1,27 @@
+import { randomUUID } from "crypto";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { getDb } from "../src/lib/db";
+import { integrations, repairRuns, users, workspaces } from "../src/lib/db/schema";
+import { listFixesForRun, recordFixes } from "../src/lib/db/repair-fixes";
+import type { SuggestedFix } from "../src/lib/engine";
 import {
   applyAstTransforms,
+  buildPullRequest,
   collectTypeDiagnostics,
   diffOpenApi,
   findImpactedCode,
+  normalizeMaxAgentResolutions,
   parseOpenApi,
+  resolveAmbiguousEnums,
   resolveSpecIndirection,
   runRepair,
   scanCodebase,
   scanDirectory,
   validateCodebase,
+  validateProposal,
+  type ApiChange,
 } from "../src/lib/engine";
 import { handleDiffCommand } from "../src/cli/commands/diff";
 import { handleInitCommand } from "../src/cli/commands/init";
@@ -31,6 +41,7 @@ function assert(condition: boolean, testName: string) {
   }
 }
 
+async function main() {
 console.log("\n==================================================");
 console.log("REPAIRO REAL INTEGRATION TEST SUITE");
 console.log("==================================================\n");
@@ -428,7 +439,7 @@ const shippingConsumerFiles = shippingConsumerPaths.map((p) => ({
   path: p,
   content: fs.readFileSync(path.resolve(p), "utf-8"),
 }));
-const shippingResult = runRepair({
+const shippingResult = await runRepair({
   beforeSpec: shippingBeforeSpec,
   afterSpec: shippingAfterSpec,
   consumerFiles: shippingConsumerFiles,
@@ -472,6 +483,356 @@ assert(
 assert(shippingResult.typecheck.passed, "Repaired Shipping API consumer code compiles cleanly");
 assert(shippingResult.pullRequest.autoMergeEligible, "Unambiguous cross-domain repair is auto-merge eligible");
 
+// Test 22: Ambiguous-enum baseline regression test — 2 removed / 2 added values for the
+// same field, with no agent resolution supplied at all. Locks in today's exact behavior:
+// both removed values are flagged for manual review, and the source is left untouched.
+console.log("\nTest 22: Ambiguous-enum baseline regression test");
+const ambiguousEnumCode = `
+export interface Order {
+  status: "pending" | "processing" | "shipped";
+}
+const o: Order = { status: "pending" };
+function isProcessing(x: Order) { return x.status === "processing"; }
+`;
+const ambiguousEnumChanges: ApiChange[] = [
+  { id: "amb_rm_1", kind: "enum-value-removed", severity: "breaking", path: "/v1/orders", operation: "post", field: "status", before: "pending", summary: 'Enum value "pending" removed' },
+  { id: "amb_rm_2", kind: "enum-value-removed", severity: "breaking", path: "/v1/orders", operation: "post", field: "status", before: "processing", summary: 'Enum value "processing" removed' },
+  { id: "amb_add_1", kind: "enum-value-added", severity: "additive", path: "/v1/orders", operation: "post", field: "status", after: "queued", summary: 'Enum value "queued" added' },
+  { id: "amb_add_2", kind: "enum-value-added", severity: "additive", path: "/v1/orders", operation: "post", field: "status", after: "in_progress", summary: 'Enum value "in_progress" added' },
+];
+const ambiguousBaselineResult = applyAstTransforms(ambiguousEnumCode, ambiguousEnumChanges, "src/orders.ts");
+const baselineFix1 = ambiguousBaselineResult.fixes.find((f) => f.changeId === "amb_rm_1");
+const baselineFix2 = ambiguousBaselineResult.fixes.find((f) => f.changeId === "amb_rm_2");
+assert(baselineFix1?.safe === false && baselineFix1.description.includes("ambiguous"), "Ambiguous removed value 'pending' is flagged, not guessed");
+assert(baselineFix2?.safe === false && baselineFix2.description.includes("ambiguous"), "Ambiguous removed value 'processing' is flagged, not guessed");
+assert(ambiguousBaselineResult.content === ambiguousEnumCode, "Source is left byte-for-byte unchanged when ambiguous and no agent resolution is supplied");
+
+// Test 23: No-key no-op test — resolveAmbiguousEnums must never attempt a network call (and
+// must return an empty map) when ANTHROPIC_API_KEY isn't set, even if the caller explicitly
+// opted in via `enabled: true`. The resulting repair output must be identical to the baseline.
+console.log("\nTest 23: No-key no-op test");
+const savedApiKey13 = process.env.ANTHROPIC_API_KEY;
+delete process.env.ANTHROPIC_API_KEY;
+const noKeyMap = await resolveAmbiguousEnums(ambiguousEnumChanges, { enabled: true });
+assert(noKeyMap.size === 0, "resolveAmbiguousEnums returns an empty map with no network attempt when ANTHROPIC_API_KEY is unset");
+const noKeyTransform = applyAstTransforms(ambiguousEnumCode, ambiguousEnumChanges, "src/orders.ts", [], noKeyMap);
+assert(noKeyTransform.content === ambiguousBaselineResult.content, "Output is identical to the baseline when no key is present (flag-off path is byte-for-byte unchanged)");
+if (savedApiKey13 !== undefined) process.env.ANTHROPIC_API_KEY = savedApiKey13;
+
+// Test 24: Agent-proposed pairing flows through the real deterministic AST-rename path —
+// this tests the seam (a hand-built resolution map), not the live API integration.
+console.log("\nTest 24: Agent-proposed pairing flows through the deterministic path");
+const agentMap = new Map([
+  ["amb_rm_1", { target: "queued", confidence: 0.87, reasoning: "Historically pending orders map to the new queued state" }],
+]);
+const agentResult = applyAstTransforms(ambiguousEnumCode, ambiguousEnumChanges, "src/orders.ts", [], agentMap);
+assert(agentResult.content.includes('"queued" | "processing" | "shipped"'), "Agent-resolved value is renamed in the union type declaration");
+assert(agentResult.content.includes('status: "queued"'), "Agent-resolved value is renamed at the object-literal call site");
+const agentFix1 = agentResult.fixes.find((f) => f.changeId === "amb_rm_1" && f.origin === "agent-proposed");
+assert(agentFix1?.agentConfidence === 0.87, "Agent-proposed fix carries the model's reported confidence");
+assert(agentFix1?.agentReasoning === "Historically pending orders map to the new queued state", "Agent-proposed fix carries the model's reasoning");
+const agentFix2 = agentResult.fixes.find((f) => f.changeId === "amb_rm_2");
+assert(agentFix2?.safe === false, "A second, unresolved removed value in the same ambiguous group still gets flagged — a partial resolution doesn't short-circuit the rest of the group");
+assert(agentResult.content.includes('x.status === "processing"'), "The unresolved value's comparison usage is left untouched");
+
+// Test 25: validateProposal unit tests (pure, network-free).
+console.log("\nTest 25: validateProposal unit tests");
+const candidates15 = ["queued", "in_progress"];
+assert(validateProposal({ target: "queued", confidence: 0.8, reasoning: "clear mapping" }, candidates15) !== null, "Valid proposal is accepted");
+assert(validateProposal({ target: "cancelled", confidence: 0.9, reasoning: "x" }, candidates15) === null, "Out-of-candidate target is rejected");
+assert(validateProposal({ target: "queued", confidence: 0.3, reasoning: "x" }, candidates15) === null, "Below-threshold confidence is rejected");
+assert(validateProposal({ target: "queued", confidence: 0.9, reasoning: "" }, candidates15) === null, "Empty reasoning is rejected");
+assert(validateProposal({ target: "queued", confidence: 0.9 } as any, candidates15) === null, "Missing reasoning is rejected");
+
+// Confidence bounds — validateProposal must enforce Number.isFinite(confidence) &&
+// confidence >= minConfidence && confidence <= 1. Default minConfidence is 0.6.
+assert(validateProposal({ target: "queued", confidence: 1.0, reasoning: "x" }, candidates15) !== null, "Confidence of exactly 1.0 is accepted");
+assert(validateProposal({ target: "queued", confidence: 0.99, reasoning: "x" }, candidates15) !== null, "Confidence of 0.99 is accepted");
+assert(validateProposal({ target: "queued", confidence: 0.6, reasoning: "x" }, candidates15) !== null, "Confidence exactly at the default threshold (0.6) is accepted");
+assert(validateProposal({ target: "queued", confidence: 0.59, reasoning: "x" }, candidates15) === null, "Confidence of 0.59 (just below the default threshold) is rejected");
+assert(validateProposal({ target: "queued", confidence: 1.01, reasoning: "x" }, candidates15) === null, "Confidence of 1.01 (just above the upper bound) is rejected");
+assert(validateProposal({ target: "queued", confidence: 5, reasoning: "x" }, candidates15) === null, "Confidence of 5 is rejected");
+assert(validateProposal({ target: "queued", confidence: -1, reasoning: "x" }, candidates15) === null, "Negative confidence (-1) is rejected");
+assert(validateProposal({ target: "queued", confidence: NaN, reasoning: "x" }, candidates15) === null, "NaN confidence is rejected");
+assert(validateProposal({ target: "queued", confidence: Infinity, reasoning: "x" }, candidates15) === null, "Infinity confidence is rejected");
+
+// normalizeMaxAgentResolutions unit tests — the exact policy the cap-bypass bug requires.
+console.log("\nTest 26: normalizeMaxAgentResolutions unit tests");
+assert(normalizeMaxAgentResolutions(undefined) === 20, "Missing value falls back to the default (20)");
+assert(normalizeMaxAgentResolutions(NaN) === 20, "NaN falls back to the default — never disables the cap");
+assert(normalizeMaxAgentResolutions(Infinity) === 20, "Infinity falls back to the default");
+assert(normalizeMaxAgentResolutions(-Infinity) === 20, "-Infinity falls back to the default");
+assert(normalizeMaxAgentResolutions(-1) === 20, "Negative value falls back to the default");
+assert(normalizeMaxAgentResolutions(-5) === 20, "Negative value falls back to the default");
+assert(normalizeMaxAgentResolutions(2.5) === 20, "Non-integer (decimal) value falls back to the default");
+assert(normalizeMaxAgentResolutions(0) === 0, "0 is honored as-is (explicit 'resolve nothing')");
+assert(normalizeMaxAgentResolutions(5) === 5, "A valid positive integer is honored as-is");
+assert(normalizeMaxAgentResolutions(1_000_000) === 1_000_000, "An extremely large valid integer is honored as-is (an explicit, informed choice)");
+
+// Test 27: maxAgentResolutions cap / fail-closed test — 5 independent ambiguous cases with
+// a cap of 2. No real network call: global fetch is monkey-patched for the duration of this
+// test only, to return a canned successful tool_use response (the standard no-mocking-
+// framework approach already used implicitly elsewhere in this suite).
+console.log("\nTest 27: maxAgentResolutions cap / fail-closed test");
+const capChanges: ApiChange[] = [];
+for (let g = 1; g <= 5; g++) {
+  capChanges.push({ id: `cap_rm_${g}`, kind: "enum-value-removed", severity: "breaking", path: "/v1/widgets", operation: "post", field: `field${g}`, before: `old${g}`, summary: `Enum value "old${g}" removed` });
+  capChanges.push({ id: `cap_add_${g}_a`, kind: "enum-value-added", severity: "additive", path: "/v1/widgets", operation: "post", field: `field${g}`, after: `new_a${g}`, summary: `Enum value "new_a${g}" added` });
+  capChanges.push({ id: `cap_add_${g}_b`, kind: "enum-value-added", severity: "additive", path: "/v1/widgets", operation: "post", field: `field${g}`, after: `new_b${g}`, summary: `Enum value "new_b${g}" added` });
+}
+
+const savedApiKey16 = process.env.ANTHROPIC_API_KEY;
+process.env.ANTHROPIC_API_KEY = "test-key-for-mock";
+const originalFetch = globalThis.fetch;
+let mockCallCount = 0;
+globalThis.fetch = (async (_input: any, init?: any) => {
+  mockCallCount++;
+  const body = init?.body ? JSON.parse(init.body) : {};
+  const candidatesFromRequest: string[] = body.tools?.[0]?.input_schema?.properties?.target?.enum ?? [];
+  const responseBody = {
+    id: "msg_test",
+    type: "message",
+    role: "assistant",
+    model: body.model ?? "claude-opus-5",
+    content: [
+      { type: "tool_use", id: "toolu_test", name: "propose_enum_mapping", input: { target: candidatesFromRequest[0], confidence: 0.9, reasoning: "mocked" } },
+    ],
+    stop_reason: "tool_use",
+    stop_sequence: null,
+    usage: { input_tokens: 10, output_tokens: 10 },
+  };
+  return new Response(JSON.stringify(responseBody), { status: 200, headers: { "content-type": "application/json" } });
+}) as typeof fetch;
+
+let capMap: Map<string, { target: string; confidence: number; reasoning: string }>;
+try {
+  capMap = await resolveAmbiguousEnums(capChanges, { enabled: true, maxAgentResolutions: 2 });
+} finally {
+  globalThis.fetch = originalFetch;
+  if (savedApiKey16 !== undefined) process.env.ANTHROPIC_API_KEY = savedApiKey16;
+  else delete process.env.ANTHROPIC_API_KEY;
+}
+
+assert(mockCallCount === 2, `resolveAmbiguousEnums calls proposeEnumMapping exactly maxAgentResolutions (2) times, not all 5 ambiguous cases (got ${mockCallCount})`);
+assert(capMap.size === 2, "Returned map has exactly 2 entries when the cap is 2");
+
+const overflowChangeIds = capChanges.filter((c) => c.kind === "enum-value-removed").map((c) => c.id).filter((id) => !capMap.has(id));
+assert(overflowChangeIds.length === 3, "Exactly 3 of the 5 ambiguous cases were left unresolved by the cap");
+
+const capCode = `
+export interface Widget {
+  field1: "old1" | "new_a1" | "new_b1";
+  field2: "old2" | "new_a2" | "new_b2";
+  field3: "old3" | "new_a3" | "new_b3";
+  field4: "old4" | "new_a4" | "new_b4";
+  field5: "old5" | "new_a5" | "new_b5";
+}
+const w: Widget = { field1: "old1", field2: "old2", field3: "old3", field4: "old4", field5: "old5" };
+`;
+const capTransform = applyAstTransforms(capCode, capChanges, "src/widgets.ts", [], capMap);
+const overflowFixes = capTransform.fixes.filter((f) => overflowChangeIds.includes(f.changeId));
+assert(overflowFixes.length === 3 && overflowFixes.every((f) => f.safe === false), "The 3 cases beyond the cap fall straight through to the existing ambiguous-flag path (safe: false), not an error or a guess");
+const resolvedFixes = capTransform.fixes.filter((f) => capMap.has(f.changeId));
+const resolvedChangeIds = new Set(resolvedFixes.map((f) => f.changeId));
+assert(resolvedChangeIds.size === 2 && resolvedFixes.every((f) => f.origin === "agent-proposed"), "The 2 cases within the cap are actually resolved via the agent-proposed path, compile-verifiable like any other fix");
+
+// Test 28: Duplicate-target conflict fail-closed test — two removed values in the SAME
+// ambiguous group independently proposed to map to the SAME target. Neither proposal
+// should be applied; the whole group must fall back to the existing ambiguous/manual-
+// review path, with no source mutation and no guessing which one to keep.
+console.log("\nTest 28: Duplicate-target conflict fail-closed test");
+const dupCode = `
+export interface Ticket {
+  status: "alpha" | "beta" | "gamma" | "delta";
+}
+const t1: Ticket = { status: "alpha" };
+const t2: Ticket = { status: "beta" };
+`;
+const dupChanges: ApiChange[] = [
+  { id: "dup_rm_1", kind: "enum-value-removed", severity: "breaking", path: "/v1/tickets", operation: "post", field: "status", before: "alpha", summary: 'Enum value "alpha" removed' },
+  { id: "dup_rm_2", kind: "enum-value-removed", severity: "breaking", path: "/v1/tickets", operation: "post", field: "status", before: "beta", summary: 'Enum value "beta" removed' },
+  { id: "dup_add_1", kind: "enum-value-added", severity: "additive", path: "/v1/tickets", operation: "post", field: "status", after: "gamma", summary: 'Enum value "gamma" added' },
+  { id: "dup_add_2", kind: "enum-value-added", severity: "additive", path: "/v1/tickets", operation: "post", field: "status", after: "delta", summary: 'Enum value "delta" added' },
+];
+
+const savedApiKey17 = process.env.ANTHROPIC_API_KEY;
+process.env.ANTHROPIC_API_KEY = "test-key-for-mock";
+const originalFetch17 = globalThis.fetch;
+globalThis.fetch = (async (_input: any, init?: any) => {
+  const body = init?.body ? JSON.parse(init.body) : {};
+  const candidatesFromRequest: string[] = body.tools?.[0]?.input_schema?.properties?.target?.enum ?? [];
+  // Deliberately always proposes the SAME candidate regardless of which removed value is
+  // being asked about, reproducing two independent model calls colliding on one target.
+  const responseBody = {
+    id: "msg_test",
+    type: "message",
+    role: "assistant",
+    model: body.model ?? "claude-opus-5",
+    content: [
+      { type: "tool_use", id: "toolu_test", name: "propose_enum_mapping", input: { target: candidatesFromRequest[0], confidence: 0.9, reasoning: "mocked, always picks the first candidate" } },
+    ],
+    stop_reason: "tool_use",
+    stop_sequence: null,
+    usage: { input_tokens: 10, output_tokens: 10 },
+  };
+  return new Response(JSON.stringify(responseBody), { status: 200, headers: { "content-type": "application/json" } });
+}) as typeof fetch;
+
+let dupMap: Map<string, { target: string; confidence: number; reasoning: string }>;
+try {
+  dupMap = await resolveAmbiguousEnums(dupChanges, { enabled: true });
+} finally {
+  globalThis.fetch = originalFetch17;
+  if (savedApiKey17 !== undefined) process.env.ANTHROPIC_API_KEY = savedApiKey17;
+  else delete process.env.ANTHROPIC_API_KEY;
+}
+
+assert(dupMap.size === 0, "Conflicting proposals (both independently mapped to the same target) result in zero resolutions for the whole group — fail closed, never a guess");
+
+const dupTransform = applyAstTransforms(dupCode, dupChanges, "src/tickets.ts", [], dupMap);
+assert(dupTransform.content === dupCode, "No source mutation occurs when the group's proposals conflict");
+const dupFix1 = dupTransform.fixes.find((f) => f.changeId === "dup_rm_1");
+const dupFix2 = dupTransform.fixes.find((f) => f.changeId === "dup_rm_2");
+assert(dupFix1?.safe === false, "Removed value 'alpha' remains eligible for the existing ambiguous/manual-review path");
+assert(dupFix2?.safe === false, "Removed value 'beta' remains eligible for the existing ambiguous/manual-review path");
+assert(dupFix1?.origin === undefined && dupFix2?.origin === undefined, "Neither conflicting case is ever labeled agent-proposed");
+
+// Test 29: autoMergeEligible must be false whenever any fix in the PR is agent-proposed,
+// and the PR body must clearly separate and label AI-proposed fixes — end to end through
+// the real buildPullRequest function (not just inferred from the origin field in isolation).
+console.log("\nTest 29: autoMergeEligible=false and PR body labeling for agent-proposed fixes");
+const amOriginalFiles = [{ path: "src/orders.ts", content: ambiguousEnumCode }];
+const amUpdatedFiles = [{ path: "src/orders.ts", content: agentResult.content }];
+const amFixes = agentResult.fixes.map((f) => ({ ...f, file: "src/orders.ts" }));
+const amPr = buildPullRequest(ambiguousEnumChanges, amFixes, amOriginalFiles, amUpdatedFiles, { fromVersion: "1.0.0", toVersion: "1.1.0" });
+assert(amPr.autoMergeEligible === false, "A PR containing any agent-proposed fix is never auto-merge eligible, regardless of safety score");
+assert(amPr.body.includes("AI-proposed, compile-verified fixes"), "PR body contains a distinct heading for AI-proposed fixes, separate from deterministic ones");
+assert(amPr.body.includes("0.87"), "PR body displays the agent-proposed fix's confidence");
+assert(amPr.body.includes(agentFix1!.agentReasoning!), "PR body displays the agent-proposed fix's reasoning");
+assert(amPr.body.includes("manual review"), "PR body explicitly calls out manual review for agent-proposed fixes");
+
+// Test 30: Repair-fix audit trail — every fix a run produces (deterministic, agent-
+// proposed, and unsafe/ambiguous-and-never-applied) must be persisted as a permanent,
+// queryable record. This is the durable "why was this decision made" trail that
+// previously only existed in memory and in free-text GitHub PR descriptions.
+console.log("\nTest 30: Repair-fix audit trail persistence");
+const dbTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-db-"));
+process.env.DATABASE_PATH = path.join(dbTmpDir, "test.db");
+const db = getDb();
+
+const auditUserId = randomUUID();
+db.insert(users)
+  .values({
+    id: auditUserId,
+    githubId: "12345",
+    login: "test-user",
+    avatarUrl: "https://example.com/avatar.png",
+    encryptedAccessToken: "encrypted",
+  })
+  .run();
+
+const auditWorkspaceId = randomUUID();
+db.insert(workspaces)
+  .values({ id: auditWorkspaceId, name: "Test Workspace", ownerUserId: auditUserId })
+  .run();
+
+const auditIntegrationId = randomUUID();
+db.insert(integrations)
+  .values({
+    id: auditIntegrationId,
+    workspaceId: auditWorkspaceId,
+    name: "Test Integration",
+    owner: "acme",
+    repo: "widgets",
+    beforePath: "specs/old.json",
+    afterPath: "specs/new.json",
+    beforeRef: "main",
+    afterRef: "main",
+    consumerPaths: ["src/client.ts"],
+    consumerRef: "main",
+    baseBranch: "main",
+    webhookSecret: "secret",
+  })
+  .run();
+
+const auditRunId = randomUUID();
+db.insert(repairRuns)
+  .values({ id: auditRunId, integrationId: auditIntegrationId, status: "running" })
+  .run();
+
+const auditFixes: SuggestedFix[] = [
+  {
+    changeId: "chg_a",
+    file: "src/client.ts",
+    description: "Renamed property via AST",
+    before: "old_field",
+    after: "new_field",
+    safe: true,
+    safetyNotes: ["Deterministic AST rename"],
+  },
+  {
+    changeId: "chg_b",
+    file: "src/client.ts",
+    description: "Renamed enum value via AST (AI-proposed)",
+    before: '"pending"',
+    after: '"queued"',
+    safe: true,
+    safetyNotes: ["AI-proposed pairing"],
+    origin: "agent-proposed",
+    agentConfidence: 0.87,
+    agentReasoning: "Historically pending maps to queued",
+  },
+  {
+    changeId: "chg_c",
+    file: "src/client.ts",
+    description: "Ambiguous — not auto-applied",
+    before: '"processing"',
+    after: "(ambiguous — not auto-applied)",
+    safe: false,
+    safetyNotes: ["Spec diff alone cannot determine which added value replaces this one"],
+  },
+];
+recordFixes(auditRunId, auditFixes);
+
+const persistedFixes = listFixesForRun(auditRunId);
+assert(persistedFixes.length === 3, "All 3 fixes are persisted, including the unsafe/ambiguous one that never touched a file");
+const persistedA = persistedFixes.find((f) => f.changeId === "chg_a");
+const persistedB = persistedFixes.find((f) => f.changeId === "chg_b");
+const persistedC = persistedFixes.find((f) => f.changeId === "chg_c");
+assert(persistedA?.origin === "deterministic" && persistedA?.safe === true, "Deterministic fix is persisted with origin='deterministic' and safe=true");
+assert(
+  persistedB?.origin === "agent-proposed" && persistedB?.agentConfidence === 0.87 && persistedB?.agentReasoning === "Historically pending maps to queued",
+  "Agent-proposed fix is persisted with its origin, confidence, and reasoning intact",
+);
+assert(persistedC?.safe === false && persistedC?.agentConfidence === null, "Unsafe/ambiguous fix is persisted with safe=false and no confidence value");
+assert(Array.isArray(persistedA?.safetyNotesJson) && persistedA?.safetyNotesJson[0] === "Deterministic AST rename", "safetyNotes round-trips as a real array through the JSON column");
+
+// Test 31: recordFixes is a true no-op for an empty fix list (no wasted insert).
+console.log("\nTest 31: recordFixes no-op for empty fix list");
+const emptyRunId = randomUUID();
+db.insert(repairRuns)
+  .values({ id: emptyRunId, integrationId: auditIntegrationId, status: "skipped" })
+  .run();
+recordFixes(emptyRunId, []);
+assert(listFixesForRun(emptyRunId).length === 0, "No rows are inserted when the fix list is empty");
+
+// Test 32: recordFixes never throws, even when persistence itself fails (e.g. a
+// foreign-key violation from a malformed/unknown repairRunId) — the audit trail must
+// never be able to break the repair run it's recording, matching the existing writeAudit
+// convention elsewhere in this codebase.
+console.log("\nTest 32: recordFixes never throws on a persistence failure");
+let recordFixesThrew = false;
+try {
+  recordFixes("nonexistent-run-id-violates-fk", [
+    { changeId: "chg_x", file: "x.ts", description: "x", before: "a", after: "b", safe: true, safetyNotes: [] },
+  ]);
+} catch {
+  recordFixesThrew = true;
+}
+assert(recordFixesThrew === false, "A foreign-key violation inside recordFixes is caught, not thrown — the repair run itself must never fail because the audit trail couldn't be written");
+
+fs.rmSync(dbTmpDir, { recursive: true, force: true });
+
 console.log("\n==================================================");
 console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);
 console.log("==================================================\n");
@@ -479,3 +840,9 @@ console.log("==================================================\n");
 if (passedTests !== totalTests) {
   process.exit(1);
 }
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -4,6 +4,7 @@ import { convertDiscoveryToOpenApi, isDiscoveryDocument } from "./discovery";
 import { findImpactedCode } from "./impact";
 import { buildPullRequest, generateFixes } from "./repair";
 import { validateInMemory } from "./validation";
+import { resolveAmbiguousEnums } from "./agent-resolve";
 import type {
   ConsumerFile,
   OpenApiDocument,
@@ -124,19 +125,31 @@ export function generateSbom(
   };
 }
 
-export function runRepair(options: {
+export async function runRepair(options: {
   beforeSpec: string;
   afterSpec: string;
   consumerFiles: ConsumerFile[];
-}): RepairRunResult {
+  /** Off by default. Requires ANTHROPIC_API_KEY to actually make any calls — see
+   * resolveAmbiguousEnums in agent-resolve.ts. CLI-only for now; the hosted /api/repair*
+   * routes intentionally never set this (see plan §7 for the reasoning). */
+  agentResolve?: boolean;
+  agentModel?: string;
+  maxAgentResolutions?: number;
+}): Promise<RepairRunResult> {
   const before = parseOpenApi(options.beforeSpec);
   const after = parseOpenApi(options.afterSpec);
   const changes = diffOpenApi(before, after);
   const impacts = findImpactedCode(changes, options.consumerFiles);
+  const agentResolutions = await resolveAmbiguousEnums(changes, {
+    enabled: Boolean(options.agentResolve),
+    model: options.agentModel,
+    maxAgentResolutions: options.maxAgentResolutions,
+  });
   const { fixes, updatedFiles } = generateFixes(
     changes,
     options.consumerFiles,
     impacts,
+    agentResolutions,
   );
   const fromVersion = before.info?.version ?? "unknown";
   const toVersion = after.info?.version ?? "unknown";
@@ -187,6 +200,7 @@ export function runRepair(options: {
       additive: changes.filter((c) => c.severity === "additive").length,
       impactedFiles,
       safeFixes: fixes.filter((f) => f.safe).length,
+      agentAssistedFixes: fixes.filter((f) => f.origin === "agent-proposed").length,
     },
   };
 }
@@ -196,7 +210,8 @@ export { diffOpenApi } from "./diff";
 export { findImpactedCode } from "./impact";
 export { buildPullRequest, generateFixes } from "./repair";
 export { scanDirectory, scanCodebase } from "./ast-parser";
-export { applyAstTransforms } from "./ast-transformer";
+export { applyAstTransforms, groupEnumChanges, type AgentEnumResolution } from "./ast-transformer";
+export { normalizeMaxAgentResolutions, proposeEnumMapping, resolveAmbiguousEnums, validateProposal } from "./agent-resolve";
 export { validateCodebase, collectTypeDiagnostics, type TypeDiagnostic } from "./validation";
 export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";
 export { getGitStatus, createGitHubPR } from "./github";

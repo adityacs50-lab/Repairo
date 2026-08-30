@@ -45,6 +45,13 @@ export interface ImpactMatch {
   reason: string;
 }
 
+/** Where a fix's target value came from. Absent/"deterministic" (today's only behavior)
+ * means it was derived solely from the spec diff with no ambiguity. "agent-proposed" means
+ * an LLM proposed the candidate mapping for a genuinely ambiguous case — the resulting
+ * fix still goes through the exact same AST transformation and compile verification as
+ * any other, but it is a guess, not a proof, and always requires human review. */
+export type FixOrigin = "deterministic" | "agent-proposed";
+
 export interface SuggestedFix {
   changeId: string;
   file: string;
@@ -53,6 +60,19 @@ export interface SuggestedFix {
   after: string;
   safe: boolean;
   safetyNotes: string[];
+  /** Absent = "deterministic" (today's only behavior). */
+  origin?: FixOrigin;
+  /** Model-reported confidence, hard-bounded to [minConfidence, 1] by `validateProposal`
+   *  (see agent-resolve.ts) before a fix can ever carry this field. This is NOT a
+   *  calibrated probability of correctness — it's whatever the model self-reports, just
+   *  clamped to a sane range. Do not treat it as trustworthy on its own; it exists for the
+   *  human reviewer's context and for future calibration once enough real outcomes are
+   *  logged (confidence bucket -> actual correctness rate). Present only when
+   *  origin === "agent-proposed". */
+  agentConfidence?: number;
+  /** The model's stated reasoning for the proposed mapping. Present only when
+   * origin === "agent-proposed". */
+  agentReasoning?: string;
 }
 
 export interface PullRequestDraft {
@@ -83,6 +103,7 @@ export interface RepairRunResult {
     additive: number;
     impactedFiles: number;
     safeFixes: number;
+    agentAssistedFixes: number;
   };
 }
 

@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = runRepair({
+    const result = await runRepair({
       beforeSpec: before.content,
       afterSpec: after.content,
       consumerFiles,
