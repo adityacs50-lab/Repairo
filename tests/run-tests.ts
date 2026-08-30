@@ -495,12 +495,12 @@ const ambiguousEnumChanges: ApiChange[] = [
   { id: "amb_add_1", kind: "enum-value-added", severity: "additive", path: "/v1/orders", operation: "post", field: "status", after: "queued", summary: 'Enum value "queued" added' },
   { id: "amb_add_2", kind: "enum-value-added", severity: "additive", path: "/v1/orders", operation: "post", field: "status", after: "in_progress", summary: 'Enum value "in_progress" added' },
 ];
-const baselineResult = applyAstTransforms(ambiguousEnumCode, ambiguousEnumChanges, "src/orders.ts");
-const baselineFix1 = baselineResult.fixes.find((f) => f.changeId === "amb_rm_1");
-const baselineFix2 = baselineResult.fixes.find((f) => f.changeId === "amb_rm_2");
+const ambiguousBaselineResult = applyAstTransforms(ambiguousEnumCode, ambiguousEnumChanges, "src/orders.ts");
+const baselineFix1 = ambiguousBaselineResult.fixes.find((f) => f.changeId === "amb_rm_1");
+const baselineFix2 = ambiguousBaselineResult.fixes.find((f) => f.changeId === "amb_rm_2");
 assert(baselineFix1?.safe === false && baselineFix1.description.includes("ambiguous"), "Ambiguous removed value 'pending' is flagged, not guessed");
 assert(baselineFix2?.safe === false && baselineFix2.description.includes("ambiguous"), "Ambiguous removed value 'processing' is flagged, not guessed");
-assert(baselineResult.content === ambiguousEnumCode, "Source is left byte-for-byte unchanged when ambiguous and no agent resolution is supplied");
+assert(ambiguousBaselineResult.content === ambiguousEnumCode, "Source is left byte-for-byte unchanged when ambiguous and no agent resolution is supplied");
 
 // Test 23: No-key no-op test — resolveAmbiguousEnums must never attempt a network call (and
 // must return an empty map) when ANTHROPIC_API_KEY isn't set, even if the caller explicitly
@@ -511,7 +511,7 @@ delete process.env.ANTHROPIC_API_KEY;
 const noKeyMap = await resolveAmbiguousEnums(ambiguousEnumChanges, { enabled: true });
 assert(noKeyMap.size === 0, "resolveAmbiguousEnums returns an empty map with no network attempt when ANTHROPIC_API_KEY is unset");
 const noKeyTransform = applyAstTransforms(ambiguousEnumCode, ambiguousEnumChanges, "src/orders.ts", [], noKeyMap);
-assert(noKeyTransform.content === baselineResult.content, "Output is identical to the baseline when no key is present (flag-off path is byte-for-byte unchanged)");
+assert(noKeyTransform.content === ambiguousBaselineResult.content, "Output is identical to the baseline when no key is present (flag-off path is byte-for-byte unchanged)");
 if (savedApiKey13 !== undefined) process.env.ANTHROPIC_API_KEY = savedApiKey13;
 
 // Test 24: Agent-proposed pairing flows through the real deterministic AST-rename path —
