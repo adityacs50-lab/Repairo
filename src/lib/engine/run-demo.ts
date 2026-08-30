@@ -21,7 +21,7 @@ const consumerFiles = [
   content: readFileSync(join(root, path), "utf8"),
 }));
 
-const result = runRepair({ beforeSpec, afterSpec, consumerFiles });
+const result = await runRepair({ beforeSpec, afterSpec, consumerFiles });
 
 console.log(JSON.stringify(result.summary, null, 2));
 console.log("\nPR:", result.pullRequest.title);

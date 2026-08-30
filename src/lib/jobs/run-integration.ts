@@ -94,7 +94,7 @@ export async function runIntegrationJob(options: {
       consumerFiles.push({ path: file.path, content: file.content });
     }
 
-    const result = runRepair({
+    const result = await runRepair({
       beforeSpec,
       afterSpec,
       consumerFiles,

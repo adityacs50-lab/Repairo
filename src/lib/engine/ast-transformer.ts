@@ -19,18 +19,55 @@ export interface AstTransformResult {
   pathHints: string[];
 }
 
+export interface AgentEnumResolution {
+  target: string;
+  confidence: number;
+  reasoning: string;
+}
+
+/** Groups enum changes by (path, operation, field): a removed value can only be safely
+ * auto-renamed to an added value when there is exactly one candidate on each side —
+ * otherwise which replacement it means is genuinely ambiguous from the spec diff alone.
+ * Shared by `applyAstTransforms` and the agent-resolve pre-pass so both agree on exactly
+ * which cases are ambiguous. */
+export function groupEnumChanges(changes: ApiChange[]): {
+  key: (c: ApiChange) => string;
+  removedByGroup: Map<string, ApiChange[]>;
+  addedByGroup: Map<string, ApiChange[]>;
+} {
+  const key = (c: ApiChange) => `${c.path}::${c.operation}::${c.field}`;
+  const removedByGroup = new Map<string, ApiChange[]>();
+  const addedByGroup = new Map<string, ApiChange[]>();
+  for (const c of changes) {
+    if (c.kind === "enum-value-removed" && c.before) {
+      const k = key(c);
+      removedByGroup.set(k, [...(removedByGroup.get(k) ?? []), c]);
+    }
+    if (c.kind === "enum-value-added" && c.after) {
+      const k = key(c);
+      addedByGroup.set(k, [...(addedByGroup.get(k) ?? []), c]);
+    }
+  }
+  return { key, removedByGroup, addedByGroup };
+}
+
 /**
  * Executes generic, deterministic AST transformations on source code files using ts-morph.
  * Works against any TypeScript/Node.js codebase — nothing here is keyed to a specific
  * vendor, interface name, or fixture. `impacts` (when supplied by the caller's impact
  * analysis pass) scopes required-field insertion to the exact object literals/interfaces
  * already identified as relevant, instead of touching every object literal in the file.
+ * `agentResolutions` (keyed by `ApiChange.id`) carries LLM-proposed mappings for ambiguous
+ * enum cases from the optional agent-resolve pre-pass — see `resolveAmbiguousEnums` in
+ * `agent-resolve.ts`. It is empty by default, which reproduces today's exact behavior:
+ * ambiguous cases are flagged, never guessed.
  */
 export function applyAstTransforms(
   content: string,
   changes: ApiChange[],
   filePath: string = "temp.ts",
   impacts: ImpactMatch[] = [],
+  agentResolutions: Map<string, AgentEnumResolution> = new Map(),
 ): AstTransformResult {
   const project = new Project({
     useInMemoryFileSystem: true,
@@ -118,23 +155,10 @@ export function applyAstTransforms(
     return { unions, rejectedByAnchoring };
   }
 
-  // Group enum changes by (path, operation, field): a removed value can only be safely
-  // auto-renamed to an added value when there is exactly one candidate on each side —
-  // otherwise which replacement it means is genuinely ambiguous from the spec diff alone,
-  // and guessing would be exactly the kind of unverified rewrite this engine exists to avoid.
-  const enumGroupKey = (c: ApiChange) => `${c.path}::${c.operation}::${c.field}`;
-  const enumRemovedByGroup = new Map<string, ApiChange[]>();
-  const enumAddedByGroup = new Map<string, ApiChange[]>();
-  for (const c of changes) {
-    if (c.kind === "enum-value-removed" && c.before) {
-      const key = enumGroupKey(c);
-      enumRemovedByGroup.set(key, [...(enumRemovedByGroup.get(key) ?? []), c]);
-    }
-    if (c.kind === "enum-value-added" && c.after) {
-      const key = enumGroupKey(c);
-      enumAddedByGroup.set(key, [...(enumAddedByGroup.get(key) ?? []), c]);
-    }
-  }
+  // Ambiguity requires knowing every candidate on both sides for a given (path, operation,
+  // field) group — never guessed from bare co-occurrence. See `groupEnumChanges` doc-comment.
+  const { key: enumGroupKey, removedByGroup: enumRemovedByGroup, addedByGroup: enumAddedByGroup } =
+    groupEnumChanges(changes);
 
   for (const change of changes) {
     // 1. Property renames — only when the change itself carries an explicit before AND
@@ -297,9 +321,17 @@ export function applyAstTransforms(
       const addedGroup = enumAddedByGroup.get(key) ?? [];
       const oldVal = change.before;
       const unambiguousTarget = removedGroup.length === 1 && addedGroup.length === 1 ? addedGroup[0].after : undefined;
+      // Only consult an agent proposal when the spec diff itself couldn't resolve the case,
+      // and only trust it if the proposed target is actually one of this group's real
+      // candidates (defense in depth — `validateProposal` in agent-resolve.ts should already
+      // guarantee this, but the AST layer never assumes an upstream guarantee holds).
+      const agentProposal = !unambiguousTarget ? agentResolutions.get(change.id) : undefined;
+      const isAgentResolution =
+        Boolean(agentProposal) && addedGroup.some((c) => c.after === agentProposal!.target);
+      const resolvedTarget = unambiguousTarget ?? (isAgentResolution ? agentProposal!.target : undefined);
 
-      if (unambiguousTarget) {
-        const newVal = unambiguousTarget;
+      if (resolvedTarget) {
+        const newVal = resolvedTarget;
         const { unions: resolvedUnions, rejectedByAnchoring } = resolveEnumScope(change);
         // Type-position literals are scoped to the resolved schema's own union(s) when we
         // could find them — never renamed by matching text alone across the whole file.
@@ -319,7 +351,15 @@ export function applyAstTransforms(
             before: `"${oldVal}"`,
             after: `"${newVal}"`,
             safe: true,
-            safetyNotes: ["AST string literal enum update, scoped to the resolved schema's union type", "Unambiguous 1:1 pairing with the added value"],
+            safetyNotes: isAgentResolution
+              ? [
+                  "AST string literal enum update, scoped to the resolved schema's union type",
+                  `AI-proposed pairing (confidence ${agentProposal!.confidence.toFixed(2)}) — spec diff alone was ambiguous; verify against the vendor changelog before merging`,
+                ]
+              : ["AST string literal enum update, scoped to the resolved schema's union type", "Unambiguous 1:1 pairing with the added value"],
+            ...(isAgentResolution
+              ? { origin: "agent-proposed" as const, agentConfidence: agentProposal!.confidence, agentReasoning: agentProposal!.reasoning }
+              : {}),
           });
           pathHints.push(oldVal);
           const union = literalType.getFirstAncestorByKind(SyntaxKind.UnionType);
@@ -357,7 +397,15 @@ export function applyAstTransforms(
             before: `"${oldVal}"`,
             after: `"${newVal}"`,
             safe: true,
-            safetyNotes: ["AST string literal enum update, scoped to matching property assignment", "Unambiguous 1:1 pairing with the added value"],
+            safetyNotes: isAgentResolution
+              ? [
+                  "AST string literal enum update, scoped to matching property assignment",
+                  `AI-proposed pairing (confidence ${agentProposal!.confidence.toFixed(2)}) — spec diff alone was ambiguous; verify against the vendor changelog before merging`,
+                ]
+              : ["AST string literal enum update, scoped to matching property assignment", "Unambiguous 1:1 pairing with the added value"],
+            ...(isAgentResolution
+              ? { origin: "agent-proposed" as const, agentConfidence: agentProposal!.confidence, agentReasoning: agentProposal!.reasoning }
+              : {}),
           });
           pathHints.push(oldVal);
         }
