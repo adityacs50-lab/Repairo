@@ -1,102 +1,114 @@
 <h1 align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./brand/logo-horizontal-light.svg">
-    <source media="(prefers-color-scheme: light)" srcset="./brand/logo-horizontal-dark.svg">
-    <img src="./brand/logo-horizontal-dark.svg" alt="Repairo" width="320">
-  </picture>
+  <img src="./public/logo.png" alt="Repairo" width="280">
 </h1>
 
 <p align="center">
-  <strong>Automatically refactor your codebase and open compile-safe Pull Requests when third-party APIs change.</strong>
+  <strong>Dependabot updates your package.json. Repairo fixes the code that breaks when it does.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/adityacs50-lab/Repairo/actions"><img alt="Build Status" src="https://img.shields.io/badge/CI-passing-10B981?style=flat-square"></a>
-  <a href="https://github.com/adityacs50-lab/Repairo/actions"><img alt="Test Status" src="https://img.shields.io/badge/tests-100%25%20passing-10B981?style=flat-square"></a>
   <a href="https://www.npmjs.com/package/repairo-cli"><img alt="npm version" src="https://img.shields.io/npm/v/repairo-cli?style=flat-square&color=F97316&label=npm"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-0EA5E9?style=flat-square"></a>
+  <a href="https://github.com/adityacs50-lab/Repairo/issues"><img alt="Issues" src="https://img.shields.io/github/issues/adityacs50-lab/Repairo?style=flat-square&color=64748B"></a>
 </p>
 
 ---
 
-## What is Repairo?
-
-**Repairo** is an automated API maintenance toolchain. Unlike standard dependency managers that only bump version numbers and leave your codebase broken, Repairo parses your codebase's Abstract Syntax Tree (AST), maps the impact of breaking API changes, and automatically generates compile-safe Pull Requests to patch the integration calls.
-
-It works entirely in-memory using our **Volatile RAM Vault**—meaning your code is never written to disk, stored, or used for AI training.
-
----
-
-## The Problem: The "Dependabot Gap"
-
-Modern development teams are caught between two sub-optimal solutions:
-1. **Version Bumpers (Dependabot):** Secure, but they only upgrade your `package.json`. When an API introduces a breaking change (like a parameter rename), the build breaks, leaving your team to spend weeks manually refactoring code.
-2. **AI Coding Agents (Cursor/Devin):** They can write code, but they are probabilistic. They hallucinate syntax errors, introduce subtle security vulnerabilities, and require sharing your proprietary codebase with third-party LLMs.
-
-**Repairo fills this gap.** We provide the deterministic security of compiler-grade codemods with the automation of a PR bot.
-
----
-
-## How It Works
-
-```
-┌───────────────────────────┐      ┌───────────────────────────┐
-│ 1. Vendor OpenAPI Poller  │ ───► │ 2. Repository Spec Scan   │
-│ (Monitors 500+ endpoints) │      │ (Detects call-site deltas)│
-└───────────────────────────┘      └─────────────┬─────────────┘
-                                                 │
-                                                 ▼
-┌───────────────────────────┐      ┌───────────────────────────┐
-│ 4. Automated PR Engine    │ ◄─── │ 3. Volatile RAM AST Engine│
-│ (Opens verified GitHub PR)│      │ (~24ms purge cycle)       │
-└───────────────────────────┘      └───────────────────────────┘
-```
-
-1. **Spec Polling:** We monitor vendor OpenAPI specifications (Stripe, OpenAI, Clerk, etc.) for breaking changes.
-2. **Impact Mapping:** Our compiler-grade parser traverses your TypeScript codebase to identify affected files and call sites.
-3. **AST Refactoring:** We perform precise syntax transformations directly on the Abstract Syntax Tree in volatile RAM.
-4. **Compile Verification:** The generated patch is verified locally to ensure a 100% build pass rate before opening a Pull Request.
-
----
-
-## Quickstart
-
-Run a local scan on your project to find deprecated API calls and schema drifts:
+## Get started in 30 seconds
 
 ```bash
-# Scan a directory for API drifts (Stripe, OpenAI, and Supabase)
 npx repairo-cli scan ./src --vendors stripe,openai,supabase
 ```
 
-### Installation
+That's it — no signup, no config file. It scans your codebase for third-party API dependencies and tells you what it finds. Everything below is what happens once it finds something breaking.
 
-Install the CLI globally:
+---
+
+## The problem
+
+A vendor API you depend on ships a breaking change — a renamed field, a removed enum value, a parameter that's now required. Today you find out one of two ways:
+
+1. **Dependabot/Renovate bump the package version**, your build still breaks, and you spend an afternoon grepping for every call site.
+2. **An AI coding agent rewrites the code for you** — but it's probabilistic. It can hallucinate a fix that compiles clean and is still wrong, and it means sending your codebase to a third-party model with no deterministic check on what comes back.
+
+Repairo is built for the gap between those two: **deterministic AST repair, with an LLM only ever proposing — never writing — for the one class of case a spec diff genuinely can't resolve on its own.**
+
+---
+
+## How it works
+
+```
+OpenAPI spec (before → after)
+        │
+        ▼
+  diffOpenApi()            — structural diff: what actually changed, and how
+        │
+        ▼
+  findImpactedCode()       — ts-morph AST scan of your repo: which call sites are affected
+        │
+        ▼
+  applyAstTransforms()     — deterministic AST rename/insert on the real syntax tree
+        │                    (an LLM proposal can enter here ONLY for a genuinely
+        │                    ambiguous enum rename — see below)
+        ▼
+  validateInMemory()/tsc   — the patch must actually compile before it's ever proposed
+        │
+        ▼
+  Pull Request              — labeled, scored, never auto-merged when AI-assisted
+```
+
+Every step through the compile check is deterministic — no model in the loop, no probability of a hallucinated rewrite. The one place an LLM can help at all is when the spec diff itself is ambiguous (see below), and even there it never touches your files directly.
+
+---
+
+## Example: a real rename, patched deterministically
+
+```diff
+// Before: vendor's old parameter name
+- const response = await openai.chat.completions.create({
+-   model: "gpt-4",
+-   max_tokens: 500,
+- });
+
+// After: Repairo's AST patch — same call, updated parameter, nothing else touched
++ const response = await openai.chat.completions.create({
++   model: "gpt-4",
++   max_output_tokens: 500,
++ });
+```
+
+This isn't a regex find-and-replace — it's a real `ts-morph` AST mutation, scoped to the actual call site (an unrelated object literal with a field of the same name is left untouched), then compile-verified before it's ever shown to you.
+
+---
+
+## The one place we use an LLM — and exactly how it's constrained
+
+Sometimes a spec removes several enum values while adding several new ones. The diff alone can't prove which maps to which — guessing here is exactly the kind of unverified rewrite this project exists to avoid, so the deterministic engine correctly refuses and flags it for manual review.
+
+Optionally (`--agent-resolve`, requires your own `ANTHROPIC_API_KEY`), Repairo asks an LLM to propose a mapping for that one ambiguous case. **The AI never writes to your code — it proposes, Repairo verifies:**
+
+- The proposed target is constrained by a strict JSON-schema `enum` to the actual candidate values from the diff — the model cannot propose anything outside what the spec itself added.
+- An accepted proposal is fed into the *exact same* deterministic AST transform used for the unambiguous case — no agent-specific code-mutation path exists.
+- The patch still has to compile before it's ever proposed.
+- **A PR containing any AI-proposed fix is never auto-merge eligible, regardless of confidence.** Confidence is model-self-reported, not a calibrated probability — it's there for the human reviewer, not as a trust signal.
+- Off by default. Requires two independent opt-ins (`--agent-resolve` and your own API key) — neither alone does anything.
+
+---
+
+## Installation
 
 ```bash
 npm install -g repairo-cli
 ```
 
-Set up Repairo in your repository:
-
 ```bash
-repairo init --repo owner/your-app           # Link your repository
-repairo scan ./src                           # Scan for API dependencies
-repairo check --vendors stripe,openai        # Diff live vendor specs vs snapshot
-repairo diff --spec ./specs/new-openapi.json # View AST refactoring diffs
-repairo repair --create-pr                   # Apply AST patches & open PR
+repairo init --repo owner/your-app            # link your repository
+repairo scan ./src                            # find API dependencies
+repairo check --vendors stripe,openai         # diff live vendor specs vs. your snapshot, exit non-zero on breakage
+repairo repair --create-pr                    # generate the AST patch, compile-verify it, open a PR
 ```
 
-### Run in CI (the Dependabot way)
-
-`repairo check` fetches each vendor's live OpenAPI spec, diffs it against the
-baseline snapshot committed in `.repairo/snapshots/`, and exits non-zero when a
-breaking change lands — so your pipeline knows before production does.
-
-```bash
-repairo check --vendors stripe,openai --json   # machine-readable report
-```
-
-Or use the GitHub Action on a schedule:
+### Run it in CI
 
 ```yaml
 # .github/workflows/repairo.yml
@@ -117,78 +129,41 @@ jobs:
           target: ./src
 ```
 
-The first run saves baselines (commit them); subsequent runs fail the job on
-breaking contract changes and write an impact report to `.repairo/reports/`.
-
----
-
-## Deterministic Code Patching
-
-When Stripe deprecated `stripe.charges.create` in favor of `stripe.paymentIntents.create`, standard tools broke. Repairo refactors the call-site structure deterministically:
-
-```diff
-// Stripe SDK v11 (Deprecated charging)
--const charge = await stripe.charges.create({
--  amount: 2000,
--  currency: "usd",
--  customer: customerId,
--});
-
-// Stripe SDK v12+ (Deterministic AST Patch)
-+const charge = await stripe.paymentIntents.create({
-+  amount: 2000,
-+  currency: "usd",
-+  customer: customerId,
-+  automatic_payment_methods: { enabled: true },
-+});
-```
-
----
-
-## Key Features
-
-* **Zero Hallucinations:** We use a compiler-grade AST engine (`ts-morph` and the TypeScript Compiler API) instead of probabilistic LLMs. Your code transformations are mathematically guaranteed to compile.
-* **The 24ms Volatile RAM Vault:** To protect your intellectual property, all codebase parsing occurs in volatile memory. Memory blocks are zeroed out in ~24ms and are never written to physical disk.
-* **Zero Configuration Overhead:** No complex SDK integrations, background daemons, or dashboards. The engine works directly with your standard GitHub setup.
-* **Open Source Engine:** The core CLI and parsing presets are licensed under Apache-2.0.
+The first run saves a baseline snapshot (commit it); every run after that fails the job the moment a watched vendor's contract changes underneath you.
 
 ---
 
 ## Comparison
 
-| Dimension | Dependabot | Speakeasy | PactFlow | AI Assistants (Cursor/Devin) | Repairo |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Primary Focus** | Package upgrades | SDK generation | Contract testing | General code writing | **API change repair** |
-| **Remediation** | Version bump only | Regenerates SDK | None (CI break alert) | Prompt-based rewrite | **Deterministic AST patch** |
-| **Compiles?** | ⚠️ Unreliable | Yes (for SDK) | N/A | ⚠️ Probabilistic (hallucinates) | **✅ 100% Guaranteed** |
-| **InfoSec Posture** | Secure | Secure | Secure | ❌ High risk (code leaks) | **✅ Stateless RAM Vault** |
-| **Trigger** | PR on schedule | Provider push | CI integration | Developer prompt | **OpenAPI drift webhook** |
+| | Dependabot / Renovate | General AI coding agents | Repairo |
+|---|:---:|:---:|:---:|
+| Fixes the version number | ✅ | — | ✅ |
+| Fixes the code that calls it | ❌ | ✅ (probabilistic) | ✅ (deterministic) |
+| Guaranteed to compile before you see it | N/A | ❌ | ✅ |
+| Ambiguous cases | N/A | Guessed silently | Flagged, or LLM-proposed with mandatory review — never auto-merged |
+| What leaves your machine for an ambiguous case | Nothing | Full file context | Field names, path, candidate values only — never source code |
 
 ---
 
 ## Pricing
 
-* **Developer (Free):** CLI local scanning, manual triggers, open-source presets, up to 3 automated repo runs/month.
-* **Team ($150/month):** Automated background spec monitoring, 24ms Volatile RAM Vault automation, 100% automated PR generation, unlimited repository runs.
-* **Enterprise (Custom):** Custom private API spec mapping, private VPC hybrid runner, dedicated SLA, and SSO/RBAC controls.
+- **Free** — $0. 1 watched integration, 15 repair runs/month, real GitHub PRs, the fixture playground.
+- **Pro** — $29/mo. 50 watched integrations, 500 runs/month, 15 team seats, priority webhook processing, billing portal.
 
 ---
 
 ## Security
 
-Please report security vulnerabilities directly to our response team at [info@heyrepairo.in](mailto:info@heyrepairo.in). Do not file public GitHub issues.
+Please report vulnerabilities to [info@heyrepairo.in](mailto:info@heyrepairo.in) rather than filing a public issue.
 
 ---
 
 ## Contributing
 
-We welcome community contributions. Feel free to fork the repository and open pull requests:
-
-* **Repository:** [github.com/adityacs50-lab/Repairo](https://github.com/adityacs50-lab/Repairo)
-* **Bugs & Issues:** [GitHub Issues](https://github.com/adityacs50-lab/Repairo/issues)
+Issues and PRs welcome: [github.com/adityacs50-lab/Repairo](https://github.com/adityacs50-lab/Repairo/issues).
 
 ---
 
 ## License
 
-Apache-2.0. Copyright © Repairo Inc. See [LICENSE](./LICENSE) for the full text.
+Apache-2.0. See [LICENSE](./LICENSE).
