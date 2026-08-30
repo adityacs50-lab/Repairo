@@ -1,6 +1,11 @@
+import { randomUUID } from "crypto";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { getDb } from "../src/lib/db";
+import { integrations, repairRuns, users, workspaces } from "../src/lib/db/schema";
+import { listFixesForRun, recordFixes } from "../src/lib/db/repair-fixes";
+import type { SuggestedFix } from "../src/lib/engine";
 import {
   applyAstTransforms,
   buildPullRequest,
@@ -705,6 +710,128 @@ assert(amPr.body.includes("AI-proposed, compile-verified fixes"), "PR body conta
 assert(amPr.body.includes("0.87"), "PR body displays the agent-proposed fix's confidence");
 assert(amPr.body.includes(agentFix1!.agentReasoning!), "PR body displays the agent-proposed fix's reasoning");
 assert(amPr.body.includes("manual review"), "PR body explicitly calls out manual review for agent-proposed fixes");
+
+// Test 30: Repair-fix audit trail — every fix a run produces (deterministic, agent-
+// proposed, and unsafe/ambiguous-and-never-applied) must be persisted as a permanent,
+// queryable record. This is the durable "why was this decision made" trail that
+// previously only existed in memory and in free-text GitHub PR descriptions.
+console.log("\nTest 30: Repair-fix audit trail persistence");
+const dbTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-db-"));
+process.env.DATABASE_PATH = path.join(dbTmpDir, "test.db");
+const db = getDb();
+
+const auditUserId = randomUUID();
+db.insert(users)
+  .values({
+    id: auditUserId,
+    githubId: "12345",
+    login: "test-user",
+    avatarUrl: "https://example.com/avatar.png",
+    encryptedAccessToken: "encrypted",
+  })
+  .run();
+
+const auditWorkspaceId = randomUUID();
+db.insert(workspaces)
+  .values({ id: auditWorkspaceId, name: "Test Workspace", ownerUserId: auditUserId })
+  .run();
+
+const auditIntegrationId = randomUUID();
+db.insert(integrations)
+  .values({
+    id: auditIntegrationId,
+    workspaceId: auditWorkspaceId,
+    name: "Test Integration",
+    owner: "acme",
+    repo: "widgets",
+    beforePath: "specs/old.json",
+    afterPath: "specs/new.json",
+    beforeRef: "main",
+    afterRef: "main",
+    consumerPaths: ["src/client.ts"],
+    consumerRef: "main",
+    baseBranch: "main",
+    webhookSecret: "secret",
+  })
+  .run();
+
+const auditRunId = randomUUID();
+db.insert(repairRuns)
+  .values({ id: auditRunId, integrationId: auditIntegrationId, status: "running" })
+  .run();
+
+const auditFixes: SuggestedFix[] = [
+  {
+    changeId: "chg_a",
+    file: "src/client.ts",
+    description: "Renamed property via AST",
+    before: "old_field",
+    after: "new_field",
+    safe: true,
+    safetyNotes: ["Deterministic AST rename"],
+  },
+  {
+    changeId: "chg_b",
+    file: "src/client.ts",
+    description: "Renamed enum value via AST (AI-proposed)",
+    before: '"pending"',
+    after: '"queued"',
+    safe: true,
+    safetyNotes: ["AI-proposed pairing"],
+    origin: "agent-proposed",
+    agentConfidence: 0.87,
+    agentReasoning: "Historically pending maps to queued",
+  },
+  {
+    changeId: "chg_c",
+    file: "src/client.ts",
+    description: "Ambiguous — not auto-applied",
+    before: '"processing"',
+    after: "(ambiguous — not auto-applied)",
+    safe: false,
+    safetyNotes: ["Spec diff alone cannot determine which added value replaces this one"],
+  },
+];
+recordFixes(auditRunId, auditFixes);
+
+const persistedFixes = listFixesForRun(auditRunId);
+assert(persistedFixes.length === 3, "All 3 fixes are persisted, including the unsafe/ambiguous one that never touched a file");
+const persistedA = persistedFixes.find((f) => f.changeId === "chg_a");
+const persistedB = persistedFixes.find((f) => f.changeId === "chg_b");
+const persistedC = persistedFixes.find((f) => f.changeId === "chg_c");
+assert(persistedA?.origin === "deterministic" && persistedA?.safe === true, "Deterministic fix is persisted with origin='deterministic' and safe=true");
+assert(
+  persistedB?.origin === "agent-proposed" && persistedB?.agentConfidence === 0.87 && persistedB?.agentReasoning === "Historically pending maps to queued",
+  "Agent-proposed fix is persisted with its origin, confidence, and reasoning intact",
+);
+assert(persistedC?.safe === false && persistedC?.agentConfidence === null, "Unsafe/ambiguous fix is persisted with safe=false and no confidence value");
+assert(Array.isArray(persistedA?.safetyNotesJson) && persistedA?.safetyNotesJson[0] === "Deterministic AST rename", "safetyNotes round-trips as a real array through the JSON column");
+
+// Test 31: recordFixes is a true no-op for an empty fix list (no wasted insert).
+console.log("\nTest 31: recordFixes no-op for empty fix list");
+const emptyRunId = randomUUID();
+db.insert(repairRuns)
+  .values({ id: emptyRunId, integrationId: auditIntegrationId, status: "skipped" })
+  .run();
+recordFixes(emptyRunId, []);
+assert(listFixesForRun(emptyRunId).length === 0, "No rows are inserted when the fix list is empty");
+
+// Test 32: recordFixes never throws, even when persistence itself fails (e.g. a
+// foreign-key violation from a malformed/unknown repairRunId) — the audit trail must
+// never be able to break the repair run it's recording, matching the existing writeAudit
+// convention elsewhere in this codebase.
+console.log("\nTest 32: recordFixes never throws on a persistence failure");
+let recordFixesThrew = false;
+try {
+  recordFixes("nonexistent-run-id-violates-fk", [
+    { changeId: "chg_x", file: "x.ts", description: "x", before: "a", after: "b", safe: true, safetyNotes: [] },
+  ]);
+} catch {
+  recordFixesThrew = true;
+}
+assert(recordFixesThrew === false, "A foreign-key violation inside recordFixes is caught, not thrown — the repair run itself must never fail because the audit trail couldn't be written");
+
+fs.rmSync(dbTmpDir, { recursive: true, force: true });
 
 console.log("\n==================================================");
 console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);
