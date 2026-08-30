@@ -62,11 +62,12 @@ export interface SuggestedFix {
   safetyNotes: string[];
   /** Absent = "deterministic" (today's only behavior). */
   origin?: FixOrigin;
-  /** Model-reported confidence (0-1) from the tool-call response. This is NOT a
-   *  calibrated probability of correctness — it's whatever the model self-reports.
-   *  Do not treat it as trustworthy on its own; it exists for the human reviewer's
-   *  context and for future calibration once enough real outcomes are logged
-   *  (confidence bucket -> actual correctness rate). Present only when
+  /** Model-reported confidence, hard-bounded to [minConfidence, 1] by `validateProposal`
+   *  (see agent-resolve.ts) before a fix can ever carry this field. This is NOT a
+   *  calibrated probability of correctness — it's whatever the model self-reports, just
+   *  clamped to a sane range. Do not treat it as trustworthy on its own; it exists for the
+   *  human reviewer's context and for future calibration once enough real outcomes are
+   *  logged (confidence bucket -> actual correctness rate). Present only when
    *  origin === "agent-proposed". */
   agentConfidence?: number;
   /** The model's stated reasoning for the proposed mapping. Present only when

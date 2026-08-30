@@ -16,7 +16,9 @@ export interface AgentResolveOptions {
    * more ambiguous cases than are worth a network round-trip for (Stripe's real historical
    * diff had 1,852 changes). Cases beyond the cap are simply never attempted, so they fall
    * straight through to the existing ambiguous-flag path in ast-transformer.ts — "fail
-   * closed" is free here, it's just "don't call". */
+   * closed" is free here, it's just "don't call". Malformed values (NaN, Infinity,
+   * negative, non-integer, missing) are never trusted as-is — see
+   * `normalizeMaxAgentResolutions`, which is the only thing that reads this field. */
   maxAgentResolutions?: number;
 }
 
@@ -32,6 +34,34 @@ const DEFAULT_TIMEOUT_MS = 20_000;
 const DEFAULT_MAX_AGENT_RESOLUTIONS = 20;
 
 /**
+ * Normalizes a user-supplied `maxAgentResolutions` value against a simple, conservative
+ * policy, so malformed input can never disable or invert the cap:
+ *
+ * - missing / `undefined`              -> default (20)
+ * - NaN, +/-Infinity                   -> default (never trusted — a NaN cap would make
+ *                                          every `attempted >= cap` comparison false,
+ *                                          silently disabling the cap entirely)
+ * - negative (e.g. -1)                 -> default (a negative count isn't meaningful)
+ * - non-integer (e.g. 2.5)             -> default (a fractional call count isn't meaningful)
+ * - 0                                  -> 0, honored as-is (an explicit, intentional
+ *                                          "resolve nothing" — the agent stays wired up
+ *                                          but zero calls are ever attempted)
+ * - any other non-negative integer     -> honored as-is, however large (an explicit,
+ *                                          informed user choice, not malformed input)
+ *
+ * Called both defensively here (in `resolveAmbiguousEnums`) and at the CLI parsing
+ * boundary (`src/cli/index.ts`) — the same policy in one place, so the two boundaries
+ * can never drift out of sync with each other.
+ */
+export function normalizeMaxAgentResolutions(value: number | undefined): number {
+  if (value === undefined) return DEFAULT_MAX_AGENT_RESOLUTIONS;
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+    return DEFAULT_MAX_AGENT_RESOLUTIONS;
+  }
+  return value;
+}
+
+/**
  * Pure, network-free guardrail applied to every raw proposal before it's ever trusted,
  * regardless of what the model returned or claimed. Defense in depth: the strict tool
  * schema's `enum` constraint on `target` should already make an out-of-candidate value
@@ -44,8 +74,11 @@ export function validateProposal(
 ): AgentEnumResolution | null {
   if (!raw) return null;
   if (typeof raw.target !== "string" || !candidates.includes(raw.target)) return null;
+  // Confidence is model-self-reported, NOT a calibrated probability (see the
+  // `agentConfidence` doc-comment in types.ts) — but it must still look like a real
+  // probability value to be usable at all: finite, and bounded to [minConfidence, 1].
   if (typeof raw.confidence !== "number" || !Number.isFinite(raw.confidence)) return null;
-  if (raw.confidence < minConfidence) return null;
+  if (raw.confidence < minConfidence || raw.confidence > 1) return null;
   if (typeof raw.reasoning !== "string" || raw.reasoning.trim().length === 0) return null;
   return { target: raw.target, confidence: raw.confidence, reasoning: raw.reasoning };
 }
@@ -168,7 +201,11 @@ export async function resolveAmbiguousEnums(
   const results = new Map<string, AgentEnumResolution>();
   if (!options.enabled || !process.env.ANTHROPIC_API_KEY) return results;
 
-  const maxAgentResolutions = options.maxAgentResolutions ?? DEFAULT_MAX_AGENT_RESOLUTIONS;
+  // Defense in depth: never trust options.maxAgentResolutions as-is. A malformed value
+  // (NaN from a bad CLI flag, Infinity, a negative or fractional number) must never reach
+  // the `attempted >= maxAgentResolutions` comparison below — a NaN cap in particular would
+  // make that comparison false forever, silently disabling the cap entirely.
+  const maxAgentResolutions = normalizeMaxAgentResolutions(options.maxAgentResolutions);
   const { removedByGroup, addedByGroup } = groupEnumChanges(changes);
 
   let attempted = 0;
@@ -182,6 +219,11 @@ export async function resolveAmbiguousEnums(
     // genuinely ambiguous remainder.
     const isAmbiguous = !(removedGroup.length === 1 && addedGroup.length === 1) && addedGroup.length > 0;
     if (!isAmbiguous) continue;
+
+    // Collect this group's proposals separately before committing any of them to
+    // `results`, so a conflict discovered anywhere in the group can still discard the
+    // whole group's proposals, not just the specific pair that collided.
+    const groupProposals = new Map<string, AgentEnumResolution>();
 
     for (const change of removedGroup) {
       if (attempted >= maxAgentResolutions) {
@@ -202,7 +244,29 @@ export async function resolveAmbiguousEnums(
         },
         options,
       );
-      if (proposal) results.set(change.id, proposal);
+      if (proposal) groupProposals.set(change.id, proposal);
+    }
+
+    // Fail closed on the whole group if two or more independently-made model calls
+    // converged on the same target. Neither call knows what the other decided, so a
+    // collision here is a genuine signal the mapping is unresolvable, not evidence that
+    // one of the two is correct — never guess which one to keep, and never prefer the
+    // higher-confidence one (confidence is model-self-reported, not calibrated).
+    const targetCounts = new Map<string, number>();
+    for (const proposal of groupProposals.values()) {
+      targetCounts.set(proposal.target, (targetCounts.get(proposal.target) ?? 0) + 1);
+    }
+    const hasConflict = Array.from(targetCounts.values()).some((count) => count > 1);
+
+    if (hasConflict) {
+      console.warn(
+        `[repairo] agent-resolve: conflicting proposals for ambiguous group "${key}" — two or more removed values independently mapped to the same target. Discarding all agent resolutions for this group; falling back to manual review.`,
+      );
+      continue;
+    }
+
+    for (const [changeId, proposal] of groupProposals) {
+      results.set(changeId, proposal);
     }
   }
 

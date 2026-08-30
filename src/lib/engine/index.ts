@@ -206,7 +206,7 @@ export { findImpactedCode } from "./impact";
 export { buildPullRequest, generateFixes } from "./repair";
 export { scanDirectory, scanCodebase } from "./ast-parser";
 export { applyAstTransforms, groupEnumChanges, type AgentEnumResolution } from "./ast-transformer";
-export { proposeEnumMapping, resolveAmbiguousEnums, validateProposal } from "./agent-resolve";
+export { normalizeMaxAgentResolutions, proposeEnumMapping, resolveAmbiguousEnums, validateProposal } from "./agent-resolve";
 export { validateCodebase } from "./validation";
 export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";
 export { getGitStatus, createGitHubPR } from "./github";

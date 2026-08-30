@@ -3,6 +3,7 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { normalizeMaxAgentResolutions } from "../lib/engine";
 import { handleDiffCommand } from "./commands/diff";
 import { handleInitCommand } from "./commands/init";
 import { handleRepairCommand } from "./commands/repair";
@@ -129,7 +130,17 @@ async function main() {
       const agentResolve = Boolean(flags["agent-resolve"]);
       const agentModel = typeof flags["agent-model"] === "string" ? flags["agent-model"] : undefined;
       const maxAgentResolutionsStr = typeof flags["max-agent-resolutions"] === "string" ? flags["max-agent-resolutions"] : undefined;
-      const maxAgentResolutions = maxAgentResolutionsStr ? Number(maxAgentResolutionsStr) : undefined;
+      let maxAgentResolutions: number | undefined;
+      if (maxAgentResolutionsStr !== undefined) {
+        const parsed = Number(maxAgentResolutionsStr);
+        const normalized = normalizeMaxAgentResolutions(parsed);
+        if (normalized !== parsed) {
+          console.error(
+            `⚠️ Invalid --max-agent-resolutions value "${maxAgentResolutionsStr}" — must be a non-negative whole number. Falling back to the default (${normalized}).\n`,
+          );
+        }
+        maxAgentResolutions = normalized;
+      }
 
       await handleRepairCommand({
         spec,
