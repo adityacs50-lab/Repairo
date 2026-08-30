@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGitHubOAuthConfig } from "@/lib/auth/config";
+import { getExplicitRedirectUri, getGitHubOAuthConfig } from "@/lib/auth/config";
 import {
   SESSION_COOKIE,
   buildSessionValue,
@@ -11,19 +11,36 @@ import { upsertGithubUser } from "@/lib/db/users";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function fail(appUrl: string, code: string, detail?: string) {
+/**
+ * Redirect back to /app using a RELATIVE Location header.
+ *
+ * Deliberately relative. This route runs on the Railway backend but is reached
+ * through the Vercel proxy at the public origin, so an absolute URL built from
+ * getAppUrl() lands on whatever APP_URL/RAILWAY_PUBLIC_DOMAIN happens to be —
+ * and Railway always sets RAILWAY_PUBLIC_DOMAIN, so a missing or stale APP_URL
+ * silently bounced every signed-in user onto the raw *.up.railway.app domain,
+ * where the session cookie just set on the public origin does not exist. A
+ * relative Location keeps the user on the exact origin they signed in from and
+ * needs no environment configuration to be correct.
+ */
+function redirectToApp(query?: URLSearchParams) {
+  const search = query?.toString();
+  return new NextResponse(null, {
+    status: 302,
+    headers: { Location: search ? `/app?${search}` : "/app" },
+  });
+}
+
+function fail(code: string, detail?: string) {
   const q = new URLSearchParams({ error: code });
   if (detail) q.set("detail", detail.slice(0, 120));
-  return NextResponse.redirect(`${appUrl}/app?${q.toString()}`);
+  return redirectToApp(q);
 }
 
 export async function GET(request: NextRequest) {
   const config = getGitHubOAuthConfig();
   if (!config) {
-    return fail(
-      process.env.APP_URL?.replace(/\/$/, "") || "http://localhost:3000",
-      "oauth_not_configured",
-    );
+    return fail("oauth_not_configured");
   }
 
   const code = request.nextUrl.searchParams.get("code");
@@ -32,7 +49,7 @@ export async function GET(request: NextRequest) {
   const ghDesc = request.nextUrl.searchParams.get("error_description");
 
   if (ghError) {
-    return fail(config.appUrl, "oauth_failed", ghDesc || ghError);
+    return fail("oauth_failed", ghDesc || ghError);
   }
 
   const storedState = request.cookies.get("repairo_oauth_state")?.value;
@@ -41,8 +58,10 @@ export async function GET(request: NextRequest) {
     (Boolean(state) && Boolean(storedState) && state === storedState);
 
   if (!code || !state || !stateOk) {
-    return fail(config.appUrl, "invalid_oauth_state");
+    return fail("invalid_oauth_state");
   }
+
+  const redirectUri = getExplicitRedirectUri();
 
   try {
     const tokenRes = await fetch(
@@ -57,7 +76,10 @@ export async function GET(request: NextRequest) {
           client_id: config.clientId,
           client_secret: config.clientSecret,
           code,
-          redirect_uri: config.callbackUrl,
+          // Must match the authorize request exactly; both read it from the same
+          // helper, and both omit it by default so GitHub uses the OAuth App's
+          // registered callback URL.
+          ...(redirectUri ? { redirect_uri: redirectUri } : {}),
         }),
       },
     );
@@ -69,7 +91,6 @@ export async function GET(request: NextRequest) {
 
     if (!tokenJson.access_token) {
       return fail(
-        config.appUrl,
         "oauth_failed",
         tokenJson.error_description ||
           tokenJson.error ||
@@ -86,7 +107,7 @@ export async function GET(request: NextRequest) {
       },
     });
     if (!userRes.ok) {
-      return fail(config.appUrl, "oauth_failed", "Could not load GitHub profile");
+      return fail("oauth_failed", "Could not load GitHub profile");
     }
     const ghUser = (await userRes.json()) as {
       id: number;
@@ -110,16 +131,23 @@ export async function GET(request: NextRequest) {
       name: user.name ?? undefined,
     });
 
-    const response = NextResponse.redirect(`${config.appUrl}/app`);
+    const response = redirectToApp();
     response.cookies.set(SESSION_COOKIE, sessionValue, {
       ...sessionCookieOptions(),
       secure: true,
     });
-    response.cookies.delete("repairo_oauth_state");
+    // Expire it explicitly with the attributes it was set with, so the deletion
+    // cookie matches the Path=/ state cookie no matter where it is sent from.
+    response.cookies.set("repairo_oauth_state", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
     return response;
   } catch (err) {
     return fail(
-      config.appUrl,
       "oauth_failed",
       err instanceof Error ? err.message : "Unexpected sign-in error",
     );

@@ -35,3 +35,24 @@ export function getGitHubOAuthConfig() {
 export function githubConfigured() {
   return getGitHubOAuthConfig() !== null;
 }
+
+/**
+ * The `redirect_uri` to send GitHub, or `undefined` to let GitHub fall back to
+ * the callback URL registered on the OAuth App itself.
+ *
+ * Single source of truth on purpose: GitHub requires the authorize request and
+ * the token exchange to send the *same* value, and rejects the exchange with
+ * `redirect_uri_mismatch` when they disagree. Previously the authorize step sent
+ * nothing (deferring to the registered callback) while the token exchange sent
+ * `getAppUrl() + /api/auth/callback`, so any deployment whose APP_URL did not
+ * exactly equal the registered callback failed at the exchange.
+ *
+ * Defaults to `undefined` — deferring to the OAuth App registration is the
+ * behavior that needs no environment configuration to be correct.
+ */
+export function getExplicitRedirectUri(): string | undefined {
+  if (process.env.EXPLICIT_REDIRECT_URI !== "true") return undefined;
+  const explicit = process.env.GITHUB_CALLBACK_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+  return `${getAppUrl()}/api/auth/callback`;
+}
