@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { getDb } from "@/lib/db";
 import { repairRuns, type Integration, workspaces } from "@/lib/db/schema";
 import { assertCanRunRepair, updateIntegration } from "@/lib/db/integrations";
+import { recordFixes } from "@/lib/db/repair-fixes";
 import { decryptToken } from "@/lib/crypto/token";
 import { getUserById } from "@/lib/db/users";
 import { runRepair } from "@/lib/engine";
@@ -99,6 +100,11 @@ export async function runIntegrationJob(options: {
       afterSpec,
       consumerFiles,
     });
+
+    // Persist every fix this run produced — including unsafe/ambiguous ones that never
+    // touched a file — before any of the skip/existing-PR/success branching below, so the
+    // audit trail reflects what the engine actually decided regardless of outcome.
+    recordFixes(runId, result.fixes);
 
     if (!result.pullRequest.files.length) {
       if (integration.specSource === "remote") {
