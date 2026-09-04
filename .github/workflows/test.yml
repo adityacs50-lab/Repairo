@@ -1,0 +1,26 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      # Scoped: older engine files carry pre-existing lint errors.
+      - run: npx eslint src/github-app src/db src/oasdiff src/lib/engine/oasdiff.ts src/lib/engine/spec-diff.ts tests/github-app.test.mts tests/spec-diff.test.ts tests/oasdiff.test.ts
+      - run: npm test
+      - run: npm run test:spec-diff
+      - run: npm run test:oasdiff

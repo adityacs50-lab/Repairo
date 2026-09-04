@@ -207,6 +207,27 @@ export async function runRepair(options: {
 
 export * from "./types";
 export { diffOpenApi } from "./diff";
+export {
+  diffSpecs,
+  diffSpecFiles,
+  parseSpecWithLines,
+  type BreakingChange,
+  type BreakingRule,
+} from "./spec-diff";
+export {
+  OASDIFF_LEVEL,
+  OASDIFF_RULE_MAP,
+  OasdiffError,
+  diffWithOasdiff,
+  diffWithOasdiffDetailed,
+  isOasdiffAvailable,
+  mapOasdiffCheckId,
+  normalizeOasdiffChange,
+  type OasdiffChange,
+  type OasdiffFailureCode,
+  type OasdiffOptions,
+  type OasdiffResult,
+} from "./oasdiff";
 export { findImpactedCode } from "./impact";
 export { buildPullRequest, generateFixes } from "./repair";
 export { scanDirectory, scanCodebase } from "./ast-parser";

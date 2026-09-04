@@ -380,7 +380,7 @@ async function main() {
   assert(
     fake.comments[0].body?.startsWith(`${COMMENT_MARKER}\n## ⚠️ Breaking API Changes Detected`) === true &&
       fake.comments[0].body?.includes("| response-field-removed | GET /api/v1/users | Response field 'phone_number' was removed |") === true &&
-      fake.comments[0].body?.includes("| required-param-added | POST /api/v1/orders | New required parameter 'include_metadata' was added |") === true &&
+      fake.comments[0].body?.includes("| required-param-added | POST /api/v1/orders | query parameter 'include_metadata' is now required |") === true &&
       fake.comments[0].body?.endsWith("_Detected by Repairo_") === true,
     "Comment body follows the required template with one row per breaking change",
   );

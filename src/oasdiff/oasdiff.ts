@@ -1,13 +1,9 @@
-import { execFile } from "child_process";
 import { mkdtemp, rm, writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
-import { promisify } from "util";
-import { parse } from "yaml";
-import { diffOpenApi } from "../lib/engine/diff";
-import type { ApiChange, OpenApiDocument } from "../lib/engine/types";
-
-const execFileAsync = promisify(execFile);
+import yaml from "js-yaml";
+import { diffWithOasdiff, isOasdiffAvailable } from "../lib/engine/oasdiff";
+import { diffSpecs, type BreakingChange as EngineChange } from "../lib/engine/spec-diff";
 
 /** One breaking change, normalised to the shape the PR comment table needs. */
 export interface BreakingChange {
@@ -31,131 +27,59 @@ export interface OasdiffInput {
   head: string | null;
 }
 
+const EMPTY_SPEC = "openapi: 3.0.0\ninfo: {title: empty, version: '0'}\npaths: {}\n";
+
 /**
  * Diff two OpenAPI documents and return only the breaking changes.
  *
- * Uses the `oasdiff` CLI (https://github.com/oasdiff/oasdiff) when it is
- * available — set `OASDIFF_BIN` or have `oasdiff` on PATH — and otherwise
- * falls back to Repairo's built-in structural diff so the app works with
- * zero extra tooling.
+ * Thin adapter for the GitHub App over the shared engine in `src/lib/engine`:
+ * uses the `oasdiff` CLI wrapper (https://github.com/oasdiff/oasdiff) when the
+ * binary is available — set `OASDIFF_BIN` or have `oasdiff` on PATH — and
+ * otherwise falls back to the built-in `diffSpecs` engine so the app works
+ * with zero extra tooling.
  */
 export async function runOasdiff(input: OasdiffInput): Promise<OasdiffResult> {
-  const bin = process.env.OASDIFF_BIN ?? "oasdiff";
-  if (await isExecutable(bin)) {
-    return { engine: "oasdiff", breaking: await runOasdiffBinary(bin, input) };
+  const base = normaliseSpec(input.base);
+  const head = normaliseSpec(input.head);
+
+  const binaryPath = process.env.OASDIFF_BIN ?? "oasdiff";
+  if (await isOasdiffAvailable({ binaryPath })) {
+    return { engine: "oasdiff", breaking: await runBinary(binaryPath, base, head) };
   }
-  return { engine: "builtin", breaking: runBuiltinDiff(input) };
+  return { engine: "builtin", breaking: diffSpecs(base, head).map(toBreakingChange) };
 }
 
-// ---------------------------------------------------------------------------
-// oasdiff binary
-// ---------------------------------------------------------------------------
-
-interface OasdiffJsonEntry {
-  id: string;
-  text: string;
-  level: number; // 3 = ERR, 2 = WARN, 1 = INFO
-  operation?: string;
-  path?: string;
-}
-
-async function runOasdiffBinary(bin: string, input: OasdiffInput): Promise<BreakingChange[]> {
+async function runBinary(binaryPath: string, base: string, head: string): Promise<BreakingChange[]> {
   const dir = await mkdtemp(join(tmpdir(), "repairo-oasdiff-"));
   try {
     const basePath = join(dir, "base.yaml");
     const headPath = join(dir, "head.yaml");
-    await writeFile(basePath, input.base ?? "openapi: 3.0.0\ninfo: {title: empty, version: '0'}\npaths: {}\n");
-    await writeFile(headPath, input.head ?? "openapi: 3.0.0\ninfo: {title: empty, version: '0'}\npaths: {}\n");
-
-    const { stdout } = await execFileAsync(bin, ["breaking", basePath, headPath, "--format", "json"], {
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    const entries = (stdout.trim() ? JSON.parse(stdout) : []) as OasdiffJsonEntry[];
-    return entries
-      .filter((e) => e.level >= 2)
-      .map((e) => ({
-        rule: e.id,
-        endpoint: e.operation && e.path ? `${e.operation.toUpperCase()} ${e.path}` : "*",
-        details: e.text,
-        level: e.level >= 3 ? "error" : "warn",
-      }));
+    await writeFile(basePath, base);
+    await writeFile(headPath, head);
+    // minLevel 2 keeps oasdiff's WARN-level findings (e.g. a removed request
+    // parameter), which our rule set also treats as breaking.
+    const changes = await diffWithOasdiff(basePath, headPath, { binaryPath, minLevel: 2 });
+    return changes.map(toBreakingChange);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 }
 
-async function isExecutable(bin: string): Promise<boolean> {
-  try {
-    await execFileAsync(bin, ["--version"]);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Built-in fallback (src/lib/engine/diff.ts)
-// ---------------------------------------------------------------------------
-
-export function parseSpec(text: string | null): OpenApiDocument {
-  if (!text || !text.trim()) return { paths: {} };
-  const doc = parse(text);
-  if (!doc || typeof doc !== "object") {
+/**
+ * Validate a raw spec and return the text to diff. A missing side becomes an
+ * empty document so a deleted spec reports every endpoint as removed.
+ */
+function normaliseSpec(text: string | null): string {
+  if (!text || !text.trim()) return EMPTY_SPEC;
+  const doc = yaml.load(text);
+  if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
     throw new Error("Spec is not a YAML/JSON object");
   }
-  return doc as OpenApiDocument;
+  return text;
 }
 
-function runBuiltinDiff(input: OasdiffInput): BreakingChange[] {
-  const changes = diffOpenApi(parseSpec(input.base), parseSpec(input.head));
-  return changes.filter((c) => c.severity === "breaking").map(toBreakingChange);
-}
-
-/** Map an engine `ApiChange` onto an oasdiff-style rule id + human sentence. */
-export function toBreakingChange(change: ApiChange): BreakingChange {
-  const endpoint = change.operation
-    ? `${change.operation.toUpperCase()} ${change.path}`
-    : "*";
-  const side = change.side === "response" ? "response" : "request";
-  const sideLabel = side === "response" ? "Response" : "Request";
-  // The engine reports parameters and body fields with the same kinds; its
-  // summaries for parameters always start with "Parameter".
-  const isParam = change.summary.startsWith("Parameter");
-  const name = change.field ?? "";
-
-  switch (change.kind) {
-    case "endpoint-removed":
-      return { rule: "endpoint-removed", endpoint, details: `Endpoint ${endpoint} was removed`, level: "error" };
-    case "field-removed":
-      return isParam
-        ? { rule: "request-param-removed", endpoint, details: `Parameter '${name}' was removed`, level: "error" }
-        : { rule: `${side}-field-removed`, endpoint, details: `${sideLabel} field '${name}' was removed`, level: "error" };
-    case "field-required":
-      return isParam
-        ? { rule: "required-param-added", endpoint, details: `New required parameter '${name}' was added`, level: "error" }
-        : { rule: `${side}-field-required`, endpoint, details: `${sideLabel} field '${name}' is now required`, level: "error" };
-    case "type-changed":
-      return {
-        rule: `${side}-field-type-changed`,
-        endpoint,
-        details: `${sideLabel} field '${name}' changed type from ${change.before} to ${change.after}`,
-        level: "error",
-      };
-    case "enum-value-removed":
-      return {
-        rule: `${side}-enum-value-removed`,
-        endpoint,
-        details: `Enum value '${change.before}' was removed from ${side} field '${name}'`,
-        level: "error",
-      };
-    case "server-url-changed":
-      return {
-        rule: "server-url-changed",
-        endpoint,
-        details: `Base URL changed from ${change.before} to ${change.after}`,
-        level: "warn",
-      };
-    default:
-      return { rule: change.kind, endpoint, details: change.summary, level: "error" };
-  }
+/** Map an engine change onto the `rule | endpoint | details` row the comment renders. */
+export function toBreakingChange(change: EngineChange): BreakingChange {
+  const endpoint = change.method === "*" ? change.path : `${change.method} ${change.path}`;
+  return { rule: change.rule, endpoint, details: change.details, level: "error" };
 }
