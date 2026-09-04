@@ -3,6 +3,9 @@
   "version": "0.3.0",
   "description": "Repairo detects breaking changes in third-party APIs, maps codebase impact, and generates validated AST repairs.",
   "private": false,
+  "engines": {
+    "node": ">=22"
+  },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"

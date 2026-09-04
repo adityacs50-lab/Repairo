@@ -190,7 +190,7 @@ Open a PR that edits an `openapi.yaml` in an installed repo and watch the logs: 
 ### 4. Run with Docker
 
 ```bash
-docker compose up --build github-app     # Node 20 alpine, SQLite persisted in the repairo-github-app-data volume
+docker compose up --build github-app     # Node 22 alpine, SQLite persisted in the repairo-github-app-data volume
 ```
 
 The container listens on port 3000 and is published on `localhost:3001` so it can run next to the web app service. Point your GitHub App's webhook URL at it.
