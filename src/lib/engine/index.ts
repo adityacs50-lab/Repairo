@@ -207,6 +207,13 @@ export async function runRepair(options: {
 
 export * from "./types";
 export { diffOpenApi } from "./diff";
+export {
+  diffSpecs,
+  diffSpecFiles,
+  parseSpecWithLines,
+  type BreakingChange,
+  type BreakingRule,
+} from "./spec-diff";
 export { findImpactedCode } from "./impact";
 export { buildPullRequest, generateFixes } from "./repair";
 export { scanDirectory, scanCodebase } from "./ast-parser";

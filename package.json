@@ -25,7 +25,8 @@
     "lint": "eslint",
     "test": "npx tsx tests/run-tests.ts",
     "repairo": "npx tsx src/cli/index.ts",
-    "demo:engine": "npx tsx src/lib/engine/run-demo.ts"
+    "demo:engine": "npx tsx src/lib/engine/run-demo.ts",
+    "test:spec-diff": "npx tsx tests/spec-diff.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
@@ -34,6 +35,8 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.42.2",
+    "js-yaml": "^4.3.1",
+    "lodash.isequal": "^4.5.0",
     "lucide-react": "^1.28.0",
     "next": "16.2.11",
     "react": "19.2.4",
@@ -47,6 +50,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/js-yaml": "^4.0.9",
+    "@types/lodash.isequal": "^4.5.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
