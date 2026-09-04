@@ -20,5 +20,23 @@ services:
       retries: 3
       start_period: 20s
 
+  # GitHub App webhook server (src/github-app). Reads APP_ID, PRIVATE_KEY and
+  # WEBHOOK_SECRET from .env.local; SQLite lives on its own volume.
+  github-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.github-app
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env.local
+    environment:
+      PORT: "3000"
+      DATABASE_PATH: /app/data/repairo.db
+    volumes:
+      - repairo-github-app-data:/app/data
+    restart: unless-stopped
+
 volumes:
   repairo-data:
+  repairo-github-app-data:
