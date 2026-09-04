@@ -26,7 +26,8 @@
     "test": "npx tsx tests/run-tests.ts",
     "repairo": "npx tsx src/cli/index.ts",
     "demo:engine": "npx tsx src/lib/engine/run-demo.ts",
-    "test:spec-diff": "npx tsx tests/spec-diff.test.ts"
+    "test:spec-diff": "npx tsx tests/spec-diff.test.ts",
+    "test:oasdiff": "npx tsx tests/oasdiff.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
