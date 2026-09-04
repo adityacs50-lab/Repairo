@@ -133,6 +133,78 @@ The first run saves a baseline snapshot (commit it); every run after that fails 
 
 ---
 
+## GitHub App: breaking-change comments on pull requests
+
+`src/github-app/` is a standalone webhook server (Express + `@octokit/app`) you install on your own repositories. Whenever a pull request touches an OpenAPI spec — `openapi.{yaml,yml,json}`, `swagger.{yaml,yml,json}`, or any YAML under an `api/spec/` directory — it diffs the base and head versions and, if the change is breaking, posts a comment like:
+
+> ## ⚠️ Breaking API Changes Detected
+>
+> | Rule | Endpoint | Details |
+> |------|----------|---------|
+> | response-field-removed | GET /api/v1/users | Response field 'phone_number' was removed |
+> | required-param-added | POST /api/v1/orders | New required parameter 'include_metadata' was added |
+>
+> **Action required**: These changes will break downstream API consumers.
+> - [ ] Add deprecation headers and sunset date
+> - [ ] Notify consumer teams
+> - [ ] Update API versioning strategy
+>
+> _Detected by Repairo_
+
+A later push to the same PR updates that comment instead of adding another. Installations and every detected breaking change are stored in SQLite (`installations`, `breaking_change_events`).
+
+### 1. Create the GitHub App
+
+1. Go to **Settings → Developer settings → GitHub Apps → New GitHub App** (or your org's settings).
+2. **Webhook URL**: where this server is reachable, ending in `/api/github/webhooks`. For local development create a channel at [smee.io](https://smee.io) and use that URL.
+3. **Webhook secret**: any long random string — you'll put the same value in `WEBHOOK_SECRET`.
+4. **Repository permissions**: *Contents: Read-only*, *Pull requests: Read and write*, *Metadata: Read-only*.
+5. **Subscribe to events**: *Pull request*. (Installation events are always delivered to the app.)
+6. Create the app, note the **App ID**, then under *Private keys* click **Generate a private key** and download the `.pem`.
+7. **Install App** on the repositories you want watched.
+
+### 2. Configure
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in `APP_ID`, `PRIVATE_KEY` (the `.pem` contents — multi-line in quotes, or one line with `\n` escapes) and `WEBHOOK_SECRET`. `PORT` defaults to `3000`.
+
+Optional: install the [`oasdiff`](https://github.com/oasdiff/oasdiff) CLI (or set `OASDIFF_BIN`) for its full breaking-change rule set. Without it the app uses Repairo's built-in structural diff, which needs no extra tooling.
+
+### 3. Run locally
+
+```bash
+npm install
+npm run dev:github-app          # tsx watch — restarts on file changes, logs as JSON (pipe to `npx pino-pretty` for colour)
+
+# in another terminal, forward webhooks from your smee channel:
+npx smee-client --url https://smee.io/<your-channel> --target http://localhost:3000/api/github/webhooks
+```
+
+Open a PR that edits an `openapi.yaml` in an installed repo and watch the logs: `webhook received` → `OpenAPI spec change detected in owner/repo#N` → `breaking API changes found` → `PR comment posted`.
+
+`GET /healthz` returns `{"ok":true}`. Set `LOG_LEVEL=debug` for per-file diff details.
+
+### 4. Run with Docker
+
+```bash
+docker compose up --build github-app     # Node 20 alpine, SQLite persisted in the repairo-github-app-data volume
+```
+
+The container listens on port 3000 and is published on `localhost:3001` so it can run next to the web app service. Point your GitHub App's webhook URL at it.
+
+### 5. Tests
+
+```bash
+npm run test:github-app
+```
+
+Covers spec-path matching, the comment format, the diff wrapper, the SQLite layer, token caching/refresh, retry with backoff, and the webhook endpoint end-to-end (401 on bad signatures, installation create/delete, PR comment upsert) using a fake GitHub client.
+
+---
+
 ## Comparison
 
 | | Dependabot / Renovate | General AI coding agents | Repairo |

@@ -1,0 +1,26 @@
+# Repairo GitHub App — webhook server (src/github-app)
+# better-sqlite3 needs a native build on Alpine, so compile it in a deps stage.
+FROM node:20-alpine AS deps
+RUN apk add --no-cache python3 make g++
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV DATABASE_PATH=/app/data/repairo.db
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json tsconfig.json ./
+COPY src ./src
+
+RUN mkdir -p /app/data && chown -R node:node /app
+USER node
+
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", "node_modules/tsx/dist/cli.mjs", "src/github-app/index.ts"]
