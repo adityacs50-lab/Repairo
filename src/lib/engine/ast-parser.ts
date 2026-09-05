@@ -40,7 +40,11 @@ const KNOWN_VENDORS: Record<string, { name: string; packages: string[]; symbols:
   supabase: {
     name: "Supabase",
     packages: ["@supabase/supabase-js"],
-    symbols: ["createClient", "supabase", "from", "auth", "storage", "rpc"],
+    // "from" deliberately excluded — it's Supabase's query-builder entry point, but it's
+    // also Buffer.from()/Array.from()/Object.fromEntries(), which drowns out real hits on
+    // any codebase that doesn't otherwise use Supabase (confirmed against facebook/react
+    // and dubinc/dub, neither of which use it).
+    symbols: ["createClient", "supabase", "auth", "storage", "rpc"],
   },
 };
 
