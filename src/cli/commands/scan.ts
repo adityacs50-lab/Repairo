@@ -21,6 +21,9 @@ export function handleScanCommand(targetPath?: string, options: ScanOptions = {}
     console.log(`  ${result.repositoryPath}\n`);
 
     console.log(`✓ Parsed ${result.filesScanned} TypeScript files`);
+    if (result.unparseableFiles.length > 0) {
+      console.log(`⚠ Skipped ${result.unparseableFiles.length} file${result.unparseableFiles.length > 1 ? "s" : ""} with non-standard syntax (e.g. Flow-only constructs)`);
+    }
     const vendorCount = Object.keys(result.vendorsDetected).length;
     console.log(`✓ Found ${vendorCount} API dependencies`);
     console.log(`✓ Found ${result.totalCallSites} API call sites\n`);

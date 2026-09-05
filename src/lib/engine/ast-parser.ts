@@ -22,6 +22,8 @@ export interface DetailedScanResult {
     vendor: string;
     snippet: string;
   }>;
+  /** Files that couldn't be parsed as valid TS/JS (e.g. Flow-only syntax) — skipped, not fatal. */
+  unparseableFiles: string[];
 }
 
 const KNOWN_VENDORS: Record<string, { name: string; packages: string[]; symbols: string[] }> = {
@@ -77,8 +79,16 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
   }
 
   const filePaths = collectFiles(absPath);
+  const unparseableFiles: string[] = [];
+
   for (const file of filePaths) {
-    project.addSourceFileAtPath(file);
+    try {
+      project.addSourceFileAtPath(file);
+    } catch {
+      // Malformed or non-standard syntax (e.g. Flow-only constructs like
+      // `import typeof * as X from '...'`) — skip this one file, not the whole scan.
+      unparseableFiles.push(path.relative(absPath, file).replace(/\\/g, "/"));
+    }
   }
 
   const vendorsDetected: Record<string, Set<string>> = {};
@@ -92,70 +102,81 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
   for (const sourceFile of project.getSourceFiles()) {
     const relPath = path.relative(absPath, sourceFile.getFilePath()).replace(/\\/g, "/");
 
-    // 1. Check imports/requires for vendors
-    const importDeclarations = sourceFile.getImportDeclarations();
-    for (const imp of importDeclarations) {
-      const moduleSpecifier = imp.getModuleSpecifierValue().toLowerCase();
-      for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
-        if (allowedVendors && !allowedVendors.has(vKey)) continue;
-        if (vData.packages.some((pkg) => moduleSpecifier === pkg || moduleSpecifier.startsWith(pkg + "/"))) {
-          if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
-          vendorsDetected[vData.name].add(relPath);
+    try {
+      // 1. Check imports/requires for vendors
+      const importDeclarations = sourceFile.getImportDeclarations();
+      for (const imp of importDeclarations) {
+        const moduleSpecifier = imp.getModuleSpecifierValue().toLowerCase();
+        for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
+          if (allowedVendors && !allowedVendors.has(vKey)) continue;
+          if (vData.packages.some((pkg) => moduleSpecifier === pkg || moduleSpecifier.startsWith(pkg + "/"))) {
+            if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
+            vendorsDetected[vData.name].add(relPath);
+          }
         }
       }
-    }
 
-    // Require calls
-    const callExprs = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
-    for (const call of callExprs) {
-      const exprText = call.getExpression().getText();
+      // Require calls
+      const callExprs = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
+      for (const call of callExprs) {
+        const exprText = call.getExpression().getText();
 
-      if (exprText === "require") {
-        const args = call.getArguments();
-        if (args.length > 0 && SyntaxKind.StringLiteral === args[0].getKind()) {
-          const reqPath = args[0].getText().replace(/['"]/g, "").toLowerCase();
-          for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
-            if (allowedVendors && !allowedVendors.has(vKey)) continue;
-            if (vData.packages.some((pkg) => reqPath === pkg || reqPath.startsWith(pkg + "/"))) {
-              if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
-              vendorsDetected[vData.name].add(relPath);
+        if (exprText === "require") {
+          const args = call.getArguments();
+          if (args.length > 0 && SyntaxKind.StringLiteral === args[0].getKind()) {
+            const reqPath = args[0].getText().replace(/['"]/g, "").toLowerCase();
+            for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
+              if (allowedVendors && !allowedVendors.has(vKey)) continue;
+              if (vData.packages.some((pkg) => reqPath === pkg || reqPath.startsWith(pkg + "/"))) {
+                if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
+                vendorsDetected[vData.name].add(relPath);
+              }
             }
           }
         }
-      }
 
-      // Check API Call Sites (fetch, axios, sdk calls)
-      let isApiCall = false;
-      let matchedVendor = "HTTP / Generic API";
+        // Check API Call Sites (fetch, axios, sdk calls)
+        let isApiCall = false;
+        let matchedVendor = "HTTP / Generic API";
 
-      if (exprText === "fetch" || exprText.startsWith("axios")) {
-        isApiCall = true;
-        matchedVendor = exprText.startsWith("axios") ? "Axios" : "Fetch API";
-      } else {
-        for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
-          if (allowedVendors && !allowedVendors.has(vKey)) continue;
-          const lowerExpr = exprText.toLowerCase();
-          if (vData.symbols.some((sym) => lowerExpr.includes(sym.toLowerCase()))) {
-            isApiCall = true;
-            matchedVendor = vData.name;
-            if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
-            vendorsDetected[vData.name].add(relPath);
-            break;
+        if (exprText === "fetch" || exprText.startsWith("axios")) {
+          isApiCall = true;
+          matchedVendor = exprText.startsWith("axios") ? "Axios" : "Fetch API";
+        } else {
+          // Match whole dotted segments (e.g. "openai" / "chat" / "completions" in
+          // "openai.chat.completions.create"), never a substring anywhere in the
+          // expression text — a plain `includes()` check matches "checkout" inside
+          // "checkoutBranch" or "images" inside "suspenseyImages", flagging unrelated
+          // code (git helpers, DOM image handling) as vendor SDK usage.
+          const exprSegments = exprText.toLowerCase().split(/[.\[\]()]+/).filter(Boolean);
+          for (const [vKey, vData] of Object.entries(KNOWN_VENDORS)) {
+            if (allowedVendors && !allowedVendors.has(vKey)) continue;
+            if (vData.symbols.some((sym) => exprSegments.includes(sym.toLowerCase()))) {
+              isApiCall = true;
+              matchedVendor = vData.name;
+              if (!vendorsDetected[vData.name]) vendorsDetected[vData.name] = new Set();
+              vendorsDetected[vData.name].add(relPath);
+              break;
+            }
           }
         }
-      }
 
-      if (isApiCall) {
-        totalCallSites++;
-        const lineAndCol = sourceFile.getLineAndColumnAtPos(call.getStart());
-        callSiteDetails.push({
-          file: relPath,
-          line: lineAndCol.line,
-          column: lineAndCol.column,
-          vendor: matchedVendor,
-          snippet: call.getText().split("\n")[0].substring(0, 80),
-        });
+        if (isApiCall) {
+          totalCallSites++;
+          const lineAndCol = sourceFile.getLineAndColumnAtPos(call.getStart());
+          callSiteDetails.push({
+            file: relPath,
+            line: lineAndCol.line,
+            column: lineAndCol.column,
+            vendor: matchedVendor,
+            snippet: call.getText().split("\n")[0].substring(0, 80),
+          });
+        }
       }
+    } catch {
+      // A source file that added successfully but breaks on a specific AST walk
+      // (unusual syntax deep in the tree) is skipped the same way as a parse failure.
+      unparseableFiles.push(relPath);
     }
   }
 
@@ -166,11 +187,12 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
 
   return {
     repositoryPath: absPath,
-    filesScanned: filePaths.length,
+    filesScanned: filePaths.length - unparseableFiles.length,
     vendorsDetected: resultVendors,
     totalCallSites,
     durationMs: Date.now() - startTime,
     callSiteDetails,
+    unparseableFiles,
   };
 }
 
