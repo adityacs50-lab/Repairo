@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -33,6 +33,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           include-dev-deps: true
+          scanners: vuln
           format: cyclonedx
           output: repairo-sbom.json
 
@@ -45,3 +46,11 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: false
           exit-code: 1
+
+      - name: Upload SBOM artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repairo-sbom
+          path: repairo-sbom.json
+          retention-days: 14
