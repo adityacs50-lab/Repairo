@@ -52,8 +52,10 @@ export function WaitlistForm() {
   };
 
   const handleGoogleClick = () => {
-    // If GOOGLE_CLIENT_ID is configured on window/env, navigate to /api/auth/google
-    // Otherwise open prompt or register instant beta access
+    // This is a waitlist entry point, not sign-in: it only collects an email
+    // address for the beta list below, via a manual prompt rather than a real
+    // Google OAuth flow. Actual product access is GitHub-only (see AppWorkspace),
+    // since repo scanning and PR creation require a GitHub token.
     if (googlePrompt) {
       setGooglePrompt(false);
       return;

@@ -5,11 +5,14 @@ import { Check, X } from "lucide-react";
 import { containerVariants, itemVariants } from "@/lib/animationVariants";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 
+// Every number here is a fact about the engine itself (see src/lib/engine/catalog.ts
+// and src/lib/engine/types.ts), not a usage metric — Repairo doesn't yet have
+// production telemetry to back a claim like "N breaking changes caught in the wild".
 const stats = [
-  { prefix: "", value: 47000, suffix: "+", label: "Breaking changes detected" },
-  { prefix: "", value: 12, suffix: "x", label: "Faster than manual maintenance" },
-  { prefix: "", value: 99, suffix: ".8%", label: "Patch accuracy" },
-  { prefix: "< ", value: 2, suffix: " min", label: "Average time to first repair" },
+  { prefix: "", value: 6, suffix: "", label: "Vendor APIs monitored out of the box" },
+  { prefix: "", value: 10, suffix: "", label: "Categories of breaking changes detected" },
+  { prefix: "", value: 100, suffix: "%", label: "Patches compile-verified before they're proposed" },
+  { prefix: "", value: 0, suffix: "", label: "AI-written edits applied without review" },
 ];
 
 const comparisonData = [
@@ -44,10 +47,10 @@ export function BenchmarkSection() {
           className="flex flex-col items-center text-center mb-16"
         >
           <motion.span variants={itemVariants} className="text-sm font-medium tracking-wider text-charcoal uppercase mb-4 block">
-            PROVEN AT SCALE
+            HOW IT&apos;S VERIFIED
           </motion.span>
           <motion.h2 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl font-medium font-display text-ink tracking-tight max-w-4xl">
-            The fastest path from API breakage to merged fix.
+            From a breaking API change to a compile-verified fix.
           </motion.h2>
         </motion.div>
 
