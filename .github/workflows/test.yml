@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       # Scoped: older engine files carry pre-existing lint errors.
-      - run: npx eslint src/github-app src/db src/oasdiff src/lib/engine/oasdiff.ts src/lib/engine/spec-diff.ts tests/github-app.test.mts tests/spec-diff.test.ts tests/oasdiff.test.ts
+      - run: npx eslint src/github-app src/db src/oasdiff src/lib/engine/oasdiff.ts src/lib/engine/spec-diff.ts src/lib/auth/session.ts tests/github-app.test.mts tests/spec-diff.test.ts tests/oasdiff.test.ts tests/web-app.test.ts
       - run: npm test
       - run: npm run test:spec-diff
       - run: npm run test:oasdiff
