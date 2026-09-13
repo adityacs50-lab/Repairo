@@ -21,7 +21,7 @@ function binaryReferencesField(node: Node, field: string): boolean {
   return false;
 }
 
-function operationTokens(change: ApiChange): string[] {
+export function operationTokens(change: ApiChange): string[] {
   if (!change.path) return [];
   const segments = change.path.split("/").filter(Boolean).filter((segment) => !/^v?\d+(?:\.\d+)?$/i.test(segment));
   const lastSegment = segments.at(-1)?.replace(/[{}]/g, "") ?? "";

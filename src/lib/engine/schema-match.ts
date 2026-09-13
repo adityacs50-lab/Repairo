@@ -176,14 +176,13 @@ export function jsonTypeToTs(jsonType: string | undefined): string {
 
 export function defaultValueFor(fieldName: string, jsonType: string | undefined): string {
   const lower = fieldName.toLowerCase();
-  if (lower.includes("reason")) {
-    return '"requested_by_customer"';
-  }
+  // A UUID-shaped filler is generically valid for any *id/*key/*token field regardless of
+  // which vendor's API this is — unlike a guess at business-semantic content (a "reason"
+  // or "email" value), which would only ever happen to look right for the one vendor whose
+  // vocabulary it was copied from. Fields like that fall through to the plain type default
+  // below instead, same as any other field Repairo can't know the real value for.
   if (jsonType === "string" && (lower.includes("id") || lower.includes("key") || lower.includes("token"))) {
     return "crypto.randomUUID()";
-  }
-  if (lower.includes("email")) {
-    return '"ops@example.com"';
   }
   switch (jsonType) {
     case "string":

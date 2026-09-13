@@ -19,10 +19,21 @@ export function parseOpenApi(source: string): OpenApiDocument {
   return doc as OpenApiDocument;
 }
 
+/** "lodash/get" -> "lodash", "@scope/pkg/sub" -> "@scope/pkg" — the installable package name. */
+function packageRootName(specifier: string): string {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+}
+
 export function generateSbom(
   consumerFiles: ConsumerFile[],
   specTitle?: string,
   specVersion?: string,
+  /** Real installed versions (e.g. read from the target repo's package.json), keyed by
+   * package name. Without this, Repairo has no way to know what's actually installed —
+   * a fabricated version number would be worse than none, so it's reported as "unknown"
+   * rather than guessed. */
+  installedVersions?: Record<string, string>,
 ) {
   const components: any[] = [];
   const detectedPackages = new Set<string>();
@@ -43,57 +54,18 @@ export function generateSbom(
     }
   }
 
-  const packageMeta: Record<
-    string,
-    { name: string; version: string; purl: string; description: string }
-  > = {
-    stripe: {
-      name: "stripe",
-      version: "12.3.2",
-      purl: "pkg:npm/stripe@12.3.2",
-      description: "Stripe NodeJS SDK Client Library",
-    },
-    openai: {
-      name: "openai",
-      version: "4.26.0",
-      purl: "pkg:npm/openai@4.26.0",
-      description: "OpenAI NodeJS SDK Client Library",
-    },
-    supabase: {
-      name: "@supabase/supabase-js",
-      version: "2.39.8",
-      purl: "pkg:npm/%40supabase/supabase-js@2.39.8",
-      description: "Supabase Client Library",
-    },
-    "@supabase/supabase-js": {
-      name: "@supabase/supabase-js",
-      version: "2.39.8",
-      purl: "pkg:npm/%40supabase/supabase-js@2.39.8",
-      description: "Supabase Client Library",
-    },
-  };
+  for (const specifier of Array.from(detectedPackages)) {
+    if (specifier.startsWith(".") || specifier.startsWith("/")) continue; // relative import, not a package
 
-  for (const pkg of Array.from(detectedPackages)) {
-    let mapped = packageMeta[pkg];
-    if (!mapped) {
-      for (const key of Object.keys(packageMeta)) {
-        if (pkg.startsWith(key)) {
-          mapped = packageMeta[key];
-          break;
-        }
-      }
-    }
-
-    if (mapped) {
-      components.push({
-        type: "library",
-        name: mapped.name,
-        version: mapped.version,
-        purl: mapped.purl,
-        description: mapped.description,
-        licenses: [{ license: { id: "MIT" } }],
-      });
-    }
+    const name = packageRootName(specifier);
+    const version = installedVersions?.[name];
+    const purl = `pkg:npm/${encodeURIComponent(name).replace(/%2F/g, "/")}${version ? `@${version}` : ""}`;
+    components.push({
+      type: "library",
+      name,
+      version: version ?? "unknown",
+      purl,
+    });
   }
 
   if (specTitle) {
@@ -135,6 +107,8 @@ export async function runRepair(options: {
   agentResolve?: boolean;
   agentModel?: string;
   maxAgentResolutions?: number;
+  /** Real installed package versions for the SBOM — see generateSbom. */
+  installedVersions?: Record<string, string>;
 }): Promise<RepairRunResult> {
   const before = parseOpenApi(options.beforeSpec);
   const after = parseOpenApi(options.afterSpec);
@@ -168,6 +142,7 @@ export async function runRepair(options: {
     options.consumerFiles,
     after.info?.title ?? before.info?.title,
     toVersion,
+    options.installedVersions,
   );
 
   // Validate the full resulting workspace (updated files layered over the originals) with

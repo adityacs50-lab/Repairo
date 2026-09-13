@@ -180,6 +180,54 @@ const scanResult = scanDirectory(path.resolve("./fixtures/breaking-api-demo"));
 assert(scanResult.filesScanned > 0, "Scans fixture repository files accurately");
 assert(scanResult.totalCallSites > 0, "Identifies real API call sites in fixture code");
 
+// Test 7b: scanDirectory generalizes beyond the 3 originally-hardcoded vendors (RP-06) —
+// any imported package with a real call site is detected by name, not lumped into a
+// generic bucket, and the vendor attribution survives the "factory client" pattern
+// (`const twilioClient = twilio(...)`) that RP-06's real-world check surfaced.
+console.log("\nTest 7b: scanDirectory generalizes to vendors outside the curated list");
+const vendorScanDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-vendor-scan-"));
+fs.writeFileSync(
+  path.join(vendorScanDir, "notify.ts"),
+  `
+import twilio from "twilio";
+import Anthropic from "@anthropic-ai/sdk";
+import { useState } from "react";
+
+const twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
+const anthropic = new Anthropic();
+
+export async function sendSms(to: string, body: string) {
+  return twilioClient.messages.create({ to, body, from: "+15551234567" });
+}
+
+export async function askClaude(prompt: string) {
+  return anthropic.messages.create({ model: "claude-opus-5", max_tokens: 100, messages: [{ role: "user", content: prompt }] });
+}
+
+export function useCounter() {
+  return useState(0);
+}
+`,
+);
+const vendorScan = scanDirectory(vendorScanDir);
+assert(
+  Object.keys(vendorScan.vendorsDetected).includes("Twilio"),
+  "A vendor package with no curated entry (twilio) is still detected, by its own package name",
+);
+assert(
+  vendorScan.callSiteDetails.some((c) => c.snippet.includes("twilioClient.messages.create") && c.vendor === "Twilio"),
+  "A call through a variable assigned from the SDK factory call is attributed to the right vendor, not misattributed to an unrelated known vendor sharing a generic method name",
+);
+assert(
+  Object.keys(vendorScan.vendorsDetected).includes("Anthropic"),
+  "Anthropic (added to the curated catalog by RP-06, previously only stripe/openai/supabase existed) is detected",
+);
+assert(
+  !Object.keys(vendorScan.vendorsDetected).includes("React"),
+  "A framework import with no actual API-shaped call site (useState) is not reported as a vendor",
+);
+fs.rmSync(vendorScanDir, { recursive: true, force: true });
+
 // Test 8: CLI diff test
 console.log("\nTest 8: CLI diff test");
 const demoOldSpec = fs.readFileSync(path.resolve("./fixtures/breaking-api-demo/specs/old-openapi.json"), "utf-8");
@@ -275,12 +323,16 @@ const requiredChange = [
     summary: 'Field "reason" is now required',
     before: "optional",
     after: "required",
+    fieldType: "string",
   },
 ];
 const requiredResult = applyAstTransforms(requiredFieldCode, requiredChange, "src/refunds.ts");
 assert(requiredResult.content.includes("const uiState = { open: true };"), "Unrelated state object does NOT receive the required field");
 assert(requiredResult.content.includes('render({ title: "Refunds" })'), "Non-API function call argument does NOT receive the required field");
-assert(/createRefund\(\{ chargeId: "ch_1", amount: 100,\s*\n?\s*reason: "requested_by_customer"/.test(requiredResult.content.replace(/\r\n/g, "\n")), "API request object DOES receive the required field with default");
+// A generic, type-correct empty string — not a guessed business value (e.g. Stripe's
+// "requested_by_customer"), which would only ever happen to be right for one vendor. See
+// defaultValueFor in schema-match.ts.
+assert(/createRefund\(\{ chargeId: "ch_1", amount: 100,\s*\n?\s*reason: ""/.test(requiredResult.content.replace(/\r\n/g, "\n")), "API request object DOES receive the required field with a generic, vendor-neutral default");
 assert((requiredResult.content.match(/reason:/g) || []).length === 1, "Required field is inserted exactly once");
 
 // Test 14: Enum rename scoped to usages of the changed field
