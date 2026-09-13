@@ -20,11 +20,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
     requireGithubConfig();
     const session = await requireSession();
     const { id } = await params;
-    const integration = getIntegration(id);
+    const integration = await getIntegration(id);
     if (!integration) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    requireWorkspaceAccess(session.userId, integration.workspaceId);
+    await requireWorkspaceAccess(session.userId, integration.workspaceId);
     return NextResponse.json({
       integration: serializeIntegration(integration),
     });
@@ -38,11 +38,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     requireGithubConfig();
     const session = await requireSession();
     const { id } = await params;
-    const integration = getIntegration(id);
+    const integration = await getIntegration(id);
     if (!integration) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    requireWorkspaceAccess(session.userId, integration.workspaceId);
+    await requireWorkspaceAccess(session.userId, integration.workspaceId);
 
     const body = (await request.json()) as Partial<{
       name: string;
@@ -56,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       enabled: boolean;
     }>;
 
-    const updated = updateIntegration(id, {
+    const updated = await updateIntegration(id, {
       ...body,
       consumerPaths: body.consumerPaths
         ? body.consumerPaths.map((p) => p.trim()).filter(Boolean)
@@ -76,11 +76,11 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     requireGithubConfig();
     const session = await requireSession();
     const { id } = await params;
-    const integration = getIntegration(id);
+    const integration = await getIntegration(id);
     if (!integration) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    requireWorkspaceAccess(session.userId, integration.workspaceId);
+    await requireWorkspaceAccess(session.userId, integration.workspaceId);
 
     if (integration.webhookId) {
       await deleteRepoWebhook({
@@ -91,7 +91,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       });
     }
 
-    deleteIntegration(id);
+    await deleteIntegration(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return jsonError(error);

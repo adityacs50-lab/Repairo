@@ -1,33 +1,49 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { getDb } from "@/lib/db";
+import { firstRow, getDb } from "@/lib/db";
 import { pendingInvites, workspaceMembers } from "@/lib/db/schema";
 import { getPlanLimits } from "@/lib/billing/plans";
 import { AuthError } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/db/audit";
 import type { Workspace } from "@/lib/db/schema";
 
-export function countSeats(workspaceId: string) {
-  return getDb()
-    .select()
-    .from(workspaceMembers)
-    .where(eq(workspaceMembers.workspaceId, workspaceId))
-    .all().length;
+/**
+ * Seat and pending-invite counts are done with SQL count() rather than by
+ * reading every row and taking .length. That was cheap against a local SQLite
+ * file; against Postgres it would pull a workspace's entire membership over
+ * the wire on every invite check.
+ */
+export async function countSeats(workspaceId: string) {
+  const row = await firstRow(
+    getDb()
+      .select({ value: count() })
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.workspaceId, workspaceId)),
+  );
+  return row?.value ?? 0;
 }
 
-export function assertCanInvite(workspace: Workspace) {
-  const limits = getPlanLimits(workspace.plan);
-  const seats = countSeats(workspace.id);
-  const pending = getDb()
-    .select()
-    .from(pendingInvites)
-    .where(
-      and(
-        eq(pendingInvites.workspaceId, workspace.id),
-        eq(pendingInvites.status, "pending"),
+async function countPendingInvites(workspaceId: string) {
+  const row = await firstRow(
+    getDb()
+      .select({ value: count() })
+      .from(pendingInvites)
+      .where(
+        and(
+          eq(pendingInvites.workspaceId, workspaceId),
+          eq(pendingInvites.status, "pending"),
+        ),
       ),
-    )
-    .all().length;
+  );
+  return row?.value ?? 0;
+}
+
+export async function assertCanInvite(workspace: Workspace) {
+  const limits = getPlanLimits(workspace.plan);
+  const [seats, pending] = await Promise.all([
+    countSeats(workspace.id),
+    countPendingInvites(workspace.id),
+  ]);
   if (seats + pending >= limits.seats) {
     throw new AuthError(
       `${limits.name} plan allows ${limits.seats} seats. Upgrade to add more.`,
@@ -36,29 +52,31 @@ export function assertCanInvite(workspace: Workspace) {
   }
 }
 
-export function createPendingInvite(input: {
+export async function createPendingInvite(input: {
   workspace: Workspace;
   githubLogin: string;
   invitedByUserId: string;
 }) {
-  assertCanInvite(input.workspace);
+  await assertCanInvite(input.workspace);
   const login = input.githubLogin.trim().replace(/^@/, "").toLowerCase();
   if (!login) throw new AuthError("GitHub username required", 400);
 
-  const existing = getDb()
-    .select()
-    .from(pendingInvites)
-    .where(
-      and(
-        eq(pendingInvites.workspaceId, input.workspace.id),
-        eq(pendingInvites.githubLogin, login),
-        eq(pendingInvites.status, "pending"),
-      ),
-    )
-    .get();
+  const existing = await firstRow(
+    getDb()
+      .select()
+      .from(pendingInvites)
+      .where(
+        and(
+          eq(pendingInvites.workspaceId, input.workspace.id),
+          eq(pendingInvites.githubLogin, login),
+          eq(pendingInvites.status, "pending"),
+        ),
+      )
+      .limit(1),
+  );
   if (existing) return existing;
 
-  const row = getDb()
+  const [row] = await getDb()
     .insert(pendingInvites)
     .values({
       id: randomUUID(),
@@ -68,10 +86,9 @@ export function createPendingInvite(input: {
       status: "pending",
       createdAt: new Date(),
     })
-    .returning()
-    .get();
+    .returning();
 
-  writeAudit({
+  await writeAudit({
     workspaceId: input.workspace.id,
     userId: input.invitedByUserId,
     action: "invite.pending",
@@ -90,14 +107,13 @@ export function listPendingInvites(workspaceId: string) {
         eq(pendingInvites.workspaceId, workspaceId),
         eq(pendingInvites.status, "pending"),
       ),
-    )
-    .all();
+    );
 }
 
 /** Accept any pending invites for this GitHub login after signup/login. */
-export function acceptPendingInvitesForLogin(userId: string, login: string) {
+export async function acceptPendingInvitesForLogin(userId: string, login: string) {
   const db = getDb();
-  const invites = db
+  const invites = await db
     .select()
     .from(pendingInvites)
     .where(
@@ -105,36 +121,35 @@ export function acceptPendingInvitesForLogin(userId: string, login: string) {
         eq(pendingInvites.githubLogin, login.toLowerCase()),
         eq(pendingInvites.status, "pending"),
       ),
-    )
-    .all();
+    );
 
   for (const invite of invites) {
-    const already = db
-      .select()
-      .from(workspaceMembers)
-      .where(
-        and(
-          eq(workspaceMembers.workspaceId, invite.workspaceId),
-          eq(workspaceMembers.userId, userId),
-        ),
-      )
-      .get();
+    const already = await firstRow(
+      db
+        .select()
+        .from(workspaceMembers)
+        .where(
+          and(
+            eq(workspaceMembers.workspaceId, invite.workspaceId),
+            eq(workspaceMembers.userId, userId),
+          ),
+        )
+        .limit(1),
+    );
     if (!already) {
-      db.insert(workspaceMembers)
-        .values({
-          id: randomUUID(),
-          workspaceId: invite.workspaceId,
-          userId,
-          role: "member",
-          createdAt: new Date(),
-        })
-        .run();
+      await db.insert(workspaceMembers).values({
+        id: randomUUID(),
+        workspaceId: invite.workspaceId,
+        userId,
+        role: "member",
+        createdAt: new Date(),
+      });
     }
-    db.update(pendingInvites)
+    await db
+      .update(pendingInvites)
       .set({ status: "accepted" })
-      .where(eq(pendingInvites.id, invite.id))
-      .run();
-    writeAudit({
+      .where(eq(pendingInvites.id, invite.id));
+    await writeAudit({
       workspaceId: invite.workspaceId,
       userId,
       action: "invite.accepted",

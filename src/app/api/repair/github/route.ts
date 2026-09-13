@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
       windowMs: 60_000,
     });
     const session = await requireSession();
-    const workspace = getWorkspaceForUser(session.userId);
-    if (workspace) assertCanRunRepair(workspace);
+    const workspace = await getWorkspaceForUser(session.userId);
+    if (workspace) await assertCanRunRepair(workspace);
 
     const body = (await request.json()) as {
       owner?: string;
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       consumerFiles,
     });
 
-    writeAudit({
+    await writeAudit({
       workspaceId: workspace?.id,
       userId: session.userId,
       action: "repair.quick",

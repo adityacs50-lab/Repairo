@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     });
 
     const session = await requireSession();
-    const workspace = getWorkspaceForUser(session.userId);
+    const workspace = await getWorkspaceForUser(session.userId);
     if (!workspace) {
       return NextResponse.json({ error: "No workspace" }, { status: 404 });
     }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    writeAudit({
+    await writeAudit({
       workspaceId: workspace.id,
       userId: session.userId,
       action: "billing.checkout_started",

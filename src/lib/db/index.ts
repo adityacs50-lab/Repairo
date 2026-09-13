@@ -1,160 +1,53 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { mkdirSync, accessSync, constants } from "fs";
-import { dirname, join } from "path";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { sql } from "drizzle-orm";
 import * as schema from "./schema";
+
+/**
+ * Postgres (Neon) connection for the app.
+ *
+ * Replaces a local better-sqlite3 file. That worked when the API ran as one
+ * long-lived process, but on serverless there is no durable local disk: the
+ * old resolveDbPath() fell back to /tmp whenever the working directory was
+ * read-only, which is *always* on Vercel. Nothing threw — every instance
+ * quietly created its own empty database, so writes appeared to succeed and
+ * then vanished when the instance was recycled. Silent data loss is worse
+ * than an outage, so this module refuses to start without a real connection
+ * string rather than inventing a scratch one.
+ *
+ * The HTTP driver is used deliberately: it opens no long-lived socket, so it
+ * suits short-lived serverless invocations, and it has no connection pool to
+ * exhaust when many of them run at once. It cannot do interactive
+ * transactions — nothing in this codebase uses them.
+ */
 
 const globalForDb = globalThis as unknown as {
   __repairoDb?: ReturnType<typeof createDb>;
 };
 
-function resolveDbPath() {
-  const preferred =
-    process.env.DATABASE_PATH?.trim() ||
-    join(process.cwd(), "data", "repairo.db");
-  try {
-    mkdirSync(dirname(preferred), { recursive: true });
-    accessSync(dirname(preferred), constants.W_OK);
-    return preferred;
-  } catch {
-    const fallback = join("/tmp", "repairo.db");
-    mkdirSync(dirname(fallback), { recursive: true });
-    return fallback;
-  }
-}
+/**
+ * Vercel's Postgres integration injects POSTGRES_URL; a Neon project connected
+ * directly gives DATABASE_URL. Accept either so the deployment does not depend
+ * on which one was wired up.
+ */
+function resolveConnectionString(): string {
+  const url =
+    process.env.DATABASE_URL?.trim() ||
+    process.env.POSTGRES_URL?.trim() ||
+    "";
 
-function ensureColumn(
-  sqlite: InstanceType<typeof Database>,
-  table: string,
-  column: string,
-  ddl: string,
-) {
-  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{
-    name: string;
-  }>;
-  if (cols.some((c) => c.name === column)) return;
-  sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+  if (!url) {
+    throw new Error(
+      "No Postgres connection string. Set DATABASE_URL (or POSTGRES_URL) to your " +
+        "Neon connection string — in Vercel this goes in Project Settings → " +
+        "Environment Variables, for every environment the app runs in.",
+    );
+  }
+  return url;
 }
 
 function createDb() {
-  const path = resolveDbPath();
-  const sqlite = new Database(path);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("foreign_keys = ON");
-
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY NOT NULL,
-      github_id TEXT NOT NULL UNIQUE,
-      login TEXT NOT NULL,
-      name TEXT,
-      avatar_url TEXT NOT NULL,
-      encrypted_access_token TEXT NOT NULL,
-      stripe_customer_id TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS workspaces (
-      id TEXT PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL,
-      owner_user_id TEXT NOT NULL REFERENCES users(id),
-      plan TEXT NOT NULL DEFAULT 'free',
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS workspace_members (
-      id TEXT PRIMARY KEY NOT NULL,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id),
-      user_id TEXT NOT NULL REFERENCES users(id),
-      role TEXT NOT NULL DEFAULT 'member',
-      created_at INTEGER NOT NULL,
-      UNIQUE(workspace_id, user_id)
-    );
-    CREATE TABLE IF NOT EXISTS integrations (
-      id TEXT PRIMARY KEY NOT NULL,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id),
-      name TEXT NOT NULL,
-      owner TEXT NOT NULL,
-      repo TEXT NOT NULL,
-      before_path TEXT NOT NULL,
-      after_path TEXT NOT NULL,
-      before_ref TEXT NOT NULL,
-      after_ref TEXT NOT NULL,
-      consumer_paths TEXT NOT NULL,
-      consumer_ref TEXT NOT NULL,
-      base_branch TEXT NOT NULL,
-      enabled INTEGER NOT NULL DEFAULT 1,
-      webhook_id INTEGER,
-      webhook_secret TEXT NOT NULL,
-      spec_source TEXT NOT NULL DEFAULT 'repo',
-      vendor_id TEXT,
-      vendor_spec_url TEXT,
-      baseline_spec TEXT,
-      last_checked_at INTEGER,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS repair_runs (
-      id TEXT PRIMARY KEY NOT NULL,
-      integration_id TEXT NOT NULL REFERENCES integrations(id),
-      status TEXT NOT NULL DEFAULT 'pending',
-      trigger TEXT NOT NULL DEFAULT 'manual',
-      summary_json TEXT,
-      pr_url TEXT,
-      pr_number INTEGER,
-      error TEXT,
-      created_at INTEGER NOT NULL,
-      finished_at INTEGER
-    );
-    CREATE TABLE IF NOT EXISTS repair_fixes (
-      id TEXT PRIMARY KEY NOT NULL,
-      repair_run_id TEXT NOT NULL REFERENCES repair_runs(id),
-      change_id TEXT NOT NULL,
-      file TEXT NOT NULL,
-      description TEXT NOT NULL,
-      before TEXT NOT NULL,
-      after TEXT NOT NULL,
-      safe INTEGER NOT NULL,
-      origin TEXT NOT NULL DEFAULT 'deterministic',
-      agent_confidence REAL,
-      agent_reasoning TEXT,
-      safety_notes_json TEXT NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS subscriptions (
-      id TEXT PRIMARY KEY NOT NULL,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id),
-      stripe_subscription_id TEXT,
-      status TEXT NOT NULL DEFAULT 'inactive',
-      price_id TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS pending_invites (
-      id TEXT PRIMARY KEY NOT NULL,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id),
-      github_login TEXT NOT NULL,
-      invited_by_user_id TEXT NOT NULL REFERENCES users(id),
-      status TEXT NOT NULL DEFAULT 'pending',
-      created_at INTEGER NOT NULL,
-      UNIQUE(workspace_id, github_login)
-    );
-    CREATE TABLE IF NOT EXISTS audit_logs (
-      id TEXT PRIMARY KEY NOT NULL,
-      workspace_id TEXT,
-      user_id TEXT,
-      action TEXT NOT NULL,
-      meta_json TEXT,
-      created_at INTEGER NOT NULL
-    );
-  `);
-
-  ensureColumn(sqlite, "integrations", "spec_source", "TEXT NOT NULL DEFAULT 'repo'");
-  ensureColumn(sqlite, "integrations", "vendor_id", "TEXT");
-  ensureColumn(sqlite, "integrations", "vendor_spec_url", "TEXT");
-  ensureColumn(sqlite, "integrations", "baseline_spec", "TEXT");
-
-  return drizzle(sqlite, { schema });
+  return drizzle(neon(resolveConnectionString()), { schema });
 }
 
 export function getDb() {
@@ -164,11 +57,18 @@ export function getDb() {
   return globalForDb.__repairoDb;
 }
 
-export function dbProbe() {
+/**
+ * Report whether the database is actually reachable.
+ *
+ * This runs a real query rather than just constructing a client: building the
+ * Neon client is lazy and succeeds even against a wrong or unreachable host,
+ * so a probe that only called getDb() would report healthy right up until the
+ * first query failed.
+ */
+export async function dbProbe() {
   try {
-    const path = resolveDbPath();
-    getDb();
-    return { ok: true as const, path };
+    await getDb().execute(sql`select 1`);
+    return { ok: true as const };
   } catch (error) {
     return {
       ok: false as const,
@@ -178,3 +78,15 @@ export function dbProbe() {
 }
 
 export type Db = ReturnType<typeof getDb>;
+
+/**
+ * Take the first row of a query, or undefined.
+ *
+ * better-sqlite3 offered a synchronous `.get()` that returned one row; the
+ * Postgres drivers are async and always resolve to an array. This keeps the
+ * call sites reading as "fetch one thing" instead of `(await …)[0]` repeated
+ * forty times. Pair it with `.limit(1)` on selects.
+ */
+export async function firstRow<T>(query: PromiseLike<T[]>): Promise<T | undefined> {
+  return (await query)[0];
+}

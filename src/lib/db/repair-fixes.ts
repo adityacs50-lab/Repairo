@@ -13,10 +13,10 @@ import type { SuggestedFix } from "@/lib/engine";
  * Never throws: like writeAudit, a failure to record the audit trail must never fail the
  * repair run itself.
  */
-export function recordFixes(repairRunId: string, fixes: SuggestedFix[]): void {
+export async function recordFixes(repairRunId: string, fixes: SuggestedFix[]): Promise<void> {
   if (fixes.length === 0) return;
   try {
-    getDb()
+    await getDb()
       .insert(repairFixes)
       .values(
         fixes.map((fix) => ({
@@ -34,8 +34,7 @@ export function recordFixes(repairRunId: string, fixes: SuggestedFix[]): void {
           safetyNotesJson: fix.safetyNotes,
           createdAt: new Date(),
         })),
-      )
-      .run();
+      );
   } catch (err) {
     console.warn(
       `[repairo] recordFixes: failed to persist fix audit trail for run ${repairRunId} — ${err instanceof Error ? err.message : String(err)}`,
@@ -43,10 +42,9 @@ export function recordFixes(repairRunId: string, fixes: SuggestedFix[]): void {
   }
 }
 
-export function listFixesForRun(repairRunId: string): RepairFix[] {
+export function listFixesForRun(repairRunId: string): Promise<RepairFix[]> {
   return getDb()
     .select()
     .from(repairFixes)
-    .where(eq(repairFixes.repairRunId, repairRunId))
-    .all();
+    .where(eq(repairFixes.repairRunId, repairRunId));
 }

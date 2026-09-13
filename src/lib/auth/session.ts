@@ -115,7 +115,7 @@ export async function getSessionPayload(): Promise<SessionPayload | null> {
 export async function getSession(): Promise<SessionContext | null> {
   const payload = await getSessionPayload();
   if (!payload) return null;
-  const user = getUserById(payload.userId);
+  const user = await getUserById(payload.userId);
   if (!user) return null;
   try {
     const accessToken = decryptToken(user.encryptedAccessToken);

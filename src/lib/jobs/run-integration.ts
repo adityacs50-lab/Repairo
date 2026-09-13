@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { getDb } from "@/lib/db";
+import { firstRow, getDb } from "@/lib/db";
 import { repairRuns, type Integration, workspaces } from "@/lib/db/schema";
 import { assertCanRunRepair, updateIntegration } from "@/lib/db/integrations";
 import { recordFixes } from "@/lib/db/repair-fixes";
@@ -21,31 +21,29 @@ export async function runIntegrationJob(options: {
   accessToken?: string;
 }) {
   const db = getDb();
-  const workspace = db
+  const workspace = await firstRow(db
     .select()
     .from(workspaces)
-    .where(eq(workspaces.id, options.integration.workspaceId))
-    .get();
+    .where(eq(workspaces.id, options.integration.workspaceId)));
   if (!workspace) throw new Error("Workspace not found");
-  assertCanRunRepair(workspace);
+  await assertCanRunRepair(workspace);
 
   const runId = randomUUID();
   const now = new Date();
 
-  db.insert(repairRuns)
+  await db.insert(repairRuns)
     .values({
       id: runId,
       integrationId: options.integration.id,
       status: "running",
       trigger: options.trigger,
       createdAt: now,
-    })
-    .run();
+    });
 
   try {
     let token = options.accessToken;
     if (!token) {
-      const owner = getUserById(workspace.ownerUserId);
+      const owner = await getUserById(workspace.ownerUserId);
       if (!owner) throw new Error("Workspace owner not found");
       token = decryptToken(owner.encryptedAccessToken);
     }
@@ -104,18 +102,19 @@ export async function runIntegrationJob(options: {
     // Persist every fix this run produced — including unsafe/ambiguous ones that never
     // touched a file — before any of the skip/existing-PR/success branching below, so the
     // audit trail reflects what the engine actually decided regardless of outcome.
-    recordFixes(runId, result.fixes);
+    await recordFixes(runId, result.fixes);
 
     if (!result.pullRequest.files.length) {
       if (integration.specSource === "remote") {
-        updateIntegration(integration.id, {
+        await updateIntegration(integration.id, {
           lastCheckedAt: new Date(),
           baselineSpec: afterSpec,
         });
       } else {
-        updateIntegration(integration.id, { lastCheckedAt: new Date() });
+        await updateIntegration(integration.id, { lastCheckedAt: new Date() });
       }
-      db.update(repairRuns)
+      await db
+        .update(repairRuns)
         .set({
           status: "skipped",
           summaryJson: {
@@ -128,8 +127,7 @@ export async function runIntegrationJob(options: {
           },
           finishedAt: new Date(),
         })
-        .where(eq(repairRuns.id, runId))
-        .run();
+        .where(eq(repairRuns.id, runId));
       return {
         runId,
         status: "skipped" as const,
@@ -145,8 +143,8 @@ export async function runIntegrationJob(options: {
       result.pullRequest.branch,
     );
     if (existing) {
-      updateIntegration(integration.id, { lastCheckedAt: new Date() });
-      db.update(repairRuns)
+      await updateIntegration(integration.id, { lastCheckedAt: new Date() });
+      await db.update(repairRuns)
         .set({
           status: "skipped",
           summaryJson: {
@@ -157,8 +155,7 @@ export async function runIntegrationJob(options: {
           prNumber: existing.number,
           finishedAt: new Date(),
         })
-        .where(eq(repairRuns.id, runId))
-        .run();
+        .where(eq(repairRuns.id, runId));
       return {
         runId,
         status: "skipped" as const,
@@ -176,15 +173,16 @@ export async function runIntegrationJob(options: {
     });
 
     if (integration.specSource === "remote") {
-      updateIntegration(integration.id, {
+      await updateIntegration(integration.id, {
         lastCheckedAt: new Date(),
         baselineSpec: afterSpec,
       });
     } else {
-      updateIntegration(integration.id, { lastCheckedAt: new Date() });
+      await updateIntegration(integration.id, { lastCheckedAt: new Date() });
     }
 
-    db.update(repairRuns)
+    await db
+      .update(repairRuns)
       .set({
         status: "success",
         summaryJson: result.summary,
@@ -192,20 +190,18 @@ export async function runIntegrationJob(options: {
         prNumber: pr.number,
         finishedAt: new Date(),
       })
-      .where(eq(repairRuns.id, runId))
-      .run();
+      .where(eq(repairRuns.id, runId));
 
     return { runId, status: "success" as const, result, pr };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Repair failed";
-    db.update(repairRuns)
+    await db.update(repairRuns)
       .set({
         status: "failed",
         error: message,
         finishedAt: new Date(),
       })
-      .where(eq(repairRuns.id, runId))
-      .run();
+      .where(eq(repairRuns.id, runId));
     throw error;
   }
 }

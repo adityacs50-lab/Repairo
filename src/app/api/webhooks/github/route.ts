@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { firstRow, getDb } from "@/lib/db";
 import { integrations } from "@/lib/db/schema";
 import { runIntegrationJob } from "@/lib/jobs/run-integration";
 
@@ -26,11 +26,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "integrationId required" }, { status: 400 });
   }
 
-  const integration = getDb()
-    .select()
-    .from(integrations)
-    .where(eq(integrations.id, integrationId))
-    .get();
+  const integration = await firstRow(
+    getDb()
+      .select()
+      .from(integrations)
+      .where(eq(integrations.id, integrationId))
+      .limit(1),
+  );
 
   if (!integration) {
     return NextResponse.json({ error: "Unknown integration" }, { status: 404 });

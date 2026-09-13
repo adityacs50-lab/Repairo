@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { getDb } from "@/lib/db";
+import { firstRow, getDb } from "@/lib/db";
 import { subscriptions, users, workspaces } from "@/lib/db/schema";
 import { writeAudit } from "@/lib/db/audit";
 
@@ -21,7 +21,7 @@ export function getStripe() {
 
 export async function ensureStripeCustomer(userId: string) {
   const db = getDb();
-  const user = db.select().from(users).where(eq(users.id, userId)).get();
+  const user = await firstRow(db.select().from(users).where(eq(users.id, userId)));
   if (!user) throw new Error("User not found");
   if (user.stripeCustomerId) return user.stripeCustomerId;
 
@@ -31,34 +31,35 @@ export async function ensureStripeCustomer(userId: string) {
     metadata: { userId: user.id, githubLogin: user.login },
   });
 
-  db.update(users)
+  await db.update(users)
     .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
-    .where(eq(users.id, user.id))
-    .run();
+    .where(eq(users.id, user.id));
 
   return customer.id;
 }
 
-export function setWorkspacePlan(
+export async function setWorkspacePlan(
   workspaceId: string,
   plan: "free" | "pro",
   sub?: { subscriptionId?: string; status?: string; priceId?: string },
 ) {
   const db = getDb();
   const now = new Date();
-  db.update(workspaces)
+  await db.update(workspaces)
     .set({ plan, updatedAt: now })
-    .where(eq(workspaces.id, workspaceId))
-    .run();
+    .where(eq(workspaces.id, workspaceId));
 
-  const existing = db
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.workspaceId, workspaceId))
-    .get();
+  const existing = await firstRow(
+    db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.workspaceId, workspaceId))
+      .limit(1),
+  );
 
   if (existing) {
-    db.update(subscriptions)
+    await db
+      .update(subscriptions)
       .set({
         stripeSubscriptionId:
           sub?.subscriptionId ?? existing.stripeSubscriptionId,
@@ -66,10 +67,10 @@ export function setWorkspacePlan(
         priceId: sub?.priceId ?? existing.priceId,
         updatedAt: now,
       })
-      .where(eq(subscriptions.id, existing.id))
-      .run();
+      .where(eq(subscriptions.id, existing.id));
   } else if (sub?.subscriptionId) {
-    db.insert(subscriptions)
+    await db
+      .insert(subscriptions)
       .values({
         id: randomUUID(),
         workspaceId,
@@ -78,11 +79,10 @@ export function setWorkspacePlan(
         priceId: sub.priceId ?? null,
         createdAt: now,
         updatedAt: now,
-      })
-      .run();
+      });
   }
 
-  writeAudit({
+  await writeAudit({
     workspaceId,
     action: "billing.plan_changed",
     meta: { plan, status: sub?.status },

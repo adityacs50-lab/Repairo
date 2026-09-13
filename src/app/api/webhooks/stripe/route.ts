@@ -5,7 +5,7 @@ import {
   setWorkspacePlan,
   stripeConfigured,
 } from "@/lib/billing/stripe";
-import { getDb } from "@/lib/db";
+import { firstRow, getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { writeAudit } from "@/lib/db/audit";
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         status: "active",
         priceId: process.env.STRIPE_PRICE_PRO,
       });
-      writeAudit({
+      await writeAudit({
         workspaceId,
         userId: session.metadata?.userId,
         action: "billing.checkout_completed",
@@ -70,14 +70,16 @@ export async function POST(request: NextRequest) {
 
     let workspaceId = sub.metadata?.workspaceId;
     if (!workspaceId && sub.customer) {
-      const user = getDb()
-        .select()
-        .from(users)
-        .where(eq(users.stripeCustomerId, String(sub.customer)))
-        .get();
+      const user = await firstRow(
+        getDb()
+          .select()
+          .from(users)
+          .where(eq(users.stripeCustomerId, String(sub.customer)))
+          .limit(1),
+      );
       if (user) {
         const { getWorkspaceForUser } = await import("@/lib/db/users");
-        workspaceId = getWorkspaceForUser(user.id)?.id;
+        workspaceId = (await getWorkspaceForUser(user.id))?.id;
       }
     }
 
@@ -97,14 +99,16 @@ export async function POST(request: NextRequest) {
       subscription?: string | null;
     };
     if (invoice.customer) {
-      const user = getDb()
-        .select()
-        .from(users)
-        .where(eq(users.stripeCustomerId, String(invoice.customer)))
-        .get();
+      const user = await firstRow(
+        getDb()
+          .select()
+          .from(users)
+          .where(eq(users.stripeCustomerId, String(invoice.customer)))
+          .limit(1),
+      );
       if (user) {
         const { getWorkspaceForUser } = await import("@/lib/db/users");
-        const workspace = getWorkspaceForUser(user.id);
+        const workspace = await getWorkspaceForUser(user.id);
         if (workspace) {
           setWorkspacePlan(workspace.id, workspace.plan, {
             subscriptionId: invoice.subscription
@@ -112,7 +116,7 @@ export async function POST(request: NextRequest) {
               : undefined,
             status: "past_due",
           });
-          writeAudit({
+          await writeAudit({
             workspaceId: workspace.id,
             userId: user.id,
             action: "billing.payment_failed",

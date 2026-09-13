@@ -1,13 +1,30 @@
 import { randomUUID } from "crypto";
 import {
+  boolean,
   integer,
+  jsonb,
+  pgTable,
   real,
-  sqliteTable,
   text,
+  timestamp,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
-export const users = sqliteTable(
+/**
+ * Postgres schema (Neon).
+ *
+ * Ported from SQLite, where three column kinds had no native type and were
+ * stored as integers or text:
+ *
+ *   integer(…, { mode: "timestamp_ms" })  →  timestamp(…, { withTimezone: true })
+ *   integer(…, { mode: "boolean" })       →  boolean(…)
+ *   text(…,    { mode: "json" })          →  jsonb(…)
+ *
+ * The TypeScript-facing types are unchanged — Date, boolean and the $type<…>
+ * shapes — so call sites read and write exactly what they did before.
+ */
+
+export const users = pgTable(
   "users",
   {
     id: text("id")
@@ -19,17 +36,17 @@ export const users = sqliteTable(
     avatarUrl: text("avatar_url").notNull(),
     encryptedAccessToken: text("encrypted_access_token").notNull(),
     stripeCustomerId: text("stripe_customer_id"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
       .$defaultFn(() => new Date()),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
       .notNull()
       .$defaultFn(() => new Date()),
   },
   (t) => [uniqueIndex("users_github_id_idx").on(t.githubId)],
 );
 
-export const workspaces = sqliteTable("workspaces", {
+export const workspaces = pgTable("workspaces", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => randomUUID()),
@@ -38,15 +55,15 @@ export const workspaces = sqliteTable("workspaces", {
     .notNull()
     .references(() => users.id),
   plan: text("plan", { enum: ["free", "pro"] }).notNull().default("free"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
 });
 
-export const workspaceMembers = sqliteTable(
+export const workspaceMembers = pgTable(
   "workspace_members",
   {
     id: text("id")
@@ -59,7 +76,7 @@ export const workspaceMembers = sqliteTable(
       .notNull()
       .references(() => users.id),
     role: text("role", { enum: ["owner", "member"] }).notNull().default("member"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
       .$defaultFn(() => new Date()),
   },
@@ -68,7 +85,7 @@ export const workspaceMembers = sqliteTable(
   ],
 );
 
-export const integrations = sqliteTable("integrations", {
+export const integrations = pgTable("integrations", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => randomUUID()),
@@ -82,12 +99,12 @@ export const integrations = sqliteTable("integrations", {
   afterPath: text("after_path").notNull(),
   beforeRef: text("before_ref").notNull(),
   afterRef: text("after_ref").notNull(),
-  consumerPaths: text("consumer_paths", { mode: "json" })
+  consumerPaths: jsonb("consumer_paths")
     .$type<string[]>()
     .notNull(),
   consumerRef: text("consumer_ref").notNull(),
   baseBranch: text("base_branch").notNull(),
-  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  enabled: boolean("enabled").notNull().default(true),
   webhookId: integer("webhook_id"),
   webhookSecret: text("webhook_secret").notNull(),
   /** repo = paths in GitHub; remote = vendor catalog OpenAPI URL */
@@ -98,16 +115,16 @@ export const integrations = sqliteTable("integrations", {
   vendorSpecUrl: text("vendor_spec_url"),
   /** Last-seen vendor OpenAPI body (baseline "before" for remote agents) */
   baselineSpec: text("baseline_spec"),
-  lastCheckedAt: integer("last_checked_at", { mode: "timestamp_ms" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  lastCheckedAt: timestamp("last_checked_at", { withTimezone: true, mode: "date" }),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
 });
 
-export const repairRuns = sqliteTable("repair_runs", {
+export const repairRuns = pgTable("repair_runs", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => randomUUID()),
@@ -122,17 +139,17 @@ export const repairRuns = sqliteTable("repair_runs", {
   trigger: text("trigger", { enum: ["manual", "webhook"] })
     .notNull()
     .default("manual"),
-  summaryJson: text("summary_json", { mode: "json" }).$type<Record<
+  summaryJson: jsonb("summary_json").$type<Record<
     string,
     unknown
   > | null>(),
   prUrl: text("pr_url"),
   prNumber: integer("pr_number"),
   error: text("error"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
-  finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
+  finishedAt: timestamp("finished_at", { withTimezone: true, mode: "date" }),
 });
 
 /**
@@ -144,7 +161,7 @@ export const repairRuns = sqliteTable("repair_runs", {
  * agent-proposed ones; `agentConfidence`/`agentReasoning` are populated only for the
  * latter (see SuggestedFix in src/lib/engine/types.ts, which this table mirrors).
  */
-export const repairFixes = sqliteTable("repair_fixes", {
+export const repairFixes = pgTable("repair_fixes", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => randomUUID()),
@@ -156,7 +173,7 @@ export const repairFixes = sqliteTable("repair_fixes", {
   description: text("description").notNull(),
   before: text("before").notNull(),
   after: text("after").notNull(),
-  safe: integer("safe", { mode: "boolean" }).notNull(),
+  safe: boolean("safe").notNull(),
   origin: text("origin", { enum: ["deterministic", "agent-proposed"] })
     .notNull()
     .default("deterministic"),
@@ -164,15 +181,15 @@ export const repairFixes = sqliteTable("repair_fixes", {
    * doc-comment in src/lib/engine/types.ts. Null for deterministic fixes. */
   agentConfidence: real("agent_confidence"),
   agentReasoning: text("agent_reasoning"),
-  safetyNotesJson: text("safety_notes_json", { mode: "json" })
+  safetyNotesJson: jsonb("safety_notes_json")
     .$type<string[]>()
     .notNull(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
 });
 
-export const subscriptions = sqliteTable("subscriptions", {
+export const subscriptions = pgTable("subscriptions", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => randomUUID()),
@@ -182,15 +199,15 @@ export const subscriptions = sqliteTable("subscriptions", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   status: text("status").notNull().default("inactive"),
   priceId: text("price_id"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
 });
 
-export const pendingInvites = sqliteTable(
+export const pendingInvites = pgTable(
   "pending_invites",
   {
     id: text("id")
@@ -206,7 +223,7 @@ export const pendingInvites = sqliteTable(
     status: text("status", { enum: ["pending", "accepted", "revoked"] })
       .notNull()
       .default("pending"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
       .$defaultFn(() => new Date()),
   },
@@ -218,18 +235,18 @@ export const pendingInvites = sqliteTable(
   ],
 );
 
-export const auditLogs = sqliteTable("audit_logs", {
+export const auditLogs = pgTable("audit_logs", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => randomUUID()),
   workspaceId: text("workspace_id"),
   userId: text("user_id"),
   action: text("action").notNull(),
-  metaJson: text("meta_json", { mode: "json" }).$type<Record<
+  metaJson: jsonb("meta_json").$type<Record<
     string,
     unknown
   > | null>(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
 });

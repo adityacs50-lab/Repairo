@@ -26,15 +26,15 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
     const session = await requireSession();
     const { id } = await params;
-    const integration = getIntegration(id);
+    const integration = await getIntegration(id);
     if (!integration) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    const { workspace } = requireWorkspaceAccess(
+    const { workspace } = await requireWorkspaceAccess(
       session.userId,
       integration.workspaceId,
     );
-    assertCanRunRepair(workspace);
+    await assertCanRunRepair(workspace);
 
     const outcome = await runIntegrationJob({
       integration,
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       accessToken: session.accessToken,
     });
 
-    writeAudit({
+    await writeAudit({
       workspaceId: workspace.id,
       userId: session.userId,
       action: "repair.manual",

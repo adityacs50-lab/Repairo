@@ -29,7 +29,7 @@ export async function GET() {
     });
   }
 
-  const workspace = getWorkspaceForUser(session.userId);
+  const workspace = await getWorkspaceForUser(session.userId);
   return NextResponse.json({
     configured: true,
     user: publicUser(session),

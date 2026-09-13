@@ -1,5 +1,5 @@
 import { and, eq, isNotNull, isNull, lt, or } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { firstRow, getDb } from "@/lib/db";
 import { integrations, workspaces } from "@/lib/db/schema";
 import { runIntegrationJob } from "@/lib/jobs/run-integration";
 import { writeAudit } from "@/lib/db/audit";
@@ -27,7 +27,7 @@ export async function pollVendorAgents(options?: {
   const cutoff = new Date(Date.now() - minAgeMs);
   const db = getDb();
 
-  const candidates = db
+  const candidates = await db
     .select()
     .from(integrations)
     .where(
@@ -41,8 +41,7 @@ export async function pollVendorAgents(options?: {
         ),
       ),
     )
-    .all()
-    .slice(0, limit);
+    .limit(limit);
 
   const result: PollResult = {
     checked: candidates.length,
@@ -52,18 +51,20 @@ export async function pollVendorAgents(options?: {
   };
 
   for (const integration of candidates) {
-    const workspace = db
-      .select()
-      .from(workspaces)
-      .where(eq(workspaces.id, integration.workspaceId))
-      .get();
+    const workspace = await firstRow(
+      db
+        .select()
+        .from(workspaces)
+        .where(eq(workspaces.id, integration.workspaceId))
+        .limit(1),
+    );
     if (!workspace) {
       result.skipped += 1;
       continue;
     }
 
     const limits = getPlanLimits(workspace.plan);
-    if (countRunsThisMonth(workspace.id) >= limits.runsPerMonth) {
+    if (await countRunsThisMonth(workspace.id) >= limits.runsPerMonth) {
       result.skipped += 1;
       continue;
     }
@@ -74,7 +75,7 @@ export async function pollVendorAgents(options?: {
         trigger: "webhook",
       });
       result.ran += 1;
-      writeAudit({
+      await writeAudit({
         workspaceId: workspace.id,
         action: "vendor.poll",
         meta: {

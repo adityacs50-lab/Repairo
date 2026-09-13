@@ -1,8 +1,9 @@
-import { and, desc, eq, gte } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { and, count, desc, eq, gte, inArray } from "drizzle-orm";
+import { firstRow, getDb } from "@/lib/db";
 import {
   integrations,
   repairRuns,
+  repairFixes,
   workspaces,
   workspaceMembers,
   subscriptions,
@@ -15,33 +16,56 @@ import { randomBytes, randomUUID } from "crypto";
 import { getPlanLimits } from "@/lib/billing/plans";
 import { writeAudit } from "@/lib/db/audit";
 
-export function requireWorkspaceAccess(userId: string, workspaceId: string) {
-  const member = getDb()
-    .select()
-    .from(workspaceMembers)
-    .where(
-      and(
-        eq(workspaceMembers.workspaceId, workspaceId),
-        eq(workspaceMembers.userId, userId),
-      ),
-    )
-    .get();
+/**
+ * Counting and filtering happen in SQL here, not in JavaScript.
+ *
+ * Under SQLite these helpers read whole tables and filtered with Array.filter,
+ * which was survivable when the database was a local file. Two of them —
+ * countRunsThisMonth and listRuns — selected from repair_runs with no
+ * workspace predicate at all, so they read every run belonging to every
+ * workspace and discarded the rest client-side. Against a network database
+ * that is both slow and unbounded, so the predicates are now in the query.
+ */
+
+/** Ids of the integrations owned by a workspace. */
+async function integrationIdsForWorkspace(workspaceId: string) {
+  const rows = await getDb()
+    .select({ id: integrations.id })
+    .from(integrations)
+    .where(eq(integrations.workspaceId, workspaceId));
+  return rows.map((r) => r.id);
+}
+
+export async function requireWorkspaceAccess(userId: string, workspaceId: string) {
+  const db = getDb();
+  const member = await firstRow(
+    db
+      .select()
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, workspaceId),
+          eq(workspaceMembers.userId, userId),
+        ),
+      )
+      .limit(1),
+  );
   if (!member) throw new AuthError("Forbidden", 403);
-  const workspace = getDb()
-    .select()
-    .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
-    .get();
+  const workspace = await firstRow(
+    db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1),
+  );
   if (!workspace) throw new AuthError("Workspace not found", 404);
   return { workspace, member };
 }
 
-export function countIntegrations(workspaceId: string) {
-  return getDb()
-    .select()
-    .from(integrations)
-    .where(eq(integrations.workspaceId, workspaceId))
-    .all().length;
+export async function countIntegrations(workspaceId: string) {
+  const row = await firstRow(
+    getDb()
+      .select({ value: count() })
+      .from(integrations)
+      .where(eq(integrations.workspaceId, workspaceId)),
+  );
+  return row?.value ?? 0;
 }
 
 function monthStart() {
@@ -49,51 +73,63 @@ function monthStart() {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 
-export function countRunsThisMonth(workspaceId: string) {
+export async function countRunsThisMonth(workspaceId: string) {
   const db = getDb();
-  const ints = db
-    .select()
-    .from(integrations)
-    .where(eq(integrations.workspaceId, workspaceId))
-    .all();
-  const ids = new Set(ints.map((i) => i.id));
+  const ids = await integrationIdsForWorkspace(workspaceId);
   const start = monthStart();
-  const integrationRuns = db
-    .select()
-    .from(repairRuns)
-    .where(gte(repairRuns.createdAt, start))
-    .all()
-    .filter((r) => ids.has(r.integrationId)).length;
+
+  const runsRow = ids.length
+    ? await firstRow(
+        db
+          .select({ value: count() })
+          .from(repairRuns)
+          .where(
+            and(
+              inArray(repairRuns.integrationId, ids),
+              gte(repairRuns.createdAt, start),
+            ),
+          ),
+      )
+    : undefined;
 
   // Quick repairs don't create repair_runs rows — count audit events too.
-  const quick = db
-    .select()
-    .from(auditLogs)
-    .where(eq(auditLogs.workspaceId, workspaceId))
-    .all()
-    .filter(
-      (a) =>
-        a.action === "repair.quick" &&
-        a.createdAt.getTime() >= start.getTime(),
-    ).length;
+  const quickRow = await firstRow(
+    db
+      .select({ value: count() })
+      .from(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.workspaceId, workspaceId),
+          eq(auditLogs.action, "repair.quick"),
+          gte(auditLogs.createdAt, start),
+        ),
+      ),
+  );
 
-  return integrationRuns + quick;
+  return (runsRow?.value ?? 0) + (quickRow?.value ?? 0);
 }
 
-export function getWorkspaceUsage(workspace: Workspace) {
+export async function getWorkspaceUsage(workspace: Workspace) {
+  const db = getDb();
   const limits = getPlanLimits(workspace.plan);
-  const integrationsUsed = countIntegrations(workspace.id);
-  const runsUsed = countRunsThisMonth(workspace.id);
-  const seatsUsed = getDb()
-    .select()
-    .from(workspaceMembers)
-    .where(eq(workspaceMembers.workspaceId, workspace.id))
-    .all().length;
-  const sub = getDb()
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.workspaceId, workspace.id))
-    .get();
+
+  const [integrationsUsed, runsUsed, seatsRow, sub] = await Promise.all([
+    countIntegrations(workspace.id),
+    countRunsThisMonth(workspace.id),
+    firstRow(
+      db
+        .select({ value: count() })
+        .from(workspaceMembers)
+        .where(eq(workspaceMembers.workspaceId, workspace.id)),
+    ),
+    firstRow(
+      db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.workspaceId, workspace.id))
+        .limit(1),
+    ),
+  ]);
 
   return {
     plan: workspace.plan,
@@ -105,7 +141,7 @@ export function getWorkspaceUsage(workspace: Workspace) {
     used: {
       integrations: integrationsUsed,
       runsThisMonth: runsUsed,
-      seats: seatsUsed,
+      seats: seatsRow?.value ?? 0,
     },
     subscriptionStatus: sub?.status ?? "inactive",
     paymentIssue: ["past_due", "unpaid", "incomplete"].includes(
@@ -114,10 +150,10 @@ export function getWorkspaceUsage(workspace: Workspace) {
   };
 }
 
-export function assertCanCreateIntegration(workspace: Workspace) {
+export async function assertCanCreateIntegration(workspace: Workspace) {
   const limits = getPlanLimits(workspace.plan);
-  const count = countIntegrations(workspace.id);
-  if (count >= limits.integrations) {
+  const used = await countIntegrations(workspace.id);
+  if (used >= limits.integrations) {
     throw new AuthError(
       `${limits.name} plan allows ${limits.integrations} integration${
         limits.integrations === 1 ? "" : "s"
@@ -127,9 +163,9 @@ export function assertCanCreateIntegration(workspace: Workspace) {
   }
 }
 
-export function assertCanRunRepair(workspace: Workspace) {
+export async function assertCanRunRepair(workspace: Workspace) {
   const limits = getPlanLimits(workspace.plan);
-  const used = countRunsThisMonth(workspace.id);
+  const used = await countRunsThisMonth(workspace.id);
   if (used >= limits.runsPerMonth) {
     throw new AuthError(
       `Monthly run limit reached (${limits.runsPerMonth} on ${limits.name}). Upgrade or wait until next month.`,
@@ -142,18 +178,18 @@ export function listIntegrations(workspaceId: string) {
   return getDb()
     .select()
     .from(integrations)
-    .where(eq(integrations.workspaceId, workspaceId))
-    .all();
+    .where(eq(integrations.workspaceId, workspaceId));
 }
 
-export function getIntegration(id: string) {
+export async function getIntegration(id: string) {
   return (
-    getDb().select().from(integrations).where(eq(integrations.id, id)).get() ??
-    null
+    (await firstRow(
+      getDb().select().from(integrations).where(eq(integrations.id, id)).limit(1),
+    )) ?? null
   );
 }
 
-export function createIntegration(input: {
+export async function createIntegration(input: {
   workspaceId: string;
   name: string;
   owner: string;
@@ -169,9 +205,9 @@ export function createIntegration(input: {
   vendorId?: string | null;
   vendorSpecUrl?: string | null;
   baselineSpec?: string | null;
-}): Integration {
+}): Promise<Integration> {
   const now = new Date();
-  const row = getDb()
+  const [row] = await getDb()
     .insert(integrations)
     .values({
       id: randomUUID(),
@@ -195,10 +231,9 @@ export function createIntegration(input: {
       createdAt: now,
       updatedAt: now,
     })
-    .returning()
-    .get();
+    .returning();
 
-  writeAudit({
+  await writeAudit({
     workspaceId: input.workspaceId,
     action: "integration.created",
     meta: {
@@ -211,7 +246,7 @@ export function createIntegration(input: {
   return row;
 }
 
-export function updateIntegration(
+export async function updateIntegration(
   id: string,
   patch: Partial<{
     name: string;
@@ -229,20 +264,37 @@ export function updateIntegration(
     vendorSpecUrl: string | null;
   }>,
 ) {
-  return getDb()
+  const [row] = await getDb()
     .update(integrations)
     .set({ ...patch, updatedAt: new Date() })
     .where(eq(integrations.id, id))
-    .returning()
-    .get();
+    .returning();
+  return row;
 }
 
-export function deleteIntegration(id: string) {
-  const existing = getIntegration(id);
-  getDb().delete(repairRuns).where(eq(repairRuns.integrationId, id)).run();
-  getDb().delete(integrations).where(eq(integrations.id, id)).run();
+export async function deleteIntegration(id: string) {
+  const db = getDb();
+  const existing = await getIntegration(id);
+
+  // repair_fixes references repair_runs, which references integrations, so the
+  // children go first. SQLite only enforced this because foreign_keys was
+  // switched on at connection time; Postgres always does, and deleting the
+  // runs first would fail outright on any integration that had recorded fixes.
+  const runIds = (
+    await db
+      .select({ id: repairRuns.id })
+      .from(repairRuns)
+      .where(eq(repairRuns.integrationId, id))
+  ).map((r) => r.id);
+
+  if (runIds.length) {
+    await db.delete(repairFixes).where(inArray(repairFixes.repairRunId, runIds));
+  }
+  await db.delete(repairRuns).where(eq(repairRuns.integrationId, id));
+  await db.delete(integrations).where(eq(integrations.id, id));
+
   if (existing) {
-    writeAudit({
+    await writeAudit({
       workspaceId: existing.workspaceId,
       action: "integration.deleted",
       meta: { id },
@@ -250,21 +302,25 @@ export function deleteIntegration(id: string) {
   }
 }
 
-export function listRuns(workspaceId: string, limit = 50) {
+export async function listRuns(workspaceId: string, limit = 50) {
   const db = getDb();
-  const ints = db
+  const ints = await db
     .select()
     .from(integrations)
-    .where(eq(integrations.workspaceId, workspaceId))
-    .all();
-  const ids = new Set(ints.map((i) => i.id));
-  const runs = db
+    .where(eq(integrations.workspaceId, workspaceId));
+  if (ints.length === 0) return [];
+
+  const runs = await db
     .select()
     .from(repairRuns)
+    .where(
+      inArray(
+        repairRuns.integrationId,
+        ints.map((i) => i.id),
+      ),
+    )
     .orderBy(desc(repairRuns.createdAt))
-    .all()
-    .filter((r) => ids.has(r.integrationId))
-    .slice(0, limit);
+    .limit(limit);
 
   const byId = new Map(ints.map((i) => [i.id, i]));
   return runs.map((run) => ({
@@ -279,8 +335,7 @@ export function listRunsForIntegration(integrationId: string, limit = 30) {
     .from(repairRuns)
     .where(eq(repairRuns.integrationId, integrationId))
     .orderBy(desc(repairRuns.createdAt))
-    .all()
-    .slice(0, limit);
+    .limit(limit);
 }
 
 export function serializeIntegration(i: Integration) {

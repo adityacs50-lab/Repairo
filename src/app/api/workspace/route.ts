@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { jsonError, requireGithubConfig } from "@/lib/api/errors";
-import { getDb } from "@/lib/db";
+import { firstRow, getDb } from "@/lib/db";
 import {
   users,
   workspaceMembers,
@@ -31,12 +31,12 @@ export async function GET() {
   try {
     requireGithubConfig();
     const session = await requireSession();
-    const workspace = getWorkspaceForUser(session.userId);
+    const workspace = await getWorkspaceForUser(session.userId);
     if (!workspace) {
       return NextResponse.json({ error: "No workspace" }, { status: 404 });
     }
-    const { member } = requireWorkspaceAccess(session.userId, workspace.id);
-    const members = getDb()
+    const { member } = await requireWorkspaceAccess(session.userId, workspace.id);
+    const members = await getDb()
       .select({
         id: workspaceMembers.id,
         role: workspaceMembers.role,
@@ -47,12 +47,11 @@ export async function GET() {
       })
       .from(workspaceMembers)
       .innerJoin(users, eq(users.id, workspaceMembers.userId))
-      .where(eq(workspaceMembers.workspaceId, workspace.id))
-      .all();
+      .where(eq(workspaceMembers.workspaceId, workspace.id));
 
-    const usage = getWorkspaceUsage(workspace);
-    const pending = listPendingInvites(workspace.id);
-    const audit = listAudit(workspace.id, 20);
+    const usage = await getWorkspaceUsage(workspace);
+    const pending = await listPendingInvites(workspace.id);
+    const audit = await listAudit(workspace.id, 20);
 
     return NextResponse.json({
       workspace: {
@@ -87,11 +86,11 @@ export async function PATCH(request: NextRequest) {
   try {
     requireGithubConfig();
     const session = await requireSession();
-    const workspace = getWorkspaceForUser(session.userId);
+    const workspace = await getWorkspaceForUser(session.userId);
     if (!workspace) {
       return NextResponse.json({ error: "No workspace" }, { status: 404 });
     }
-    const { member } = requireWorkspaceAccess(session.userId, workspace.id);
+    const { member } = await requireWorkspaceAccess(session.userId, workspace.id);
     if (member.role !== "owner") {
       return NextResponse.json({ error: "Owner only" }, { status: 403 });
     }
@@ -102,12 +101,11 @@ export async function PATCH(request: NextRequest) {
     };
 
     if (body.name?.trim()) {
-      getDb()
+      await getDb()
         .update(workspaces)
         .set({ name: body.name.trim(), updatedAt: new Date() })
-        .where(eq(workspaces.id, workspace.id))
-        .run();
-      writeAudit({
+        .where(eq(workspaces.id, workspace.id));
+      await writeAudit({
         workspaceId: workspace.id,
         userId: session.userId,
         action: "workspace.renamed",
@@ -117,22 +115,27 @@ export async function PATCH(request: NextRequest) {
 
     if (body.inviteLogin?.trim()) {
       const login = body.inviteLogin.trim().replace(/^@/, "");
-      const invitee = getDb()
+      const invitee = await firstRow(getDb()
         .select()
         .from(users)
-        .where(sql`lower(${users.login}) = ${login.toLowerCase()}`)
-        .get();
+        .where(sql`lower(${users.login}) = ${login.toLowerCase()}`));
 
       if (invitee) {
-        assertCanInvite(workspace);
-        const already = getDb()
-          .select()
-          .from(workspaceMembers)
-          .where(eq(workspaceMembers.workspaceId, workspace.id))
-          .all()
-          .find((m) => m.userId === invitee.id);
-        if (!already) {
+        await assertCanInvite(workspace);
+        const already = await firstRow(
           getDb()
+            .select()
+            .from(workspaceMembers)
+            .where(
+              and(
+                eq(workspaceMembers.workspaceId, workspace.id),
+                eq(workspaceMembers.userId, invitee.id),
+              ),
+            )
+            .limit(1),
+        );
+        if (!already) {
+          await getDb()
             .insert(workspaceMembers)
             .values({
               id: randomUUID(),
@@ -140,9 +143,8 @@ export async function PATCH(request: NextRequest) {
               userId: invitee.id,
               role: "member",
               createdAt: new Date(),
-            })
-            .run();
-          writeAudit({
+            });
+          await writeAudit({
             workspaceId: workspace.id,
             userId: session.userId,
             action: "invite.accepted_direct",
@@ -150,7 +152,7 @@ export async function PATCH(request: NextRequest) {
           });
         }
       } else {
-        createPendingInvite({
+        await createPendingInvite({
           workspace,
           githubLogin: login,
           invitedByUserId: session.userId,
@@ -158,7 +160,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const updated = getWorkspaceForUser(session.userId);
+    const updated = await getWorkspaceForUser(session.userId);
     return NextResponse.json({
       workspace: updated
         ? {
@@ -168,7 +170,7 @@ export async function PATCH(request: NextRequest) {
           }
         : null,
       pendingInvites: updated
-        ? listPendingInvites(updated.id).map((p) => ({
+        ? (await listPendingInvites(updated.id)).map((p) => ({
             id: p.id,
             githubLogin: p.githubLogin,
             createdAt: p.createdAt.toISOString(),

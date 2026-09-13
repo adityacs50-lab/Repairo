@@ -30,12 +30,12 @@ export async function POST(request: NextRequest) {
   try {
     requireGithubConfig();
     const session = await requireSession();
-    const workspace = getWorkspaceForUser(session.userId);
+    const workspace = await getWorkspaceForUser(session.userId);
     if (!workspace) {
       return NextResponse.json({ error: "No workspace" }, { status: 404 });
     }
-    requireWorkspaceAccess(session.userId, workspace.id);
-    assertCanCreateIntegration(workspace);
+    await requireWorkspaceAccess(session.userId, workspace.id);
+    await assertCanCreateIntegration(workspace);
 
     const body = (await request.json()) as {
       vendorId?: string;
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       vendorId: vendor.id,
     });
 
-    const integration = createIntegration({
+    const integration = await createIntegration({
       workspaceId: workspace.id,
       name: `${vendor.name} agent → ${body.owner}/${body.repo}`,
       owner: body.owner,
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
           secret: integration.webhookSecret,
         });
         const { updateIntegration } = await import("@/lib/db/integrations");
-        updateIntegration(integration.id, { webhookId: hookId });
+        await updateIntegration(integration.id, { webhookId: hookId });
         integration.webhookId = hookId;
       } catch (err) {
         webhookWarning =
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    writeAudit({
+    await writeAudit({
       workspaceId: workspace.id,
       userId: session.userId,
       action: "vendor.agent_installed",
