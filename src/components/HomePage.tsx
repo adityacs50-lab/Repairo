@@ -169,15 +169,33 @@ export function HomePage() {
                 View docs <span aria-hidden="true" className="arrow-mark">↗</span>
               </Link>
             </div>
-            <p className="hero-trust">
-              Available: Stripe · OpenAI · Anthropic · Supabase · Gemini · GitHub
-              <span className="hero-trust-sep" aria-hidden="true">
-                /
-              </span>
-              <a href="https://www.npmjs.com/package/repairo-cli" rel="noreferrer" target="_blank">
-                npm i -g repairo-cli
-              </a>
-            </p>
+            <div className="hero-trust-marquee" aria-label="Available vendors and install command">
+              <div className="hero-trust-track">
+                {[0, 1].map((copy) => (
+                  <p
+                    key={copy}
+                    className="hero-trust"
+                    aria-hidden={copy === 1 ? true : undefined}
+                  >
+                    Available: Stripe · OpenAI · Anthropic · Supabase · Gemini · GitHub
+                    <span className="hero-trust-sep" aria-hidden="true">
+                      /
+                    </span>
+                    <a
+                      href="https://www.npmjs.com/package/repairo-cli"
+                      rel="noreferrer"
+                      target="_blank"
+                      tabIndex={copy === 1 ? -1 : undefined}
+                    >
+                      npm i -g repairo-cli
+                    </a>
+                    <span className="hero-trust-sep" aria-hidden="true">
+                      ·
+                    </span>
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         <div className="hero-art-wrap">

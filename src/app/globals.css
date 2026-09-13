@@ -312,9 +312,41 @@ h3 {
   display: flex;
 }
 
-.hero-trust {
+.hero-trust-marquee {
   margin-top: 28px;
   max-width: 520px;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent
+  );
+}
+
+.hero-trust-track {
+  display: flex;
+  width: max-content;
+  animation: hero-trust-scroll 28s linear infinite;
+}
+
+.hero-trust-marquee:hover .hero-trust-track {
+  animation-play-state: paused;
+}
+
+.hero-trust {
+  flex: 0 0 auto;
+  margin: 0;
+  padding-right: 0;
+  white-space: nowrap;
   color: var(--repairo-muted);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -332,6 +364,26 @@ h3 {
 .hero-trust-sep {
   margin: 0 10px;
   color: var(--repairo-rule);
+}
+
+@keyframes hero-trust-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-trust-track {
+    animation: none;
+  }
+  .hero-trust-marquee {
+    mask-image: none;
+    -webkit-mask-image: none;
+    overflow-x: auto;
+  }
 }
 
 .hero-product-frame {
