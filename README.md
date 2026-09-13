@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="./public/logo.png" alt="Repairo AI" width="160">
+  <img src="./public/repairo-ai-logo.png" alt="Repairo AI" width="180">
 </p>
 
-<h1 align="center">Repairo</h1>
+<h1 align="center">Repairo AI</h1>
 
 <p align="center">
   <strong>Dependabot bumps the package. Repairo fixes the call sites that break.</strong>
