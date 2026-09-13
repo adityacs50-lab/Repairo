@@ -14,15 +14,39 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { migrate } from "drizzle-orm/neon-http/migrator";
 
+/** tsx does not read .env on its own, so load the same files Next.js would. */
+function loadEnvFiles() {
+  for (const file of [".env.local", ".env"]) {
+    try {
+      process.loadEnvFile(file);
+    } catch {
+      /* missing file, or a key already set — fine either way */
+    }
+  }
+}
+
 async function main() {
-  const url = process.env.DATABASE_URL?.trim() || process.env.POSTGRES_URL?.trim();
+  loadEnvFiles();
+
+  // Prefer the direct endpoint for DDL. Neon's pooled hostname routes through
+  // pgbouncer in transaction mode, which is built for short application queries
+  // rather than a migration's sequence of schema statements.
+  const url =
+    process.env.DATABASE_URL_UNPOOLED?.trim() ||
+    process.env.POSTGRES_URL_NON_POOLING?.trim() ||
+    process.env.DATABASE_URL?.trim() ||
+    process.env.POSTGRES_URL?.trim();
   if (!url) {
     console.error(
-      "DATABASE_URL (or POSTGRES_URL) is not set. Copy the connection string from " +
+      "No Postgres connection string found in the environment or in .env / .env.local.\n" +
+        "Set DATABASE_URL (or DATABASE_URL_UNPOOLED) to the connection string from " +
         "your Neon project, or from Vercel → Storage → your database.",
     );
     process.exit(1);
   }
+
+  const host = url.match(/@([^/?]+)/)?.[1] ?? "unknown host";
+  console.log(`Applying migrations to ${host} …`);
 
   const db = drizzle(neon(url));
   await migrate(db, { migrationsFolder: "./drizzle" });
