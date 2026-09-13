@@ -178,8 +178,15 @@ function resolveReasoningEffort(value?: string): string | undefined {
   return DEFAULT_REASONING_EFFORT;
 }
 
-/** Resolve config from env, with explicit options winning. */
-export function sarvamConfigFromEnv(env: NodeJS.ProcessEnv = process.env) {
+/**
+ * Resolve config from env, with explicit options winning.
+ *
+ * Typed as a plain string map rather than `NodeJS.ProcessEnv` because that is
+ * all this reads. `ProcessEnv` additionally requires `NODE_ENV`, which forced
+ * callers passing a literal (the tests) into an `as NodeJS.ProcessEnv` cast
+ * that `next build` rejects as an unsound conversion.
+ */
+export function sarvamConfigFromEnv(env: Record<string, string | undefined> = process.env) {
   return {
     apiKey: env.SARVAM_API_KEY?.trim() || "",
     model: env.SARVAM_MODEL?.trim() || env.CHAT_MODEL?.trim() || DEFAULT_SARVAM_MODEL,
