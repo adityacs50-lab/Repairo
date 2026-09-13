@@ -33,7 +33,7 @@ const docsNav = [
     items: [
       { href: "#vault", label: "Zero-Disk Volatile RAM Vault" },
       { href: "#oauth", label: "GitHub OAuth Scopes & Permissions" },
-      { href: "#soc2", label: "SOC 2 & Enterprise Controls" },
+      { href: "#soc2", label: "Enterprise Controls & Compliance" },
     ],
   },
 ];
@@ -188,9 +188,13 @@ repairo repair --apply`} />
         </p>
       </Section>
 
-      <Section title="SOC 2 & Enterprise Controls" id="soc2">
+      <Section title="Enterprise Controls & Compliance" id="soc2">
         <p>
-          Enterprise customers get isolated VPC runners, explicit SSO integration with Entra ID or Okta, and comprehensive SOC 2 Type II compliance reports available upon request.
+          Enterprise plans can include an isolated VPC runner and SSO integration with Entra ID or Okta — talk to sales about your requirements. Formal SOC 2 / ISO programs are on Repairo&apos;s roadmap, not completed today; see{" "}
+          <Link href="/security#compliance" className="text-ink underline">
+            /security
+          </Link>{" "}
+          for the current state and to request a security questionnaire.
         </p>
       </Section>
     </ContentPage>

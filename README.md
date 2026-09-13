@@ -133,7 +133,7 @@ The first run saves a baseline snapshot (commit it); every run after that fails 
 
 ---
 
-## GitHub App: breaking-change comments on pull requests
+## GitHub App: breaking-change comments — and compile-verified fix PRs
 
 `src/github-app/` is a standalone webhook server (Express + `@octokit/app`) you install on your own repositories. Whenever a pull request touches an OpenAPI spec — `openapi.{yaml,yml,json}`, `swagger.{yaml,yml,json}`, or any YAML under an `api/spec/` directory — it diffs the base and head versions and, if the change is breaking, posts a comment like:
 
@@ -153,12 +153,15 @@ The first run saves a baseline snapshot (commit it); every run after that fails 
 
 A later push to the same PR updates that comment instead of adding another. Installations and every detected breaking change are stored in SQLite (`installations`, `breaking_change_events`).
 
+It then scans the rest of the repo at the PR's head SHA for consumer code impacted by those changes, through the same deterministic AST-repair engine the CLI uses. When — and only when — every generated fix is safe and deterministic (nothing ambiguous, no AI involved) and the result passes an in-memory TypeScript compile, it pushes a branch and opens a second PR with the compile-verified patch, and updates the comment above with a link to it. A PR from a fork is skipped (the installation has no write access to push there); anything ambiguous is left for manual review instead of a silent, unreviewed push.
+
 ### 1. Create the GitHub App
 
 1. Go to **Settings → Developer settings → GitHub Apps → New GitHub App** (or your org's settings).
 2. **Webhook URL**: where this server is reachable, ending in `/api/github/webhooks`. For local development create a channel at [smee.io](https://smee.io) and use that URL.
 3. **Webhook secret**: any long random string — you'll put the same value in `WEBHOOK_SECRET`.
-4. **Repository permissions**: *Contents: Read-only*, *Pull requests: Read and write*, *Metadata: Read-only*.
+4. **Repository permissions**: *Contents: Read and write* (read to diff specs and scan consumer code, write to push the fix branch — read-only is not enough, the fix-PR push will fail with a 403 without this), *Pull requests: Read and write*, *Metadata: Read-only*.
+   - If your App was created before this feature existed, update its permissions under **Settings → Developer settings → GitHub Apps → (your app) → Permissions & events**, bump Contents to Read and write, then accept the new permissions on each installation (GitHub prompts installation owners automatically).
 5. **Subscribe to events**: *Pull request*. (Installation events are always delivered to the app.)
 6. Create the app, note the **App ID**, then under *Private keys* click **Generate a private key** and download the `.pem`.
 7. **Install App** on the repositories you want watched.

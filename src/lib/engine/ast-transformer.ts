@@ -1,5 +1,6 @@
 import { Node, Project, SyntaxKind } from "ts-morph";
 import type { ApiChange, ImpactMatch, SuggestedFix } from "./types";
+import { operationTokens } from "./impact";
 import {
   anchoredFunctionsForPath,
   defaultValueFor,
@@ -13,16 +14,24 @@ import {
   usagePositionOf,
 } from "./schema-match";
 
-const API_CALL_RE =
-  /\b(fetch|axios|client|api|sdk|http|request|stripe|openai|anthropic|gemini|supabase|razorpay|octokit|github|paymentsClient|submitShipment|createShipment)\b/i;
+/** Naming an SDK client/wrapper generically, regardless of which vendor it's for. */
+const GENERIC_API_CALL_RE = /\b(fetch|axios|client|api|sdk|http|request)\b/i;
 
-function isApiCallExpression(call: Node): boolean {
+function isApiCallExpression(call: Node, change?: ApiChange): boolean {
   if (!Node.isCallExpression(call)) return false;
   const text = call.getExpression().getText().replace(/([a-z0-9])([A-Z])/g, "$1 $2");
-  return API_CALL_RE.test(text);
+  if (GENERIC_API_CALL_RE.test(text)) return true;
+  if (!change) return false;
+  // No generic "client/api/sdk" naming on the callee (e.g. `stripe.refunds.create(...)`,
+  // `submitShipment(...)`) — most SDKs and hand-written wrappers echo the REST path into
+  // their method/function names, so fall back to tokens derived from the changed
+  // operation's own path (POST /v1/shipments -> "shipment"/"shipments"/"createShipment").
+  // This recognizes any vendor's call sites without hardcoding a single vendor by name.
+  const lowerText = text.toLowerCase();
+  return operationTokens(change).some((token) => token.length > 2 && lowerText.includes(token.toLowerCase()));
 }
 
-function enclosingApiCall(node: Node): Node | undefined {
+function enclosingApiCall(node: Node, change?: ApiChange): Node | undefined {
   let child: Node = node;
   let parent = node.getParent();
   while (parent) {
@@ -30,7 +39,7 @@ function enclosingApiCall(node: Node): Node | undefined {
       Node.isCallExpression(parent) &&
       parent.getArguments().some((arg) => arg === child)
     ) {
-      if (isApiCallExpression(parent)) return parent;
+      if (isApiCallExpression(parent, change)) return parent;
     }
     child = parent;
     parent = parent.getParent();
@@ -204,7 +213,7 @@ export function applyAstTransforms(
           if (prop.getName() !== oldField) continue;
           const parentObj = prop.getFirstAncestorByKind(SyntaxKind.ObjectLiteralExpression);
           if (!parentObj) continue;
-          const inApiCall = enclosingApiCall(parentObj) !== undefined;
+          const inApiCall = enclosingApiCall(parentObj, change) !== undefined;
           if (!inApiCall && impacts.length === 0) continue;
           prop.getNameNode().replaceWithText(newField);
           fixes.push({
@@ -317,7 +326,7 @@ export function applyAstTransforms(
           continue;
         }
         const isStructural = related.size > 0 && structurallyMatches(originalProps, related);
-        const inApiCall = enclosingApiCall(literal) !== undefined;
+        const inApiCall = enclosingApiCall(literal, change) !== undefined;
         if (!isImpacted && !isStructural && !inApiCall) continue;
         // A response value is never a hand-authored object literal (it comes back from
         // `.json()`), so a structural-only match against a response-side change is almost

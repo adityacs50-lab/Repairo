@@ -13,16 +13,21 @@ import {
   withRetry,
   type GitHubClient,
   type IssueComment,
+  type OpenFixPullRequestParams,
+  type OpenFixPullRequestResult,
   type PullRequestFile,
 } from "../src/github-app/octokit";
 import { createServer } from "../src/github-app/server";
 import {
   COMMENT_MARKER,
   formatBreakingChangesComment,
+  handlePullRequest,
   isOpenApiSpecPath,
   registerPullRequestHandlers,
+  type PullRequestPayload,
 } from "../src/github-app/webhooks";
 import { runOasdiff } from "../src/oasdiff/oasdiff";
+import { readFixture } from "../src/lib/fixtures";
 
 logger.level = "silent";
 
@@ -125,6 +130,26 @@ class FakeGitHubClient implements GitHubClient {
     comment.body = body;
     this.calls.push("updateIssueComment");
     return comment;
+  }
+}
+
+/** Adds the optional auto-fix capabilities on top of the base fake, in-memory. */
+class FakeGitHubClientWithFix extends FakeGitHubClient {
+  repoTree = new Map<string, { paths: string[]; truncated: boolean }>(); // ref -> tree
+  openedPRs: Array<OpenFixPullRequestParams & { number: number; html_url: string }> = [];
+  private nextPrNumber = 100;
+
+  async listRepoFiles(_owner: string, _repo: string, ref: string) {
+    this.calls.push(`listRepoFiles:${ref}`);
+    return this.repoTree.get(ref) ?? { paths: [], truncated: false };
+  }
+
+  async openFixPullRequest(params: OpenFixPullRequestParams): Promise<OpenFixPullRequestResult> {
+    this.calls.push(`openFixPullRequest:${params.branchName}`);
+    const number = this.nextPrNumber++;
+    const html_url = `https://example/pr/${number}`;
+    this.openedPRs.push({ ...params, number, html_url });
+    return { number, html_url, created: true };
   }
 }
 
@@ -396,6 +421,110 @@ async function main() {
   fake.files = [{ filename: "openapi.yaml", status: "added" }];
   const addedOnly = await signed("pull_request", { ...prPayload, number: 8, pull_request: { ...prPayload.pull_request, number: 8 } });
   assert(addedOnly.status === 200 && fake.comments.length === 1, "A newly added spec has nothing to break, so no comment");
+
+  // Test 9: auto-fix PR — drives handlePullRequest() directly so the AutoFixOutcome
+  // is visible (the HTTP dispatch above fires the webhook and discards the return value).
+  console.log("\nTest 9: auto-fix PR");
+
+  const paymentsBefore = readFixture("apis", "payments-v1.openapi.yaml");
+  const paymentsAfter = readFixture("apis", "payments-v2.openapi.yaml");
+  const paymentsClientPath = "fixtures/consumers/checkout-service/src/payments-client.ts";
+  const checkoutFlowPath = "fixtures/consumers/checkout-service/src/checkout-flow.ts";
+  const paymentsClientContent = readFixture("consumers", "checkout-service", "src", "payments-client.ts");
+  const checkoutFlowContent = readFixture("consumers", "checkout-service", "src", "checkout-flow.ts");
+
+  const shippingBefore = readFixture("apis", "shipping-v1.openapi.yaml");
+  const shippingAfter = readFixture("apis", "shipping-v2.openapi.yaml");
+  const shipmentsClientPath = "fixtures/consumers/logistics-service/src/shipments-client.ts";
+  const orderFlowPath = "fixtures/consumers/logistics-service/src/order-flow.ts";
+  const shipmentsClientContent = readFixture("consumers", "logistics-service", "src", "shipments-client.ts");
+  const orderFlowContent = readFixture("consumers", "logistics-service", "src", "order-flow.ts");
+
+  function makeFixPayload(number: number, headRepoFullName = "acme/shop"): PullRequestPayload {
+    return {
+      action: "opened",
+      number,
+      installation: { id: 99 },
+      repository: { name: "shop", full_name: "acme/shop", owner: { login: "acme" } },
+      pull_request: {
+        number,
+        base: { sha: "base-sha" },
+        head: { sha: "head-sha", ref: "feature-branch", repo: { full_name: headRepoFullName } },
+      },
+    } as unknown as PullRequestPayload;
+  }
+
+  // 9a: a spec change whose only impacted consumer fix is an ambiguous enum rename
+  // (payments-v1 -> v2 removes "failed" with three replacement candidates) must never
+  // be pushed unattended.
+  const reviewClient = new FakeGitHubClientWithFix();
+  reviewClient.files = [{ filename: "openapi.yaml", status: "modified" }];
+  reviewClient.contents.set("base-sha:openapi.yaml", paymentsBefore);
+  reviewClient.contents.set("head-sha:openapi.yaml", paymentsAfter);
+  reviewClient.repoTree.set("head-sha", {
+    paths: ["openapi.yaml", paymentsClientPath, checkoutFlowPath],
+    truncated: false,
+  });
+  reviewClient.contents.set(`head-sha:${paymentsClientPath}`, paymentsClientContent);
+  reviewClient.contents.set(`head-sha:${checkoutFlowPath}`, checkoutFlowContent);
+
+  const reviewOutcome = await handlePullRequest(makeFixPayload(20), {
+    db: db2,
+    getClient: async () => reviewClient,
+  });
+  assert(
+    reviewOutcome.fix?.status === "needs-manual-review",
+    "A spec change with any ambiguous fix backs off to manual review instead of opening a PR",
+  );
+  assert(
+    !reviewClient.calls.some((c) => c.startsWith("openFixPullRequest")),
+    "No fix PR is opened when any generated fix is unsafe",
+  );
+
+  // 9b: a spec change whose consumer fixes are all deterministic and safe opens a PR,
+  // and the breaking-changes comment gets updated to link it.
+  const fixClient = new FakeGitHubClientWithFix();
+  fixClient.files = [{ filename: "openapi.yaml", status: "modified" }];
+  fixClient.contents.set("base-sha:openapi.yaml", shippingBefore);
+  fixClient.contents.set("head-sha:openapi.yaml", shippingAfter);
+  fixClient.repoTree.set("head-sha", {
+    paths: ["openapi.yaml", shipmentsClientPath, orderFlowPath, "node_modules/foo/index.js"],
+    truncated: false,
+  });
+  fixClient.contents.set(`head-sha:${shipmentsClientPath}`, shipmentsClientContent);
+  fixClient.contents.set(`head-sha:${orderFlowPath}`, orderFlowContent);
+
+  const fixOutcome = await handlePullRequest(makeFixPayload(21), { db: db2, getClient: async () => fixClient });
+  assert(fixOutcome.fix?.status === "opened", "All-safe consumer fixes open an auto-fix PR");
+  assert(fixOutcome.fix?.pr?.filesChanged === 2, "Both impacted consumer files are included in the fix PR");
+  assert(fixClient.openedPRs.length === 1, "Exactly one fix PR is opened");
+  assert(
+    fixClient.openedPRs[0]?.branchName === "repairo/auto-fix-pr-21" &&
+      fixClient.openedPRs[0]?.baseBranch === "feature-branch",
+    "The fix branch is named after the PR and based on its own head branch",
+  );
+  assert(
+    !fixClient.calls.some((c) => c.includes("node_modules")),
+    "node_modules is excluded from the consumer-code scan",
+  );
+  const fixComment = fixClient.comments.find((c) => c.body?.includes(COMMENT_MARKER));
+  assert(
+    Boolean(fixComment?.body?.includes("Automatic fix available")) &&
+      Boolean(fixComment?.body?.includes("#100")),
+    "The breaking-changes comment is updated to link the fix PR",
+  );
+
+  // 9c: a PR from a fork can't receive a pushed branch — auto-fix must back off cleanly.
+  const forkClient = new FakeGitHubClientWithFix();
+  forkClient.files = [{ filename: "openapi.yaml", status: "modified" }];
+  forkClient.contents.set("base-sha:openapi.yaml", shippingBefore);
+  forkClient.contents.set("head-sha:openapi.yaml", shippingAfter);
+  const forkOutcome = await handlePullRequest(makeFixPayload(22, "someone-else/shop"), {
+    db: db2,
+    getClient: async () => forkClient,
+  });
+  assert(forkOutcome.fix?.status === "skipped-fork", "A PR from a fork skips the auto-fix attempt");
+  assert(forkClient.calls.every((c) => !c.startsWith("listRepoFiles")), "A fork PR is never scanned for consumer code");
 
   const deleted = await signed("installation", { action: "deleted", installation: { id: 99, account: { login: "acme" } } });
   assert(deleted.status === 200 && db2.getInstallation(99) === null && forgotten.includes(99), "installation.deleted removes the row and drops the cached token");

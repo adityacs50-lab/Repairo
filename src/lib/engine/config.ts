@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { KNOWN_VENDORS, scanDirectory } from "./ast-parser";
 
 export interface RepairoConfig {
   version: number;
@@ -27,6 +28,27 @@ export function getSnapshotsDir(targetDir: string = "."): string {
 
 export function getReportsDir(targetDir: string = "."): string {
   return path.join(getRepairoDir(targetDir), "reports");
+}
+
+/**
+ * Which catalog vendors (see catalog.ts — matched by KNOWN_VENDORS' key, which mirrors the
+ * catalog id 1:1) this codebase actually imports, via the same detection `repairo scan`
+ * uses. Not a guess: `repairo init` has no way to know which vendors a given project
+ * depends on ahead of time, so it looks rather than assuming everyone is on the same
+ * three SDKs. Falls back to none found (rather than throwing) so `init` still succeeds
+ * against an empty or unreadable directory.
+ */
+function detectVendorsIn(targetDir: string): string[] {
+  try {
+    const { vendorsDetected } = scanDirectory(targetDir);
+    const idByName = new Map(Object.entries(KNOWN_VENDORS).map(([id, v]) => [v.name, id]));
+    const detected = Object.keys(vendorsDetected)
+      .map((name) => idByName.get(name))
+      .filter((id): id is string => Boolean(id));
+    return Array.from(new Set(detected));
+  } catch {
+    return [];
+  }
 }
 
 export function initRepairoConfig(
@@ -64,7 +86,7 @@ export function initRepairoConfig(
       version: 1,
       repository: options.repository || "owner/repository",
       language: "typescript",
-      vendors: options.vendors || ["stripe", "openai", "supabase"],
+      vendors: options.vendors && options.vendors.length > 0 ? options.vendors : detectVendorsIn(targetDir),
       specs: {},
       validation: {
         typecheck: true,

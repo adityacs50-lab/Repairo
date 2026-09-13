@@ -33,7 +33,8 @@ function encodeSession(payload: SessionPayload, secret: string) {
   return `${payloadB64}.${signature}`;
 }
 
-function decodeSession(token: string, secret: string): SessionPayload | null {
+/** Exported for tests — production code only reaches this through getSessionPayload(). */
+export function decodeSession(token: string, secret: string): SessionPayload | null {
   const [payloadB64, signature] = token.split(".");
   if (!payloadB64 || !signature) return null;
 

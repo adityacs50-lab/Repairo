@@ -8,7 +8,7 @@ interface Message {
 }
 
 const SUGGESTIONS = [
-  "How does the Stateless RAM Vault work?",
+  "How does the Volatile RAM Vault work?",
   "How is Repairo different from Devin or Cursor?",
   "Can I run it completely offline?",
   "What is the pricing model?",
@@ -163,7 +163,7 @@ export default function RepairoChatAssistant() {
       setMessages([
         {
           role: "assistant",
-          content: "Hi! I'm Otto, the Repairo assistant. Ask me anything about our AST compiler engine, 24ms stateless RAM vaults, security, or how to get started.",
+          content: "Hi! I'm Otto, the Repairo assistant. Ask me anything about our AST compiler engine, the Volatile RAM Vault, security, or how to get started.",
         },
       ]);
     }
