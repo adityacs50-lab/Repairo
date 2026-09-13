@@ -314,20 +314,21 @@ h3 {
 
 .hero-trust-marquee {
   margin-top: 28px;
-  max-width: 520px;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   mask-image: linear-gradient(
     to right,
     transparent,
-    #000 12px,
-    #000 calc(100% - 12px),
+    #000 8px,
+    #000 calc(100% - 8px),
     transparent
   );
   -webkit-mask-image: linear-gradient(
     to right,
     transparent,
-    #000 12px,
-    #000 calc(100% - 12px),
+    #000 8px,
+    #000 calc(100% - 8px),
     transparent
   );
 }
@@ -335,7 +336,8 @@ h3 {
 .hero-trust-track {
   display: flex;
   width: max-content;
-  animation: hero-trust-scroll 28s linear infinite;
+  animation: hero-trust-scroll 22s linear infinite;
+  will-change: transform;
 }
 
 .hero-trust-marquee:hover .hero-trust-track {
@@ -345,7 +347,7 @@ h3 {
 .hero-trust {
   flex: 0 0 auto;
   margin: 0;
-  padding-right: 0;
+  padding-right: 48px;
   white-space: nowrap;
   color: var(--repairo-muted);
   font-family: var(--font-mono);
@@ -371,7 +373,7 @@ h3 {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(-25%);
   }
 }
 
