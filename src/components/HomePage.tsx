@@ -117,8 +117,8 @@ export function HomePage() {
           </Link>
           <nav className="main-nav" aria-label="Main navigation">
             <a href="#workflow">Workflow</a>
-            <a href="#why-repairo">Why Repairo</a>
-            <a href="#review">For engineering teams</a>
+            <a href="#security">Security</a>
+            <Link href="/pricing">Pricing</Link>
           </nav>
           <a className="button button-dark button-small" href="#demo">
             Book a demo <span aria-hidden="true" className="arrow-mark">↗</span>
@@ -139,27 +139,50 @@ export function HomePage() {
               <a className="button button-dark" href="#demo">
                 Book a demo <span aria-hidden="true" className="arrow-mark">↗</span>
               </a>
-              <a className="text-link" href="#workflow">
-                See the repair workflow <span aria-hidden="true" className="arrow-mark">↗</span>
-              </a>
+              <Link className="text-link" href="/docs">
+                View docs <span aria-hidden="true" className="arrow-mark">↗</span>
+              </Link>
             </div>
+            <p className="hero-trust">
+              Watches Stripe · OpenAI · Clerk · Supabase · Anthropic
+              <span className="hero-trust-sep" aria-hidden="true">
+                /
+              </span>
+              <a href="https://www.npmjs.com/package/repairo-cli" rel="noreferrer" target="_blank">
+                npm i -g repairo-cli
+              </a>
+            </p>
           </div>
         </div>
         <div className="hero-art-wrap">
-          <div className="asset-frame hero-art-frame">
-            <Image
-              alt="Abstract API impact network and breaking change visualization"
-              width={1600}
-              height={1000}
-              priority
-              className="hero-art"
-              src="/assets/repairo-api-diff.png"
-            />
-            <div className="asset-caption">
-              <span>CHANGE / 0001</span>
-              <span>VISIBLE BEFORE CI</span>
+          <motion.div
+            className="asset-frame hero-product-frame"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="hero-product-bar">
+              <span>repairo · scan</span>
+              <span>tsc --noEmit · pass</span>
             </div>
-          </div>
+            <pre className="hero-product-body" aria-label="Example Repairo CLI output">
+              <code>{`$ npx repairo-cli scan ./src --vendors stripe,openai
+watching 2 vendors · OpenAPI diff · AST impact
+
+stripe   breaking  high   src/payments/customer.ts:42
+  customer.source → removed in 2024-06-20
+openai   rename    med    src/ai/embeddings.ts:18
+  createEmbedding → embeddings.create
+
+2 call sites · compiler-verified repair ready
+$ npx repairo-cli repair --open-pr
+opened PR #184  fix(stripe): migrate customer.source`}</code>
+            </pre>
+            <div className="asset-caption">
+              <span>PRODUCT / CLI</span>
+              <span>EVIDENCE BEFORE MERGE</span>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -368,7 +391,36 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 7. DEMO BOOKING FORM SECTION */}
+      {/* 7. SECURITY BOUNDARY */}
+      <section className="security-section section-rule" id="security">
+        <div className="section-intro">
+          <p className="eyebrow">TRUST BOUNDARY</p>
+          <h2>Your source stays under your control.</h2>
+          <p>
+            Repairo is built for teams that will not send a repo to a model to “see what happens.”
+            Processing is job-scoped. Pull requests never auto-merge.
+          </p>
+        </div>
+        <div className="security-list">
+          <div className="security-item">
+            <p className="mono-label">01 / CODE</p>
+            <p>Spec and consumer files are fetched for a repair, processed in memory for that job, then discarded. We do not train on customer code.</p>
+          </div>
+          <div className="security-item">
+            <p className="mono-label">02 / ACCESS</p>
+            <p>GitHub OAuth with <code>repo</code> and <code>read:user</code> only. Tokens encrypted at rest. You revoke anytime in GitHub.</p>
+          </div>
+          <div className="security-item">
+            <p className="mono-label">03 / REVIEW</p>
+            <p>Repairo opens a PR with evidence and stops. A human on your side merges — or closes it.</p>
+          </div>
+        </div>
+        <Link className="text-link security-more" href="/security">
+          Full security model <span aria-hidden="true" className="arrow-mark">↗</span>
+        </Link>
+      </section>
+
+      {/* 8. DEMO BOOKING FORM SECTION */}
       <section className="demo-section" id="demo">
         <div className="demo-intro">
           <p className="eyebrow">SEE THE REPAIR PATH</p>
@@ -417,13 +469,13 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 8. BETA WAITLIST + GOOGLE AUTH */}
+      {/* 9. BETA WAITLIST (secondary capture) */}
       <section className="demo-section section-rule" id="waitlist">
         <div className="demo-intro">
           <p className="eyebrow">PRIVATE BETA</p>
-          <h2>Join the waitlist.</h2>
+          <h2>Not ready for a walkthrough?</h2>
           <p>
-            Sign up with Google or your work email for early access when Repairo opens.
+            Join the waitlist with Google or work email. We only email when beta access opens.
           </p>
         </div>
         <div className="demo-form-wrap" style={{ maxWidth: "28rem" }}>
@@ -431,7 +483,18 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 9. FOOTER */}
+      {/* 10. PRICING PATH */}
+      <section className="pricing-strip section-rule" id="pricing-path">
+        <p className="mono-label">PRICING</p>
+        <p className="pricing-strip-copy">
+          Free CLI on npm · Hosted Free for early teams · Pro from $29/mo
+        </p>
+        <Link className="text-link" href="/pricing">
+          See plans <span aria-hidden="true" className="arrow-mark">↗</span>
+        </Link>
+      </section>
+
+      {/* 11. FOOTER */}
       <footer className="site-footer section-rule">
         <div>
           <Link href="#top" className="wordmark" aria-label="Repairo AI home">
@@ -444,15 +507,21 @@ export function HomePage() {
           <div>
             <p className="mono-label">Explore</p>
             <a href="#workflow">Workflow</a>
-            <a href="#why-repairo">Why Repairo</a>
+            <a href="#security">Security</a>
             <a href="#demo">Book a demo</a>
-            <a href="#waitlist">Beta waitlist</a>
+            <Link href="/docs">Docs</Link>
           </div>
           <div>
-            <p className="mono-label">Repairo AI</p>
-            <span>For engineering teams</span>
-            <span>Built for review</span>
-            <span>2026</span>
+            <p className="mono-label">Company</p>
+            <Link href="/pricing">Pricing</Link>
+            <a href="#waitlist">Beta waitlist</a>
+            <a
+              href="https://www.npmjs.com/package/repairo-cli"
+              rel="noreferrer"
+              target="_blank"
+            >
+              npm
+            </a>
           </div>
         </div>
       </footer>
