@@ -1,0 +1,28 @@
+# Railway config for the GitHub App webhook server (src/github-app).
+#
+# The root railway.toml builds the Next.js web app and healthchecks /api/health.
+# That file applies to every service in the repo unless a service overrides it,
+# so this service must be pointed at THIS file:
+#
+#   Railway -> the github-app service -> Settings -> Config-as-code
+#   -> Railway Config File = railway.github-app.toml
+#
+# Required variables on the service:
+#   APP_ID           4928468
+#   PRIVATE_KEY      PEM contents (single line with \n escapes is accepted)
+#   WEBHOOK_SECRET   same value as the GitHub App's Webhook secret
+#   DATABASE_PATH    /app/data/repairo.db
+#   PORT             3000
+#
+# Attach a volume mounted at /app/data, or the installations and
+# breaking_change_events tables reset on every redeploy.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.github-app"
+
+[deploy]
+healthcheckPath = "/healthz"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
