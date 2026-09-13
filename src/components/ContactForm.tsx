@@ -42,61 +42,55 @@ export function ContactForm() {
 
   if (status === "sent") {
     return (
-      <p className="text-sm text-safe">
-        Thanks — we received your message at{" "}
-        <a href={`mailto:${CONTACT_INBOX}`} className="text-fg underline">
-          {CONTACT_INBOX}
-        </a>
-        .
-      </p>
+      <div className="form-success" style={{ paddingTop: 0 }}>
+        <p className="mono-label" style={{ color: "var(--repairo-teal)" }}>
+          MESSAGE SENT
+        </p>
+        <p>
+          Thanks — we received your note at{" "}
+          <a href={`mailto:${CONTACT_INBOX}`}>{CONTACT_INBOX}</a>.
+        </p>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block space-y-1 text-sm">
-          <span className="font-mono text-[11px] uppercase text-muted-dim">
-            Name
-          </span>
+    <form onSubmit={submit} className="demo-form contact-form">
+      <div className="contact-form-row">
+        <label htmlFor="contact-name">
+          Name
           <input
+            id="contact-name"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-line bg-bg px-3 py-2 text-sm text-fg outline-none focus:border-accent"
           />
         </label>
-        <label className="block space-y-1 text-sm">
-          <span className="font-mono text-[11px] uppercase text-muted-dim">
-            Work email
-          </span>
+        <label htmlFor="contact-email">
+          Work email
           <input
+            id="contact-email"
             required
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-line bg-bg px-3 py-2 text-sm text-fg outline-none focus:border-accent"
           />
         </label>
       </div>
-      <label className="block space-y-1 text-sm">
-        <span className="font-mono text-[11px] uppercase text-muted-dim">
-          Company
-        </span>
+      <label htmlFor="contact-company">
+        Company
         <input
+          id="contact-company"
           value={company}
           onChange={(e) => setCompany(e.target.value)}
-          className="w-full border border-line bg-bg px-3 py-2 text-sm text-fg outline-none focus:border-accent"
         />
       </label>
-      <label className="block space-y-1 text-sm">
-        <span className="font-mono text-[11px] uppercase text-muted-dim">
-          Topic
-        </span>
+      <label htmlFor="contact-topic">
+        Topic
         <select
+          id="contact-topic"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          className="w-full border border-line bg-bg px-3 py-2 text-sm text-fg outline-none focus:border-accent"
         >
           <option value="enterprise">Enterprise / Pro</option>
           <option value="security">Security review</option>
@@ -104,35 +98,36 @@ export function ContactForm() {
           <option value="support">Product support</option>
         </select>
       </label>
-      <label className="block space-y-1 text-sm">
-        <span className="font-mono text-[11px] uppercase text-muted-dim">
-          Message
-        </span>
+      <label htmlFor="contact-message">
+        Message
         <textarea
+          id="contact-message"
           required
           rows={5}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="w-full border border-line bg-bg p-3 text-sm text-fg outline-none focus:border-accent"
         />
       </label>
       {status === "error" && (
-        <p className="text-xs text-accent-red">
+        <p className="form-note" style={{ color: "#c0392b" }}>
           Something went wrong. Email us at {CONTACT_INBOX}.
         </p>
       )}
-      <p className="text-xs text-muted-dim">
+      <p className="form-note">
         Prefer docs?{" "}
-        <Link href="/docs" className="text-fg underline">
-          Read the docs
+        <Link href="/docs" className="text-link inline-link">
+          Read the docs <span aria-hidden="true" className="arrow-mark">↗</span>
         </Link>
       </p>
       <button
         type="submit"
         disabled={status === "loading"}
-        className="btn-primary !py-2 !text-sm"
+        className="button button-dark form-submit"
       >
-        {status === "loading" ? "Sending..." : "Send message"}
+        {status === "loading" ? "Sending..." : "Send message"}{" "}
+        <span aria-hidden="true" className="arrow-mark">
+          ↗
+        </span>
       </button>
     </form>
   );

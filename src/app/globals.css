@@ -16,6 +16,25 @@
   --color-body: var(--repairo-muted);
 }
 
+/* Compatibility for pages still using the previous token class names */
+.bg-canvas { background-color: var(--repairo-paper); }
+.bg-surface-elevated,
+.bg-surface-card,
+.bg-surface-deep { background-color: var(--repairo-white); }
+.text-ink,
+.text-fg { color: var(--repairo-ink); }
+.text-body,
+.text-mute,
+.text-muted-dim,
+.text-charcoal { color: var(--repairo-muted); }
+.text-primary-on { color: var(--repairo-white); }
+.text-safe { color: var(--repairo-teal); }
+.border-hairline,
+.border-hairline-strong,
+.border-line { border-color: var(--repairo-rule); }
+.bg-hairline-strong { background-color: var(--repairo-rule); }
+.font-display { font-family: var(--font-sans); }
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -67,6 +86,30 @@ code {
   min-height: 72px;
   margin: 0 auto;
   display: flex;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-menu-btn {
+  display: none;
+  border: 0;
+  background: transparent;
+  color: var(--repairo-ink);
+  padding: 6px;
+  cursor: pointer;
+}
+
+.header-mobile-panel {
+  display: none;
+}
+
+.main-nav a.nav-active {
+  color: var(--repairo-ink);
+  font-weight: 600;
 }
 
 .wordmark {
@@ -144,6 +187,17 @@ code {
 .button-dark:hover {
   background: var(--repairo-purple);
   border-color: var(--repairo-purple);
+}
+
+.button-light {
+  background: var(--repairo-white);
+  color: var(--repairo-ink);
+}
+
+.button-light:hover {
+  background: var(--repairo-paper);
+  border-color: var(--repairo-purple);
+  color: var(--repairo-purple);
 }
 
 .button-small {
@@ -297,13 +351,13 @@ h3 {
 
 .hero-product-body {
   margin: 0;
-  padding: 22px 18px 28px;
+  padding: 28px 24px 32px;
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: clamp(11px, 1.15vw, 13px);
-  line-height: 1.65;
+  line-height: 1.7;
   white-space: pre;
-  color: rgba(247, 248, 250, 0.9);
+  color: rgba(247, 248, 250, 0.92);
 }
 
 .hero-product-body code {
@@ -654,7 +708,7 @@ h3 {
 }
 
 .security-item {
-  padding: 28px 28px 28px 0;
+  padding: 32px 36px 8px 0;
   border-right: 1px solid var(--repairo-rule);
 }
 
@@ -663,9 +717,17 @@ h3 {
   padding-right: 0;
 }
 
+.security-item:not(:first-child) {
+  padding-left: 36px;
+}
+
 .security-item .mono-label {
   color: var(--repairo-purple);
   margin-bottom: 14px;
+}
+
+.security-item > p:last-child {
+  max-width: none;
 }
 
 .security-item code {
@@ -675,7 +737,7 @@ h3 {
 }
 
 .security-more {
-  margin-top: 36px;
+  margin-top: 40px;
 }
 
 .pricing-strip {
@@ -689,10 +751,315 @@ h3 {
 .pricing-strip-copy {
   flex: 1 1 280px;
   color: var(--repairo-slate);
-  font-size: 18px;
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
   letter-spacing: -0.03em;
-  line-height: 1.35;
+  line-height: 1.4;
   margin: 0;
+}
+
+.pricing-hero,
+.pricing-board,
+.pricing-footnote {
+  width: min(100% - 64px, 1380px);
+  margin: 0 auto;
+}
+
+.pricing-hero {
+  padding: 88px 0 56px;
+}
+
+.pricing-hero .eyebrow {
+  margin-bottom: 18px;
+}
+
+.pricing-hero h1 {
+  max-width: 820px;
+  font-size: clamp(2.8rem, 5.5vw, 4.8rem);
+}
+
+.pricing-hero-lede {
+  margin-top: 22px;
+  max-width: 540px;
+  color: var(--repairo-muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.pricing-board {
+  padding: 0 0 72px;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.plan-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-height: 100%;
+  padding: 32px 28px 36px;
+  background: var(--repairo-white);
+  border: 1px solid var(--repairo-rule);
+}
+
+.plan-tier-featured {
+  border-color: var(--repairo-ink);
+  background: #f3f5f8;
+}
+
+.plan-tier-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.plan-tier-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-tier .mono-label {
+  color: var(--repairo-purple);
+  margin: 0;
+}
+
+.plan-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--repairo-white);
+  background: var(--repairo-ink);
+  padding: 5px 8px;
+}
+
+.plan-price {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: clamp(2.4rem, 4vw, 3.2rem);
+  letter-spacing: -0.06em;
+  line-height: 1;
+  color: var(--repairo-ink);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.plan-price-note {
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  color: var(--repairo-muted);
+  font-weight: 400;
+}
+
+.plan-desc {
+  margin: 0;
+  color: var(--repairo-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 3.2em;
+}
+
+.plan-cta {
+  width: 100%;
+  justify-content: center;
+}
+
+.plan-features {
+  list-style: none;
+  margin: 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--repairo-rule);
+  display: grid;
+  gap: 14px;
+}
+
+.plan-features li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--repairo-slate);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.plan-check {
+  color: var(--repairo-teal);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pricing-footnote {
+  padding: 28px 0 64px;
+}
+
+.pricing-footnote p {
+  margin: 0;
+  max-width: 720px;
+  color: var(--repairo-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.text-link.inline-link {
+  display: inline-flex;
+  margin-left: 4px;
+}
+
+/* Content pages (docs, security, about, …) */
+.content-layout {
+  width: min(100% - 64px, 1380px);
+  margin: 0 auto;
+  padding: 72px 0 96px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: clamp(40px, 6vw, 96px);
+  align-items: start;
+}
+
+.content-layout-wide .content-main {
+  max-width: 920px;
+}
+
+.content-aside {
+  position: sticky;
+  top: 96px;
+}
+
+.content-aside-groups {
+  display: grid;
+  gap: 28px;
+}
+
+.content-aside .mono-label {
+  color: var(--repairo-purple);
+  margin-bottom: 14px;
+}
+
+.content-aside-nav {
+  display: grid;
+  gap: 4px;
+}
+
+.content-side-link {
+  display: block;
+  padding: 8px 0;
+  color: var(--repairo-muted);
+  font-size: 13px;
+  line-height: 1.4;
+  transition: color 0.18s;
+}
+
+.content-side-link:hover,
+.content-side-link.is-active {
+  color: var(--repairo-ink);
+}
+
+.content-aside-rule {
+  height: 1px;
+  background: var(--repairo-rule);
+  margin: 22px 0;
+}
+
+.content-main {
+  max-width: 720px;
+}
+
+.content-title {
+  margin-top: 12px;
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  max-width: none;
+}
+
+.content-lede {
+  margin-top: 18px;
+  color: var(--repairo-muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.content-body {
+  margin-top: 40px;
+  display: grid;
+  gap: 36px;
+}
+
+.content-cta {
+  margin-top: 48px;
+}
+
+.content-section {
+  padding-top: 28px;
+  border-top: 1px solid var(--repairo-rule);
+  scroll-margin-top: 96px;
+}
+
+.content-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.content-section h2 {
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  max-width: none;
+  margin-bottom: 16px;
+}
+
+.content-section-body {
+  display: grid;
+  gap: 14px;
+  color: var(--repairo-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.content-section-body p,
+.content-section-body strong {
+  color: inherit;
+}
+
+.content-section-body strong {
+  color: var(--repairo-ink);
+  font-weight: 600;
+}
+
+.content-section-body a {
+  color: var(--repairo-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.content-bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.content-bullets li {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 12px;
+  align-items: start;
+  color: var(--repairo-muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.content-bullet-dot {
+  width: 6px;
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: var(--repairo-ink);
 }
 
 .demo-section {
@@ -727,7 +1094,8 @@ h3 {
 }
 
 .demo-form input,
-.demo-form textarea {
+.demo-form textarea,
+.demo-form select {
   border: 1px solid var(--repairo-rule);
   background: var(--repairo-white);
   width: 100%;
@@ -739,12 +1107,19 @@ h3 {
   transition: border 0.18s, box-shadow 0.18s;
 }
 
+.contact-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 .demo-form textarea {
   resize: vertical;
 }
 
 .demo-form input:focus,
-.demo-form textarea:focus {
+.demo-form textarea:focus,
+.demo-form select:focus {
   border-color: var(--repairo-purple);
   box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.16);
 }
@@ -822,12 +1197,53 @@ h3 {
   .main-nav {
     display: none;
   }
+  .header-menu-btn {
+    display: inline-flex;
+  }
+  .header-mobile-panel {
+    display: grid;
+    gap: 14px;
+    width: min(100% - 64px, 1380px);
+    margin: 0 auto;
+    padding: 8px 0 20px;
+  }
+  .header-mobile-panel a {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--repairo-muted);
+  }
+  .header-mobile-panel a.nav-active,
+  .header-mobile-panel a:hover {
+    color: var(--repairo-ink);
+  }
   .hero-section,
   .proof-section,
   .human-section,
   .security-section,
   .demo-section {
     grid-template-columns: 1fr;
+  }
+  .plan-grid {
+    grid-template-columns: 1fr;
+  }
+  .content-layout {
+    grid-template-columns: 1fr;
+    padding-top: 48px;
+  }
+  .content-aside {
+    position: static;
+    display: none;
+  }
+  .pricing-hero,
+  .pricing-board,
+  .pricing-footnote,
+  .content-layout {
+    width: min(100% - 64px, 1380px);
+  }
+  .security-item:not(:first-child) {
+    padding-left: 0;
   }
   .hero-section {
     min-height: auto;
@@ -908,8 +1324,21 @@ h3 {
   .security-section,
   .demo-section,
   .pricing-strip,
+  .pricing-hero,
+  .pricing-board,
+  .pricing-footnote,
+  .content-layout,
   .site-footer {
     width: min(100% - 36px, 1380px);
+  }
+  .header-mobile-panel {
+    width: min(100% - 36px, 1380px);
+  }
+  .plan-tier {
+    padding: 28px 22px 32px;
+  }
+  .contact-form-row {
+    grid-template-columns: 1fr;
   }
   .header-inner {
     min-height: 64px;

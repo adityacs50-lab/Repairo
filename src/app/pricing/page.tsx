@@ -1,56 +1,36 @@
-"use client";
-
-import { motion, Variants } from "framer-motion";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PricingSection } from "@/components/Pricing";
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
+import Link from "next/link";
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-canvas text-body font-sans selection:bg-ink selection:text-canvas overflow-x-hidden flex flex-col">
+    <main className="site-shell">
       <SiteHeader active="pricing" />
 
-      <main className="w-full flex-grow flex flex-col justify-center items-center py-[64px] md:py-[120px]">
-        <motion.section 
-          initial="hidden"
-          animate="show"
-          variants={containerVariants}
-          className="px-[24px] w-full max-w-[1200px] mx-auto"
-        >
-          <div className="flex flex-col gap-[16px] mb-[64px] text-center items-center">
-            <motion.div variants={itemVariants} className="font-mono text-[14px] uppercase tracking-[1.4px] text-charcoal">
-              Pricing
-            </motion.div>
-            <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl leading-[1.1] font-medium font-display tracking-tight text-ink max-w-[800px]">
-              Simple, transparent pricing.
-            </motion.h1>
-            <motion.p variants={itemVariants} className="text-[18px] md:text-[20px] text-mute leading-[1.5] max-w-[600px] mt-[8px]">
-              Start free, upgrade when you need automated PRs and team features.
-            </motion.p>
-          </div>
-          
-          <motion.div variants={itemVariants}>
-            <PricingSection />
-          </motion.div>
-        </motion.section>
-      </main>
+      <section className="pricing-hero section-rule">
+        <p className="eyebrow">PRICING</p>
+        <h1>Simple, transparent pricing.</h1>
+        <p className="pricing-hero-lede">
+          Start free on the CLI. Upgrade when you need hosted watching, automated PRs, and team seats.
+        </p>
+      </section>
+
+      <section className="pricing-board section-rule">
+        <PricingSection />
+      </section>
+
+      <section className="pricing-footnote section-rule">
+        <p>
+          Formal SOC 2 / ISO programs are on the roadmap — not claimed as complete today.
+          Need a security questionnaire?{" "}
+          <Link href="/contact" className="text-link inline-link">
+            Contact us <span aria-hidden="true" className="arrow-mark">↗</span>
+          </Link>
+        </p>
+      </section>
 
       <SiteFooter />
-    </div>
+    </main>
   );
 }
