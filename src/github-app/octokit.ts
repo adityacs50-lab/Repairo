@@ -159,6 +159,32 @@ export interface CommentResult {
   html_url: string;
 }
 
+export interface RepoFileList {
+  /** Every blob path in the tree at `ref` — callers filter to what they care about. */
+  paths: string[];
+  /** True when GitHub truncated the tree (very large repo) — the list is incomplete. */
+  truncated: boolean;
+}
+
+export interface OpenFixPullRequestParams {
+  owner: string;
+  repo: string;
+  /** Branch to base the new commit on, and to open the PR against — normally the source PR's own head branch. */
+  baseBranch: string;
+  branchName: string;
+  files: { path: string; content: string }[];
+  commitMessage: string;
+  title: string;
+  body: string;
+}
+
+export interface OpenFixPullRequestResult {
+  number: number;
+  html_url: string;
+  /** False when a PR already existed for this branch and was reused instead of re-created. */
+  created: boolean;
+}
+
 /** The handful of GitHub calls the app needs; easy to fake in tests. */
 export interface GitHubClient {
   listPullRequestFiles(owner: string, repo: string, pullNumber: number): Promise<PullRequestFile[]>;
@@ -167,6 +193,16 @@ export interface GitHubClient {
   listIssueComments(owner: string, repo: string, issueNumber: number): Promise<IssueComment[]>;
   createIssueComment(owner: string, repo: string, issueNumber: number, body: string): Promise<CommentResult>;
   updateIssueComment(owner: string, repo: string, commentId: number, body: string): Promise<CommentResult>;
+  /**
+   * Recursive file listing at `ref`, used to find consumer code to auto-repair.
+   * Optional: a client that doesn't implement this just gets no auto-fix PRs.
+   */
+  listRepoFiles?(owner: string, repo: string, ref: string): Promise<RepoFileList>;
+  /**
+   * Commit `files` onto a new (or existing) branch off `baseBranch` and open a PR for it,
+   * reusing an already-open PR for that branch instead of creating a second one.
+   */
+  openFixPullRequest?(params: OpenFixPullRequestParams): Promise<OpenFixPullRequestResult>;
 }
 
 /** Wrap an authenticated Octokit in the narrow client, with retries on every call. */
@@ -220,6 +256,95 @@ export function createGitHubClient(octokit: Octokit): GitHubClient {
           return { id: data.id, html_url: data.html_url };
         },
         { label: "issues.updateComment" },
+      ),
+
+    listRepoFiles: (owner, repo, ref) =>
+      withRetry(
+        async () => {
+          const { data } = await octokit.rest.git.getTree({ owner, repo, tree_sha: ref, recursive: "true" });
+          const paths = data.tree
+            .filter((entry): entry is typeof entry & { path: string } => entry.type === "blob" && Boolean(entry.path))
+            .map((entry) => entry.path);
+          return { paths, truncated: Boolean(data.truncated) };
+        },
+        { label: "git.getTree" },
+      ),
+
+    openFixPullRequest: (params) =>
+      withRetry(
+        async () => {
+          const { owner, repo, baseBranch, branchName, files, commitMessage, title, body } = params;
+
+          const { data: baseRef } = await octokit.rest.git.getRef({ owner, repo, ref: `heads/${baseBranch}` });
+          const baseSha = baseRef.object.sha;
+          const { data: baseCommit } = await octokit.rest.git.getCommit({ owner, repo, commit_sha: baseSha });
+
+          const treeEntries = [];
+          for (const file of files) {
+            const { data: blob } = await octokit.rest.git.createBlob({
+              owner,
+              repo,
+              content: file.content,
+              encoding: "utf-8",
+            });
+            treeEntries.push({ path: file.path, mode: "100644" as const, type: "blob" as const, sha: blob.sha });
+          }
+
+          const { data: tree } = await octokit.rest.git.createTree({
+            owner,
+            repo,
+            base_tree: baseCommit.tree.sha,
+            tree: treeEntries,
+          });
+
+          const { data: commit } = await octokit.rest.git.createCommit({
+            owner,
+            repo,
+            message: commitMessage,
+            tree: tree.sha,
+            parents: [baseSha],
+          });
+
+          // Re-running on a later `synchronize` event should update the same fix branch
+          // rather than fail on "reference already exists" or pile up duplicate PRs.
+          let branchExisted = false;
+          try {
+            await octokit.rest.git.createRef({ owner, repo, ref: `refs/heads/${branchName}`, sha: commit.sha });
+          } catch (error) {
+            if ((error as { status?: number }).status !== 422) throw error;
+            branchExisted = true;
+            await octokit.rest.git.updateRef({
+              owner,
+              repo,
+              ref: `heads/${branchName}`,
+              sha: commit.sha,
+              force: true,
+            });
+          }
+
+          if (branchExisted) {
+            const { data: existing } = await octokit.rest.pulls.list({
+              owner,
+              repo,
+              head: `${owner}:${branchName}`,
+              state: "open",
+            });
+            if (existing[0]) {
+              return { number: existing[0].number, html_url: existing[0].html_url, created: false };
+            }
+          }
+
+          const { data: pr } = await octokit.rest.pulls.create({
+            owner,
+            repo,
+            title,
+            body,
+            head: branchName,
+            base: baseBranch,
+          });
+          return { number: pr.number, html_url: pr.html_url, created: true };
+        },
+        { label: "openFixPullRequest" },
       ),
   };
 }

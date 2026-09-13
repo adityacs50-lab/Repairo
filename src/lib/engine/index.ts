@@ -233,7 +233,7 @@ export { buildPullRequest, generateFixes } from "./repair";
 export { scanDirectory, scanCodebase } from "./ast-parser";
 export { applyAstTransforms, groupEnumChanges, type AgentEnumResolution } from "./ast-transformer";
 export { normalizeMaxAgentResolutions, proposeEnumMapping, resolveAmbiguousEnums, validateProposal } from "./agent-resolve";
-export { validateCodebase, collectTypeDiagnostics, type TypeDiagnostic } from "./validation";
+export { validateCodebase, validateInMemory, collectTypeDiagnostics, type TypeDiagnostic } from "./validation";
 export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";
 export { getGitStatus, createGitHubPR } from "./github";
 export { VENDOR_CATALOG, getVendor, listVendors, type VendorCatalogEntry } from "./catalog";
