@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./public/repairo-ai-logo.png" alt="Repairo AI" width="180">
+  <img src="./public/brand-mark.png" alt="Repairo AI" width="180">
 </p>
 
 <h1 align="center">Repairo AI</h1>
