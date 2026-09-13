@@ -27,17 +27,25 @@ export interface SarvamCompletionOptions {
   /** Retries on 429 / 5xx. One retry by default. */
   retries?: number;
   /**
-   * Sarvam's "thinking mode".
+   * Sarvam's "thinking mode". The API accepts ONLY `"low" | "medium" | "high"`
+   * — it answers 400 with
+   * `body.reasoning_effort : Input should be 'low', 'medium' or 'high'`
+   * to anything else, so there is no way to switch thinking off.
    *
-   * Defaults to `"none"`, which is what the chat widget wants: the default
-   * models are reasoning-capable, and left unbounded a thinking pass can spend
-   * the entire `max_tokens` budget and return `content: ""` with the answer
-   * stranded in `reasoning_content`. That surfaces to the visitor as "I
-   * couldn't come up with a response to that", which is why this is opt-out
-   * rather than opt-in.
+   * That matters, because thinking is what breaks this widget: the models are
+   * reasoning-capable, and the thinking pass is billed against the same
+   * `max_tokens` budget as the answer. Observed on `sarvam-105b` with a
+   * 1200-token budget: 5460 characters of `reasoning_content`,
+   * `finish_reason: "length"`, and `content: null` — the visitor sees "I
+   * couldn't come up with a response to that" because generation ran out of
+   * room before the answer started.
    *
-   * Pass `"default"` to send no field at all and take the provider's default,
-   * or `"low"` / `"medium"` / `"high"` to deliberately enable thinking.
+   * So the two levers are: ask for the *least* thinking the API allows
+   * (`"low"`, the default here), and give the budget enough headroom that the
+   * answer still fits after it (see `maxTokens`).
+   *
+   * Pass `"default"`, `"none"` or `"off"` to omit the field entirely and take
+   * the provider default — which thinks harder, not less.
    */
   reasoningEffort?: string;
   /** Injectable for tests. */
@@ -79,6 +87,15 @@ interface SarvamResponseBody {
 /** Hard ceiling on network calls per completion, across every retry reason. */
 const MAX_CALLS = 4;
 
+/** The only values Sarvam's `reasoning_effort` accepts. */
+const VALID_REASONING_EFFORTS = new Set(["low", "medium", "high"]);
+
+/** Least thinking the API permits — see `reasoningEffort`. */
+const DEFAULT_REASONING_EFFORT = "low";
+
+/** Upper bound on the budget escalation, so a pathological model cannot bill forever. */
+const MAX_TOKEN_BUDGET = 8000;
+
 /**
  * Pull the assistant's text out of a response, tolerating the shapes an
  * OpenAI-compatible endpoint can legitimately return. Reasoning traces are
@@ -108,7 +125,7 @@ function reasoningChars(choice: SarvamChoice | undefined): number {
  * Did this 200-with-no-content look like a budget problem rather than a model
  * that genuinely had nothing to say? Either the thinking pass produced output
  * of its own, or generation stopped because it ran out of room. Both are worth
- * one more try with thinking off and a bigger budget.
+ * one more try with a bigger budget.
  */
 function looksLikeBudgetOverrun(choice: SarvamChoice | undefined): boolean {
   return reasoningChars(choice) > 0 || choice?.finish_reason === "length";
@@ -116,11 +133,15 @@ function looksLikeBudgetOverrun(choice: SarvamChoice | undefined): boolean {
 
 function describeEmpty(choice: SarvamChoice | undefined, data: SarvamResponseBody, raw: string): string {
   const thinking = reasoningChars(choice);
+  const budgetHint =
+    choice?.finish_reason === "length"
+      ? " — the thinking pass used the whole token budget before the answer started; raise MAX_TOKENS in the chat route"
+      : "";
   return (
     `Sarvam API returned no message content (finish_reason=${choice?.finish_reason ?? "none"}` +
     `, choices=${data.choices?.length ?? 0}` +
     (thinking ? `, reasoning_content=${thinking} chars` : "") +
-    `). Raw: ${raw.slice(0, 400)}`
+    `${budgetHint}). Raw: ${raw.slice(0, 400)}`
   );
 }
 
@@ -138,14 +159,23 @@ function isRetryable(status: number): boolean {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * `undefined` means "omit the field entirely". See `reasoningEffort` above for
- * why an unset env var resolves to "none" rather than to the provider default.
+ * `undefined` means "omit the field entirely". An unset env var resolves to
+ * `"low"`, not to the provider default — see `reasoningEffort` above.
+ *
+ * Note that `"none"` maps to *omitting* the field rather than being sent: the
+ * API rejects it outright, and silently passing it through would 400 every
+ * request for anyone who set `SARVAM_REASONING_EFFORT=none`.
  */
 function resolveReasoningEffort(value?: string): string | undefined {
   const normalized = value?.trim().toLowerCase();
-  if (!normalized) return "none";
-  if (normalized === "default" || normalized === "provider" || normalized === "unset") return undefined;
-  return normalized;
+  if (!normalized) return DEFAULT_REASONING_EFFORT;
+  if (["default", "provider", "unset", "none", "off"].includes(normalized)) return undefined;
+  if (VALID_REASONING_EFFORTS.has(normalized)) return normalized;
+  console.warn(
+    `Sarvam: ignoring SARVAM_REASONING_EFFORT="${value}" — expected low, medium or high. ` +
+      `Using "${DEFAULT_REASONING_EFFORT}".`,
+  );
+  return DEFAULT_REASONING_EFFORT;
 }
 
 /** Resolve config from env, with explicit options winning. */
@@ -168,7 +198,7 @@ export function sarvamConfigFromEnv(env: NodeJS.ProcessEnv = process.env) {
  *  - 400 while sending `reasoning_effort` → the endpoint does not know the
  *    field; resend the plain body rather than failing the request.
  *  - 200 with empty content after a thinking pass or a `length` stop → retry
- *    with thinking off and a doubled budget.
+ *    with a doubled token budget, so the answer has room after the thinking.
  *  - 429 / 5xx / timeout → the ordinary transient retry.
  */
 export async function createSarvamCompletion(options: SarvamCompletionOptions): Promise<string> {
@@ -268,14 +298,13 @@ export async function createSarvamCompletion(options: SarvamCompletionOptions): 
       // thinking pass, a truncated answer, or a model that genuinely returned
       // nothing all land here, and all three look identical to the visitor.
       const detail = describeEmpty(choice, data, raw);
-      if (!retriedAfterEmpty && looksLikeBudgetOverrun(choice)) {
-        console.warn(
-          `Sarvam: empty content on the first attempt (${detail}). ` +
-            "Retrying with thinking disabled and a doubled token budget.",
-        );
+      if (!retriedAfterEmpty && looksLikeBudgetOverrun(choice) && budget < MAX_TOKEN_BUDGET) {
         retriedAfterEmpty = true;
-        effort = "none";
-        budget = Math.max(budget * 2, 1600);
+        // Budget is the only lever here. `effort` is deliberately left alone:
+        // it is either a value the endpoint accepted, or one it already
+        // rejected and we dropped — re-adding either would waste the attempt.
+        budget = Math.min(Math.max(budget * 2, 3000), MAX_TOKEN_BUDGET);
+        console.warn(`Sarvam: ${detail}. Retrying once with max_tokens=${budget}.`);
         lastError = new SarvamError("empty", detail);
         continue;
       }

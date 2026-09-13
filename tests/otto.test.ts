@@ -152,10 +152,11 @@ async function main() {
   );
   assert(prompt.length < 14_000, `The assembled prompt stays within budget (${prompt.length} chars)`);
 
-  // The widget renders a narrow column and only a small markdown subset, so the
-  // prompt has to forbid the syntax that would show up as literal characters.
-  assert(/PLAIN TEXT ONLY/.test(prompt), "The prompt forbids markdown syntax in answers");
-  assert(/380px/.test(prompt), "The prompt states the width Otto is writing into");
+  // The widget renders markdown, but into a narrow column — so the prompt opts
+  // into a small subset and rules out what will not fit.
+  assert(/renders markdown properly/.test(prompt), "The prompt tells Otto its markdown is rendered, not shown raw");
+  assert(/`inline code`/.test(prompt), "The prompt names the markdown Otto may use");
+  assert(/400px/.test(prompt), "The prompt states the width Otto is writing into");
   assert(/Never a table\.|never a table/i.test(prompt), "The prompt rules out tables");
   assert(
     KNOWLEDGE.find((s) => s.id === "comparisons")!.content.includes("never reproduce it as a table"),
@@ -166,7 +167,7 @@ async function main() {
 
   // ---------------------------------------------------------------------
   console.log("\nTest 6: Sarvam config resolution");
-  const defaults = sarvamConfigFromEnv({} as NodeJS.ProcessEnv);
+  const defaults = sarvamConfigFromEnv({});
   assert(
     defaults.model === DEFAULT_SARVAM_MODEL && defaults.baseUrl === DEFAULT_SARVAM_BASE_URL && defaults.apiKey === "",
     "With no env set, config falls back to documented defaults and an empty key",
@@ -175,7 +176,7 @@ async function main() {
     SARVAM_API_KEY: "  sk_test  ",
     SARVAM_MODEL: "sarvam-105b-conversations",
     SARVAM_BASE_URL: "https://api.sarvam.ai/v2/",
-  } as NodeJS.ProcessEnv);
+  });
   assert(overridden.apiKey === "sk_test", "The API key is trimmed");
   assert(overridden.model === "sarvam-105b-conversations", "SARVAM_MODEL overrides the default model");
   assert(overridden.baseUrl === "https://api.sarvam.ai/v2", "A trailing slash on SARVAM_BASE_URL is stripped");
