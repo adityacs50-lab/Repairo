@@ -773,23 +773,21 @@ process.env.DATABASE_PATH = path.join(dbTmpDir, "test.db");
 const db = getDb();
 
 const auditUserId = randomUUID();
-db.insert(users)
+await db.insert(users)
   .values({
     id: auditUserId,
     githubId: "12345",
     login: "test-user",
     avatarUrl: "https://example.com/avatar.png",
     encryptedAccessToken: "encrypted",
-  })
-  .run();
+  });
 
 const auditWorkspaceId = randomUUID();
-db.insert(workspaces)
-  .values({ id: auditWorkspaceId, name: "Test Workspace", ownerUserId: auditUserId })
-  .run();
+await db.insert(workspaces)
+  .values({ id: auditWorkspaceId, name: "Test Workspace", ownerUserId: auditUserId });
 
 const auditIntegrationId = randomUUID();
-db.insert(integrations)
+await db.insert(integrations)
   .values({
     id: auditIntegrationId,
     workspaceId: auditWorkspaceId,
@@ -804,13 +802,11 @@ db.insert(integrations)
     consumerRef: "main",
     baseBranch: "main",
     webhookSecret: "secret",
-  })
-  .run();
+  });
 
 const auditRunId = randomUUID();
-db.insert(repairRuns)
-  .values({ id: auditRunId, integrationId: auditIntegrationId, status: "running" })
-  .run();
+await db.insert(repairRuns)
+  .values({ id: auditRunId, integrationId: auditIntegrationId, status: "running" });
 
 const auditFixes: SuggestedFix[] = [
   {
@@ -844,9 +840,9 @@ const auditFixes: SuggestedFix[] = [
     safetyNotes: ["Spec diff alone cannot determine which added value replaces this one"],
   },
 ];
-recordFixes(auditRunId, auditFixes);
+await recordFixes(auditRunId, auditFixes);
 
-const persistedFixes = listFixesForRun(auditRunId);
+const persistedFixes = await listFixesForRun(auditRunId);
 assert(persistedFixes.length === 3, "All 3 fixes are persisted, including the unsafe/ambiguous one that never touched a file");
 const persistedA = persistedFixes.find((f) => f.changeId === "chg_a");
 const persistedB = persistedFixes.find((f) => f.changeId === "chg_b");
@@ -862,11 +858,10 @@ assert(Array.isArray(persistedA?.safetyNotesJson) && persistedA?.safetyNotesJson
 // Test 31: recordFixes is a true no-op for an empty fix list (no wasted insert).
 console.log("\nTest 31: recordFixes no-op for empty fix list");
 const emptyRunId = randomUUID();
-db.insert(repairRuns)
-  .values({ id: emptyRunId, integrationId: auditIntegrationId, status: "skipped" })
-  .run();
-recordFixes(emptyRunId, []);
-assert(listFixesForRun(emptyRunId).length === 0, "No rows are inserted when the fix list is empty");
+await db.insert(repairRuns)
+  .values({ id: emptyRunId, integrationId: auditIntegrationId, status: "skipped" });
+await recordFixes(emptyRunId, []);
+assert((await listFixesForRun(emptyRunId)).length === 0, "No rows are inserted when the fix list is empty");
 
 // Test 32: recordFixes never throws, even when persistence itself fails (e.g. a
 // foreign-key violation from a malformed/unknown repairRunId) — the audit trail must
@@ -875,7 +870,7 @@ assert(listFixesForRun(emptyRunId).length === 0, "No rows are inserted when the 
 console.log("\nTest 32: recordFixes never throws on a persistence failure");
 let recordFixesThrew = false;
 try {
-  recordFixes("nonexistent-run-id-violates-fk", [
+  await recordFixes("nonexistent-run-id-violates-fk", [
     { changeId: "chg_x", file: "x.ts", description: "x", before: "a", after: "b", safe: true, safetyNotes: [] },
   ]);
 } catch {

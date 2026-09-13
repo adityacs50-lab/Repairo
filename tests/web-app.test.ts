@@ -59,15 +59,14 @@ function assert(condition: boolean, testName: string) {
 
 /** Workspaces created via upsertGithubUser get an owner membership row automatically;
  * workspaces inserted directly for test setup below need the same invariant by hand. */
-function addOwnerMembership(workspaceId: string, userId: string) {
-  getDb()
+async function addOwnerMembership(workspaceId: string, userId: string) {
+  await getDb()
     .insert(workspaceMembers)
-    .values({ id: randomUUID(), workspaceId, userId, role: "owner", createdAt: new Date() })
-    .run();
+    .values({ id: randomUUID(), workspaceId, userId, role: "owner", createdAt: new Date() });
 }
 
-function newIntegration(workspaceId: string, overrides: Partial<Parameters<typeof createIntegration>[0]> = {}) {
-  return createIntegration({
+async function newIntegration(workspaceId: string, overrides: Partial<Parameters<typeof createIntegration>[0]> = {}) {
+  return await createIntegration({
     workspaceId,
     name: overrides.name ?? `integration-${randomUUID()}`,
     owner: "acme",
@@ -168,16 +167,16 @@ async function main() {
   });
   assert(secondLogin.id === firstLogin.id && secondLogin.login === "acme-dev-renamed", "Logging in again with the same githubId updates the existing user instead of creating a second one");
   assert(secondWorkspace.id === firstWorkspace.id, "The same workspace is reused across logins rather than provisioning a new one each time");
-  assert(getWorkspaceForUser(firstLogin.id)?.id === firstWorkspace.id, "getWorkspaceForUser resolves back to the owned workspace");
+  assert((await getWorkspaceForUser(firstLogin.id))?.id === firstWorkspace.id, "getWorkspaceForUser resolves back to the owned workspace");
 
   // ---------------------------------------------------------------------
   console.log("\nTest 6: workspace access control");
   const { user: outsider } = await upsertGithubUser({ githubId: "556", login: "outsider", avatarUrl: "https://x/c.png", accessToken: "gho_out" });
-  const access = requireWorkspaceAccess(firstLogin.id, firstWorkspace.id);
+  const access = await requireWorkspaceAccess(firstLogin.id, firstWorkspace.id);
   assert(access.workspace.id === firstWorkspace.id, "The workspace owner is granted access to their own workspace");
   let forbiddenThrew = false;
   try {
-    requireWorkspaceAccess(outsider.id, firstWorkspace.id);
+    await requireWorkspaceAccess(outsider.id, firstWorkspace.id);
   } catch (e) {
     forbiddenThrew = e instanceof AuthError && e.status === 403;
   }
@@ -188,11 +187,11 @@ async function main() {
   // needs a deliberate, temporary FK bypass here — not a shortcut anything else can take.
   const rawSqlite = (getDb() as unknown as { $client: { pragma(sql: string): unknown } }).$client;
   rawSqlite.pragma("foreign_keys = OFF");
-  addOwnerMembership("dangling-workspace-id", firstLogin.id);
+  await addOwnerMembership("dangling-workspace-id", firstLogin.id);
   rawSqlite.pragma("foreign_keys = ON");
   let notFoundThrew = false;
   try {
-    requireWorkspaceAccess(firstLogin.id, "dangling-workspace-id");
+    await requireWorkspaceAccess(firstLogin.id, "dangling-workspace-id");
   } catch (e) {
     notFoundThrew = e instanceof AuthError && e.status === 404;
   }
@@ -201,24 +200,24 @@ async function main() {
   // ---------------------------------------------------------------------
   console.log("\nTest 7: integration plan-limit gate (Free = 1 integration)");
   const gateWorkspaceId = randomUUID();
-  getDb().insert(users).values({ id: randomUUID(), githubId: "999", login: "gate-user", avatarUrl: "https://x/g.png", encryptedAccessToken: "e" }).run();
-  const gateOwnerId = getDb().select().from(users).all().find((u) => u.login === "gate-user")!.id;
-  getDb().insert(workspaces).values({ id: gateWorkspaceId, name: "Gate WS", ownerUserId: gateOwnerId, plan: "free" }).run();
-  addOwnerMembership(gateWorkspaceId, gateOwnerId);
-  const gateWorkspace = getDb().select().from(workspaces).all().find((w) => w.id === gateWorkspaceId)!;
+  await getDb().insert(users).values({ id: randomUUID(), githubId: "999", login: "gate-user", avatarUrl: "https://x/g.png", encryptedAccessToken: "e" });
+  const gateOwnerId = (await getDb().select().from(users)).find((u) => u.login === "gate-user")!.id;
+  await getDb().insert(workspaces).values({ id: gateWorkspaceId, name: "Gate WS", ownerUserId: gateOwnerId, plan: "free" });
+  await addOwnerMembership(gateWorkspaceId, gateOwnerId);
+  const gateWorkspace = (await getDb().select().from(workspaces)).find((w) => w.id === gateWorkspaceId)!;
 
   let underLimitThrew = false;
   try {
-    assertCanCreateIntegration(gateWorkspace);
+    await assertCanCreateIntegration(gateWorkspace);
   } catch {
     underLimitThrew = true;
   }
   assert(!underLimitThrew, "A Free workspace with 0 integrations may create one");
-  newIntegration(gateWorkspaceId);
+  await newIntegration(gateWorkspaceId);
   let atLimitThrew = false;
   let atLimitStatus = 0;
   try {
-    assertCanCreateIntegration(gateWorkspace);
+    await assertCanCreateIntegration(gateWorkspace);
   } catch (e) {
     atLimitThrew = true;
     atLimitStatus = e instanceof AuthError ? e.status : 0;
@@ -228,32 +227,32 @@ async function main() {
   // ---------------------------------------------------------------------
   console.log("\nTest 8: repair-run plan-limit gate, including quick-repair audit events");
   const runsWorkspaceId = randomUUID();
-  getDb().insert(workspaces).values({ id: runsWorkspaceId, name: "Runs WS", ownerUserId: gateOwnerId, plan: "free" }).run();
-  addOwnerMembership(runsWorkspaceId, gateOwnerId);
-  const runsWorkspace = getDb().select().from(workspaces).all().find((w) => w.id === runsWorkspaceId)!;
-  const runsIntegration = newIntegration(runsWorkspaceId);
+  await getDb().insert(workspaces).values({ id: runsWorkspaceId, name: "Runs WS", ownerUserId: gateOwnerId, plan: "free" });
+  await addOwnerMembership(runsWorkspaceId, gateOwnerId);
+  const runsWorkspace = (await getDb().select().from(workspaces)).find((w) => w.id === runsWorkspaceId)!;
+  const runsIntegration = await newIntegration(runsWorkspaceId);
 
-  assert(countRunsThisMonth(runsWorkspaceId) === 0, "A fresh workspace has 0 runs this month");
-  for (let i = 0; i < 14; i++) {
-    getDb().insert(repairRuns).values({ id: randomUUID(), integrationId: runsIntegration.id, status: "success" }).run();
+  assert(await countRunsThisMonth(runsWorkspaceId) === 0, "A fresh workspace has 0 runs this month");
+  for (let i = 0; i < 14; await i++) {
+    getDb().insert(repairRuns).values({ id: randomUUID(), integrationId: runsIntegration.id, status: "success" });
   }
-  assert(countRunsThisMonth(runsWorkspaceId) === 14, "14 of 14 inserted runs are counted");
+  assert(await countRunsThisMonth(runsWorkspaceId) === 14, "14 of 14 inserted runs are counted");
   let underRunLimitThrew = false;
   try {
-    assertCanRunRepair(runsWorkspace);
+    await assertCanRunRepair(runsWorkspace);
   } catch {
     underRunLimitThrew = true;
   }
   assert(!underRunLimitThrew, "A Free workspace with 14 of its 15-run limit used may still run a repair");
 
-  // The 15th unit of usage is a quick repair (audit-log only, no repair_runs row) — proves
+  await // The 15th unit of usage is a quick repair (audit-log only, no repair_runs row) — proves
   // the gate counts both sources together, not just repair_runs.
-  getDb().insert(auditLogs).values({ id: randomUUID(), workspaceId: runsWorkspaceId, action: "repair.quick", createdAt: new Date() }).run();
-  assert(countRunsThisMonth(runsWorkspaceId) === 15, "A quick repair (audit-log only) is counted alongside integration runs");
+  getDb().insert(auditLogs).values({ id: randomUUID(), workspaceId: runsWorkspaceId, action: "repair.quick", createdAt: new Date() });
+  assert(await countRunsThisMonth(runsWorkspaceId) === 15, "A quick repair (audit-log only) is counted alongside integration runs");
   let atRunLimitThrew = false;
   let atRunLimitStatus = 0;
   try {
-    assertCanRunRepair(runsWorkspace);
+    await assertCanRunRepair(runsWorkspace);
   } catch (e) {
     atRunLimitThrew = true;
     atRunLimitStatus = e instanceof AuthError ? e.status : 0;
@@ -262,33 +261,33 @@ async function main() {
 
   const lastMonth = new Date();
   lastMonth.setUTCMonth(lastMonth.getUTCMonth() - 1);
-  getDb().insert(repairRuns).values({ id: randomUUID(), integrationId: runsIntegration.id, status: "success", createdAt: lastMonth }).run();
-  assert(countRunsThisMonth(runsWorkspaceId) === 15, "A run from a previous calendar month doesn't inflate this month's count");
+  await getDb().insert(repairRuns).values({ id: randomUUID(), integrationId: runsIntegration.id, status: "success", createdAt: lastMonth });
+  assert(await countRunsThisMonth(runsWorkspaceId) === 15, "A run from a previous calendar month doesn't inflate this month's count");
 
   // ---------------------------------------------------------------------
   console.log("\nTest 9: invites — seat limit and accept-on-login");
   const inviteWorkspaceId = randomUUID();
-  getDb().insert(workspaces).values({ id: inviteWorkspaceId, name: "Invite WS", ownerUserId: gateOwnerId, plan: "free" }).run();
-  addOwnerMembership(inviteWorkspaceId, gateOwnerId);
-  const inviteWorkspace = getDb().select().from(workspaces).all().find((w) => w.id === inviteWorkspaceId)!;
+  await getDb().insert(workspaces).values({ id: inviteWorkspaceId, name: "Invite WS", ownerUserId: gateOwnerId, plan: "free" });
+  await addOwnerMembership(inviteWorkspaceId, gateOwnerId);
+  const inviteWorkspace = (await getDb().select().from(workspaces)).find((w) => w.id === inviteWorkspaceId)!;
 
-  const invite = createPendingInvite({ workspace: inviteWorkspace, githubLogin: "@Future-Teammate", invitedByUserId: gateOwnerId });
+  const invite = await createPendingInvite({ workspace: inviteWorkspace, githubLogin: "@Future-Teammate", invitedByUserId: gateOwnerId });
   assert(invite.githubLogin === "future-teammate", "Invite login is normalized (leading @ stripped, lowercased)");
-  const sameInvite = createPendingInvite({ workspace: inviteWorkspace, githubLogin: "future-teammate", invitedByUserId: gateOwnerId });
+  const sameInvite = await createPendingInvite({ workspace: inviteWorkspace, githubLogin: "future-teammate", invitedByUserId: gateOwnerId });
   assert(sameInvite.id === invite.id, "Inviting the same pending login twice returns the existing invite instead of duplicating it");
-  assert(listPendingInvites(inviteWorkspaceId).length === 1, "Exactly one pending invite is stored");
+  assert((await listPendingInvites(inviteWorkspaceId)).length === 1, "Exactly one pending invite is stored");
 
   await upsertGithubUser({ githubId: "777", login: "future-teammate", avatarUrl: "https://x/f.png", accessToken: "gho_f" });
-  assert(listPendingInvites(inviteWorkspaceId).length === 0, "Signing up under the invited login accepts the invite automatically");
-  const teammateId = getDb().select().from(users).all().find((u) => u.login === "future-teammate")!.id;
-  acceptPendingInvitesForLogin(teammateId, "future-teammate");
-  assert(requireWorkspaceAccess(teammateId, inviteWorkspaceId).member.role === "member", "The invited user is now a member of the inviting workspace, not just their own");
+  assert((await listPendingInvites(inviteWorkspaceId)).length === 0, "Signing up under the invited login accepts the invite automatically");
+  const teammateId = (await getDb().select().from(users)).find((u) => u.login === "future-teammate")!.id;
+  await acceptPendingInvitesForLogin(teammateId, "future-teammate");
+  assert((await requireWorkspaceAccess(teammateId, inviteWorkspaceId)).member.role === "member", "The invited user is now a member of the inviting workspace, not just their own");
 
   // Free plan seats = 3: owner (1) + this invited member (1) leaves exactly 1 more before the gate trips.
-  createPendingInvite({ workspace: inviteWorkspace, githubLogin: "second-teammate", invitedByUserId: gateOwnerId });
+  await createPendingInvite({ workspace: inviteWorkspace, githubLogin: "second-teammate", invitedByUserId: gateOwnerId });
   let seatLimitThrew = false;
   try {
-    assertCanInvite(inviteWorkspace);
+    await assertCanInvite(inviteWorkspace);
   } catch (e) {
     seatLimitThrew = e instanceof AuthError && e.status === 402;
   }
