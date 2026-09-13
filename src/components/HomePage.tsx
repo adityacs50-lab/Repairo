@@ -6,6 +6,31 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FORMSUBMIT_ENDPOINT } from "@/lib/contact";
+import {
+  DESIGN_PARTNER,
+  ENGINE_METRICS,
+  VENDOR_MARKS,
+} from "@/lib/social-proof";
+
+const SOCIAL = {
+  github: "https://github.com/sanjaynandanj/Repairo",
+  npm: "https://www.npmjs.com/package/repairo-cli",
+} as const;
+
+const PROVIDERS_AVAILABLE = [
+  { name: "Stripe", note: "OpenAPI watch + AST repair" },
+  { name: "OpenAI", note: "Platform & Chat APIs" },
+  { name: "Anthropic", note: "Messages API / SDK drift" },
+  { name: "Supabase", note: "Management API contract" },
+  { name: "Google Gemini", note: "Generative AI Discovery" },
+  { name: "GitHub REST", note: "Official OpenAPI pin" },
+] as const;
+
+const PROVIDERS_UPCOMING = [
+  { name: "Clerk", note: "Auth SDK migrations" },
+  { name: "Private OpenAPI", note: "Enterprise / VPC" },
+  { name: "Custom vendors", note: "Team-pinned specs" },
+] as const;
 
 type TabId = "impact" | "repair" | "verify";
 
@@ -117,6 +142,7 @@ export function HomePage() {
           </Link>
           <nav className="main-nav" aria-label="Main navigation">
             <a href="#workflow">Workflow</a>
+            <a href="#providers">Providers</a>
             <a href="#security">Security</a>
             <Link href="/pricing">Pricing</Link>
           </nav>
@@ -144,7 +170,7 @@ export function HomePage() {
               </Link>
             </div>
             <p className="hero-trust">
-              Watches Stripe · OpenAI · Clerk · Supabase · Anthropic
+              Available: Stripe · OpenAI · Anthropic · Supabase · Gemini · GitHub
               <span className="hero-trust-sep" aria-hidden="true">
                 /
               </span>
@@ -186,7 +212,72 @@ opened PR #184  fix(stripe): migrate customer.source`}</code>
         </div>
       </section>
 
-      {/* 3. WORKFLOW SECTION */}
+      {/* 3. SOCIAL PROOF */}
+      <section className="social-section section-rule" id="proof">
+        <div className="social-proof-stack">
+          <div className="logo-strip" aria-label="Vendors Repairo watches">
+            <p className="mono-label">Works with</p>
+            <ul className="logo-strip-list">
+              {VENDOR_MARKS.map((name) => (
+                <li key={name} className="logo-mark">
+                  {name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="social-quotes">
+            <figure className="social-quote-block">
+              <p className="eyebrow">DESIGN PARTNER</p>
+              <blockquote className="social-quote">
+                “{DESIGN_PARTNER.beforeCode}
+                <code>{DESIGN_PARTNER.code}</code>
+                {DESIGN_PARTNER.afterCode}”
+              </blockquote>
+              <figcaption className="social-attrib">
+                <span className="social-attrib-name">{DESIGN_PARTNER.role}</span>
+                <span className="hero-trust-sep" aria-hidden="true">
+                  /
+                </span>
+                {DESIGN_PARTNER.org}
+              </figcaption>
+            </figure>
+            <figure className="social-quote-block social-quote-secondary">
+              <p className="eyebrow">WORKS WITH</p>
+              <blockquote className="social-quote social-quote-sm">
+                Apache-2.0 CLI on npm. Public engine suite. Human merge required — including every
+                AI-assisted mapping.
+              </blockquote>
+              <figcaption className="social-attrib">
+                <a className="text-link" href={SOCIAL.npm} rel="noreferrer" target="_blank">
+                  npm <span aria-hidden="true" className="arrow-mark">↗</span>
+                </a>
+                <span className="hero-trust-sep" aria-hidden="true">
+                  /
+                </span>
+                <a className="text-link" href={SOCIAL.github} rel="noreferrer" target="_blank">
+                  GitHub <span aria-hidden="true" className="arrow-mark">↗</span>
+                </a>
+              </figcaption>
+            </figure>
+          </div>
+
+          <div className="metrics-strip" aria-label="Engine-verified metrics">
+            {ENGINE_METRICS.map((m) => (
+              <div key={m.label} className="metric-cell">
+                <span className="metric-value">{m.value}</span>
+                <span className="metric-label">{m.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="metrics-footnote">
+            Engine facts from the open catalog, change taxonomy, and test suite — not production
+            usage telemetry.
+          </p>
+        </div>
+      </section>
+
+      {/* 4. WORKFLOW SECTION */}
       <section className="workflow-section section-rule" id="workflow">
         <div className="section-intro">
           <p className="eyebrow">THE REPAIR WORKFLOW</p>
@@ -391,7 +482,53 @@ opened PR #184  fix(stripe): migrate customer.source`}</code>
         </div>
       </section>
 
-      {/* 7. SECURITY BOUNDARY */}
+      {/* 8. PROVIDER COVERAGE */}
+      <section className="providers-section section-rule" id="providers">
+        <div className="section-intro">
+          <p className="eyebrow">PROVIDER COVERAGE</p>
+          <h2>Available now. Clear about what&apos;s next.</h2>
+          <p>
+            Live agents watch public OpenAPI (and Discovery) pins. Upcoming vendors ship when the
+            contract path is solid — we don&apos;t pretend coverage we don&apos;t have.
+          </p>
+        </div>
+        <div className="provider-matrix">
+          <div className="provider-col">
+            <p className="mono-label">Available</p>
+            <ul className="provider-list">
+              {PROVIDERS_AVAILABLE.map((p) => (
+                <li key={p.name}>
+                  <span className="provider-name">{p.name}</span>
+                  <span className="provider-note">{p.note}</span>
+                </li>
+              ))}
+            </ul>
+            <Link className="text-link" href="/agents">
+              Browse agents <span aria-hidden="true" className="arrow-mark">
+                ↗
+              </span>
+            </Link>
+          </div>
+          <div className="provider-col">
+            <p className="mono-label">Upcoming</p>
+            <ul className="provider-list">
+              {PROVIDERS_UPCOMING.map((p) => (
+                <li key={p.name}>
+                  <span className="provider-name">{p.name}</span>
+                  <span className="provider-note">{p.note}</span>
+                </li>
+              ))}
+            </ul>
+            <a className="text-link" href="#waitlist">
+              Get notified <span aria-hidden="true" className="arrow-mark">
+                ↗
+              </span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* 9. SECURITY BOUNDARY */}
       <section className="security-section section-rule" id="security">
         <div className="section-intro">
           <p className="eyebrow">TRUST BOUNDARY</p>
@@ -420,7 +557,88 @@ opened PR #184  fix(stripe): migrate customer.source`}</code>
         </Link>
       </section>
 
-      {/* 8. DEMO BOOKING FORM SECTION */}
+      {/* 10. PUBLIC EVIDENCE */}
+      <section className="evidence-section section-rule" id="evidence">
+        <div className="section-intro">
+          <p className="eyebrow">PUBLIC EVIDENCE</p>
+          <h2>
+            Stripe <code className="evidence-inline">customer.source</code> → compile-checked
+            repair.
+          </h2>
+          <p>
+            A concrete walkthrough of the loop peers ask for: vendor contract move, call-site
+            impact, AST patch, then <code className="evidence-inline">tsc --noEmit</code> before
+            the PR.
+          </p>
+        </div>
+        <div className="evidence-metrics">
+          <div className="evidence-metric">
+            <span className="metric-value">2</span>
+            <span className="metric-label">Shipping fixture files repaired cross-domain</span>
+          </div>
+          <div className="evidence-metric">
+            <span className="metric-value">tsc</span>
+            <span className="metric-label">Clean compile on repaired consumers</span>
+          </div>
+          <div className="evidence-metric">
+            <span className="metric-value">113/113</span>
+            <span className="metric-label">Engine suite green (local CI)</span>
+          </div>
+          <div className="evidence-metric">
+            <span className="metric-value">fail-closed</span>
+            <span className="metric-label">Ambiguous AI mappings never auto-merge</span>
+          </div>
+        </div>
+        <ol className="evidence-steps">
+          <li>
+            <p className="mono-label">01 / Detect</p>
+            <p>
+              OpenAPI pin shows <code>customer.source</code> removed on the Stripe API version your
+              SDK targets.
+            </p>
+          </li>
+          <li>
+            <p className="mono-label">02 / Impact</p>
+            <p>
+              AST scan marks <code>src/payments/customer.ts</code> and related jobs — references,
+              not guesses.
+            </p>
+          </li>
+          <li>
+            <p className="mono-label">03 / Repair</p>
+            <p>
+              Deterministic transform migrates the call path; confidence and provenance travel with
+              the diff.
+            </p>
+          </li>
+          <li>
+            <p className="mono-label">04 / Verify</p>
+            <p>
+              Typecheck (and tests when configured) must pass before Repairo opens the pull
+              request.
+            </p>
+          </li>
+        </ol>
+        <div className="evidence-actions">
+          <Link className="text-link" href="/docs">
+            Read the docs path <span aria-hidden="true" className="arrow-mark">
+              ↗
+            </span>
+          </Link>
+          <a className="text-link" href="#demo">
+            Book this walkthrough live <span aria-hidden="true" className="arrow-mark">
+              ↗
+            </span>
+          </a>
+          <a className="text-link" href={SOCIAL.github} rel="noreferrer" target="_blank">
+            Inspect tests on GitHub <span aria-hidden="true" className="arrow-mark">
+              ↗
+            </span>
+          </a>
+        </div>
+      </section>
+
+      {/* 11. DEMO BOOKING FORM SECTION */}
       <section className="demo-section" id="demo">
         <div className="demo-intro">
           <p className="eyebrow">SEE THE REPAIR PATH</p>
@@ -483,18 +701,18 @@ opened PR #184  fix(stripe): migrate customer.source`}</code>
         </div>
       </section>
 
-      {/* 10. PRICING PATH */}
+      {/* 13. PRICING PATH */}
       <section className="pricing-strip section-rule" id="pricing-path">
         <p className="mono-label">PRICING</p>
         <p className="pricing-strip-copy">
           Free CLI on npm · Hosted Free for early teams · Pro from $29/mo
         </p>
         <Link className="text-link" href="/pricing">
-          See plans <span aria-hidden="true" className="arrow-mark">↗</span>
+          See plans &amp; FAQ <span aria-hidden="true" className="arrow-mark">↗</span>
         </Link>
       </section>
 
-      {/* 11. FOOTER */}
+      {/* 14. FOOTER */}
       <footer className="site-footer section-rule">
         <div>
           <Link href="#top" className="wordmark" aria-label="Repairo AI home">
@@ -507,20 +725,21 @@ opened PR #184  fix(stripe): migrate customer.source`}</code>
           <div>
             <p className="mono-label">Explore</p>
             <a href="#workflow">Workflow</a>
+            <a href="#providers">Providers</a>
+            <a href="#evidence">Evidence</a>
             <a href="#security">Security</a>
-            <a href="#demo">Book a demo</a>
             <Link href="/docs">Docs</Link>
           </div>
           <div>
             <p className="mono-label">Company</p>
             <Link href="/pricing">Pricing</Link>
+            <a href="#demo">Book a demo</a>
             <a href="#waitlist">Beta waitlist</a>
-            <a
-              href="https://www.npmjs.com/package/repairo-cli"
-              rel="noreferrer"
-              target="_blank"
-            >
+            <a href={SOCIAL.npm} rel="noreferrer" target="_blank">
               npm
+            </a>
+            <a href={SOCIAL.github} rel="noreferrer" target="_blank">
+              GitHub
             </a>
           </div>
         </div>

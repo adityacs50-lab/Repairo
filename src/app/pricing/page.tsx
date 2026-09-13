@@ -1,6 +1,6 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PricingSection } from "@/components/Pricing";
+import { PricingFaq, PricingSection } from "@/components/Pricing";
 import Link from "next/link";
 
 export default function PricingPage() {
@@ -18,6 +18,10 @@ export default function PricingPage() {
 
       <section className="pricing-board section-rule">
         <PricingSection />
+      </section>
+
+      <section className="pricing-faq-section section-rule">
+        <PricingFaq />
       </section>
 
       <section className="pricing-footnote section-rule">

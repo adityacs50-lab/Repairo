@@ -163,8 +163,12 @@ repairo repair --apply`} />
           items={[
             "Stripe API",
             "OpenAI (Platform & Chat APIs)",
-            "Supabase",
+            "Anthropic Claude",
+            "Supabase Management API",
+            "Google Gemini",
+            "GitHub REST",
             "Custom OpenAPI 3.x / 2.0 schemas",
+            "Upcoming: Clerk, private / team-pinned specs",
           ]}
         />
       </Section>

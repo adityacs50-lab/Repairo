@@ -9,7 +9,7 @@ export const SITE_NAME = "Repairo";
 export const SITE_TAGLINE = "Dependabot for third-party APIs";
 export const SITE_TITLE = `${SITE_NAME} — ${SITE_TAGLINE}`;
 export const SITE_DESCRIPTION =
-  "Repairo detects breaking changes in third-party APIs (Stripe, OpenAI, Supabase, Clerk, Gemini, Anthropic), maps the impact across your TypeScript codebase, and opens compiler-validated AST repair pull requests automatically.";
+  "Repairo detects breaking changes in third-party APIs (Stripe, OpenAI, Supabase, Anthropic, Gemini, GitHub), maps the impact across your TypeScript codebase, and opens compiler-validated AST repair pull requests automatically.";
 
 export const SITE_KEYWORDS = [
   "breaking API changes",

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PLANS } from "@/lib/billing/plans";
+import { PRICING_FAQ } from "@/lib/pricing-faq";
 
 const ENTERPRISE_FEATURES = [
   "Private API specs & custom vendors",
@@ -95,6 +96,26 @@ export function PricingSection() {
           </ul>
         </article>
       ))}
+    </div>
+  );
+}
+
+export function PricingFaq() {
+  return (
+    <div className="pricing-faq">
+      <div className="section-intro pricing-faq-intro">
+        <p className="eyebrow">FAQ</p>
+        <h2>Pricing questions, answered.</h2>
+        <p>Clear limits, honest compliance status, and when Free is enough.</p>
+      </div>
+      <div className="pricing-faq-list">
+        {PRICING_FAQ.map((item) => (
+          <details key={item.id} className="pricing-faq-item">
+            <summary>{item.question}</summary>
+            <p>{item.answer}</p>
+          </details>
+        ))}
+      </div>
     </div>
   );
 }

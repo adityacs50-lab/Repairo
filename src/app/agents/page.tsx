@@ -6,7 +6,7 @@ import { listVendors } from "@/lib/catalog/vendors";
 export const metadata = pageMetadata({
   title: "Vendor update agents",
   description:
-    "Install Dependabot-style update agents that watch Stripe, OpenAI, Supabase, Clerk, Gemini, and Anthropic OpenAPI specs and open AST repair PRs when breaking changes ship.",
+    "Install Dependabot-style update agents that watch Stripe, OpenAI, Supabase, Gemini, Anthropic, and GitHub OpenAPI specs and open AST repair PRs when breaking changes ship. Clerk and private specs are upcoming.",
   path: "/agents",
   keywords: ["vendor agents", "Stripe API changes", "OpenAI API changes"],
 });
@@ -18,7 +18,7 @@ export default function AgentsIndexPage() {
     <ContentPage
       eyebrow="Marketplace"
       title="Vendor agents"
-      description="Install a per-provider update agent — or use Repairo as the neutral plane across vendors. Each agent watches public OpenAPI and opens PRs in your repos."
+      description="Install a per-provider update agent — or use Repairo as the neutral plane across vendors. Available agents watch public OpenAPI; Clerk and private specs are marked upcoming."
       activeHref="/agents"
       wide
       cta={{ href: "/app?tab=agents", label: "Open app to install" }}
