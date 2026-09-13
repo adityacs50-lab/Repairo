@@ -45,3 +45,16 @@ yarn-error.log*
 next-env.d.ts
 # Security scan artifacts
 repairo-sbom.json
+# Business and legal documents — never belong in a repo that publishes a package
+*.pdf
+*.xlsx
+*.docx
+
+# Local scratch and agent output
+/_to_delete/
+/Claude outputs/
+/.repairo/
+/repairo-demo/
+
+# Packed CLI tarballs (build output of `npm pack`)
+*.tgz

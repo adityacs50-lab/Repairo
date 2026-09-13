@@ -112,6 +112,7 @@ export async function proposeEnumMapping(
 
   let Anthropic: any;
   try {
+    // @ts-ignore - optional dependency at runtime
     ({ default: Anthropic } = await import("@anthropic-ai/sdk"));
   } catch (err) {
     console.warn(`[repairo] agent-resolve: @anthropic-ai/sdk not available — ${err instanceof Error ? err.message : String(err)}`);

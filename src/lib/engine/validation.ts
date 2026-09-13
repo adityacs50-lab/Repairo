@@ -145,7 +145,8 @@ export function validateCodebase(
     if (fs.existsSync(pkgPath)) {
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
-        if (pkg.scripts && pkg.scripts.test && pkg.scripts.test !== 'echo "Error: no test specified" && exit 1') {
+        const isInternalFixture = pkg.name === "repairo-cli" && path.resolve(targetDir) !== rootDir;
+        if (pkg.scripts && pkg.scripts.test && pkg.scripts.test !== 'echo "Error: no test specified" && exit 1' && !isInternalFixture) {
           const testOut = execSync("npm test", {
             cwd: rootDir,
             encoding: "utf-8",

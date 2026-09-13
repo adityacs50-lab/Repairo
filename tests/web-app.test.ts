@@ -295,13 +295,13 @@ async function main() {
   assert(seatLimitThrew, "Free plan's 3-seat limit (members + pending invites) blocks a third invite with a 402");
 
   // ---------------------------------------------------------------------
-  // Test 10: /api/chat request validation (RP-10 — was previously an unconditional
-  // dependency on SARVAM_API_KEY, dead since nothing else in the product uses Sarvam;
-  // now Anthropic-backed, matching --agent-resolve). No ANTHROPIC_API_KEY is set here,
-  // so this only exercises validation, not a real model call.
+  // Test 10: /api/chat request validation. Otto (the chat widget) is Sarvam-backed;
+  // ANTHROPIC_API_KEY is now only the CLI's --agent-resolve key. No SARVAM_API_KEY is
+  // set here, so this only exercises validation, not a real model call. Otto's own
+  // knowledge/prompt/transport coverage lives in tests/otto.test.ts.
   console.log("\nTest 10: /api/chat request validation");
-  const savedAnthropicKey = process.env.ANTHROPIC_API_KEY;
-  delete process.env.ANTHROPIC_API_KEY;
+  const savedSarvamKey = process.env.SARVAM_API_KEY;
+  delete process.env.SARVAM_API_KEY;
 
   const emptyMessagesRes = await chatPost(new Request("http://x/api/chat", { method: "POST", body: JSON.stringify({ messages: [] }) }));
   assert(emptyMessagesRes.status === 400, "An empty message history is rejected with a 400");
@@ -320,11 +320,11 @@ async function main() {
   const validNoKeyRes = await chatPost(
     new Request("http://x/api/chat", { method: "POST", body: JSON.stringify({ messages: [{ role: "user", content: "What is Repairo?" }] }) }),
   );
-  assert(validNoKeyRes.status === 503, "A well-formed request is accepted past validation but fails cleanly (503) without ANTHROPIC_API_KEY, instead of a raw 500 crash");
+  assert(validNoKeyRes.status === 503, "A well-formed request is accepted past validation but fails cleanly (503) without SARVAM_API_KEY, instead of a raw 500 crash");
   const validNoKeyBody = await validNoKeyRes.json();
-  assert(typeof validNoKeyBody.error === "string" && validNoKeyBody.error.includes("ANTHROPIC_API_KEY"), "The missing-key error names the actual env var to set, not a generic failure");
+  assert(typeof validNoKeyBody.error === "string" && validNoKeyBody.error.includes("SARVAM_API_KEY"), "The missing-key error names the actual env var to set, not a generic failure");
 
-  if (savedAnthropicKey !== undefined) process.env.ANTHROPIC_API_KEY = savedAnthropicKey;
+  if (savedSarvamKey !== undefined) process.env.SARVAM_API_KEY = savedSarvamKey;
 
   console.log("\n==================================================");
   console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);

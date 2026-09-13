@@ -1,179 +1,1006 @@
 @import "tailwindcss";
 
 :root {
-  /* Resend Colors */
-  --color-primary: #fcfdff;
-  --color-primary-on: #000000;
-  --color-ink: #fcfdff;
-  --color-body: rgba(252,253,255,0.86);
-  --color-charcoal: rgba(252,253,255,0.7);
-  --color-mute: #a1a4a5;
-  --color-ash: #888e90;
-  --color-stone: #464a4d;
-  --color-on-light: #000000;
-  --color-on-light-mute: rgba(0,0,51,0.7);
-  --color-canvas: #000000;
-  --color-surface-card: #0a0a0c;
-  --color-surface-elevated: #101012;
-  --color-surface-deep: #06060a;
-  --color-hairline: rgba(255,255,255,0.06);
-  --color-hairline-strong: rgba(255,255,255,0.14);
-  --color-divider-soft: rgba(255,255,255,0.04);
-  --color-accent-orange: #ff801f;
-  --color-accent-orange-glow: rgba(255,89,0,0.22);
-  --color-accent-yellow: #ffc53d;
-  --color-accent-blue: #3b9eff;
-  --color-accent-blue-glow: rgba(0,117,255,0.34);
-  --color-accent-green: #11ff99;
-  --color-accent-green-glow: rgba(34,255,153,0.18);
-  --color-accent-red: #ff2047;
-  --color-accent-red-glow: rgba(255,32,71,0.34);
-  --color-link: #3b9eff;
-  --color-surface-light: #f1f7fe;
-}
+  --repairo-paper: #f7f8fa;
+  --repairo-white: #ffffff;
+  --repairo-ink: #0b1220;
+  --repairo-slate: #1e2633;
+  --repairo-muted: #667080;
+  --repairo-rule: #d9dee7;
+  --repairo-purple: #6c5ce7;
+  --repairo-teal: #00bfa6;
+  --repairo-amber: #ffb020;
 
-@theme inline {
-  --color-primary: var(--color-primary);
-  --color-primary-on: var(--color-primary-on);
-  --color-ink: var(--color-ink);
-  --color-body: var(--color-body);
-  --color-charcoal: var(--color-charcoal);
-  --color-mute: var(--color-mute);
-  --color-ash: var(--color-ash);
-  --color-stone: var(--color-stone);
-  --color-on-light: var(--color-on-light);
-  --color-on-light-mute: var(--color-on-light-mute);
-  --color-canvas: var(--color-canvas);
-  --color-surface-card: var(--color-surface-card);
-  --color-surface-elevated: var(--color-surface-elevated);
-  --color-surface-deep: var(--color-surface-deep);
-  --color-hairline: var(--color-hairline);
-  --color-hairline-strong: var(--color-hairline-strong);
-  --color-divider-soft: var(--color-divider-soft);
-  --color-accent-orange: var(--color-accent-orange);
-  --color-accent-orange-glow: var(--color-accent-orange-glow);
-  --color-accent-yellow: var(--color-accent-yellow);
-  --color-accent-blue: var(--color-accent-blue);
-  --color-accent-blue-glow: var(--color-accent-blue-glow);
-  --color-accent-green: var(--color-accent-green);
-  --color-accent-green-glow: var(--color-accent-green-glow);
-  --color-accent-red: var(--color-accent-red);
-  --color-accent-red-glow: var(--color-accent-red-glow);
-  --color-link: var(--color-link);
-  --color-surface-light: var(--color-surface-light);
-
-  --font-display: var(--font-playfair), "Times New Roman", serif;
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --color-canvas: var(--repairo-paper);
+  --color-ink: var(--repairo-ink);
+  --color-body: var(--repairo-muted);
 }
 
 * {
   box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
   margin: 0;
-  min-height: 100vh;
-  color: var(--color-ink);
-  background-color: var(--color-canvas);
+  padding: 0;
+}
+
+html, body {
+  min-height: 100%;
+  background-color: var(--repairo-paper);
+  color: var(--repairo-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizelegibility;
 }
 
-.radial-pattern-bg {
-  /* Resend style doesn't use standard patterns, but if we need one, keep it dark */
-  background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-@keyframes marquee {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-@keyframes marquee-reverse {
-  0% {
-    transform: translateX(-50%);
-  }
-  100% {
-    transform: translateX(0%);
-  }
-}
-
-.animate-marquee {
-  animation: marquee 30s linear infinite;
-}
-
-.animate-marquee-reverse {
-  animation: marquee-reverse 30s linear infinite;
-}
-
-.pause-on-hover:hover .animate-marquee,
-.pause-on-hover:hover .animate-marquee-reverse {
-  animation-play-state: paused;
-}
-
-/* Global Button Styling Classes */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 0.5rem;
-  background-color: #0f172a;
-  color: #ffffff;
-  padding: 0.625rem 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.25rem;
-  transition: all 0.2s ease-in-out;
-  border: 1px solid #1e293b;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  cursor: pointer;
+a {
+  color: inherit;
   text-decoration: none;
 }
 
-.btn-primary:hover {
-  background-color: #1e293b;
-  border-color: #334155;
-  color: #ffffff;
+code {
+  font-family: var(--font-mono);
 }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* Base Site Architecture Classes matching exact live stylesheet */
+.site-shell {
+  background: var(--repairo-paper);
+  color: var(--repairo-ink);
+  overflow: hidden;
+  min-height: 100vh;
 }
 
-.btn-ghost {
-  display: inline-flex;
+.site-header {
+  z-index: 50;
+  border-bottom: 1px solid var(--repairo-rule);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  background: rgba(247, 248, 250, 0.94);
+  position: sticky;
+  top: 0;
+}
+
+.header-inner {
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 0.5rem;
-  background-color: #ffffff;
-  color: #1e293b;
-  padding: 0.625rem 1.25rem;
-  font-size: 0.875rem;
+  gap: 32px;
+  width: min(100% - 64px, 1380px);
+  min-height: 72px;
+  margin: 0 auto;
+  display: flex;
+}
+
+.wordmark {
+  font-family: "Pixelify Sans", var(--font-pixelify-sans), monospace;
+  letter-spacing: -0.04em;
+  color: var(--repairo-ink);
+  white-space: nowrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+  font-weight: 400;
+  display: inline-flex;
+}
+
+.wordmark-ai {
+  color: var(--repairo-purple);
+  font-family: "Figtree", var(--font-figtree), sans-serif;
+  letter-spacing: -0.02em;
+  margin-left: 1px;
+  font-size: 0.72em;
   font-weight: 500;
-  line-height: 1.25rem;
-  transition: all 0.2s ease-in-out;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.main-nav {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--repairo-slate);
+  align-items: center;
+  gap: clamp(18px, 3vw, 48px);
+  margin-left: auto;
+  font-size: 11px;
+  display: flex;
+}
+
+.main-nav a,
+.footer-links a {
+  transition: color 0.18s;
+}
+
+.main-nav a:hover,
+.footer-links a:hover,
+.text-link:hover {
+  color: var(--repairo-purple);
+}
+
+.button {
+  border: 1px solid var(--repairo-ink);
+  min-height: 46px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px;
+  font-size: 11px;
+  transition: background 0.18s, color 0.18s, transform 0.18s, box-shadow 0.18s;
+  display: inline-flex;
   cursor: pointer;
   text-decoration: none;
 }
 
-.btn-ghost:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
-  border-color: #94a3b8;
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(11, 18, 32, 0.14);
+}
+
+.button-dark {
+  background: var(--repairo-ink);
+  color: var(--repairo-white);
+}
+
+.button-dark:hover {
+  background: var(--repairo-purple);
+  border-color: var(--repairo-purple);
+}
+
+.button-small {
+  min-height: 38px;
+  padding: 0 15px;
+  font-size: 10px;
+}
+
+.arrow-mark {
+  font-size: 16px;
+  line-height: 0;
+}
+
+.section-rule {
+  border-bottom: 1px solid var(--repairo-rule);
+}
+
+.hero-section,
+.workflow-section,
+.proof-section,
+.product-section,
+.human-section,
+.demo-section,
+.site-footer {
+  width: min(100% - 64px, 1380px);
+  margin: 0 auto;
+}
+
+.hero-section {
+  grid-template-columns: minmax(0, 0.87fr) minmax(0, 1.13fr);
+  align-items: center;
+  gap: clamp(48px, 8vw, 136px);
+  min-height: calc(100vh - 72px);
+  padding: 72px 0 88px;
+  display: grid;
+}
+
+.eyebrow,
+.mono-label,
+.step-number,
+.asset-caption,
+.status-tag,
+.demo-panel-foot,
+.row-state,
+.form-note {
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.eyebrow {
+  color: var(--repairo-purple);
+  margin: 0 0 24px;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-sans);
+  letter-spacing: -0.055em;
+  font-weight: 400;
+}
+
+h1 {
+  max-width: 620px;
+  font-size: clamp(3.8rem, 6.4vw, 6.4rem);
+  line-height: 0.98;
+}
+
+h2 {
+  max-width: 680px;
+  font-size: clamp(2.5rem, 4.5vw, 4.65rem);
+  line-height: 1.05;
+}
+
+h3 {
+  font-size: clamp(1.55rem, 2.5vw, 2.4rem);
+  line-height: 1.08;
+}
+
+.hero-lede,
+.section-intro > p:last-child,
+.proof-copy > p,
+.human-copy > p,
+.demo-intro > p:last-child,
+.demo-panel-head > div > p:last-child {
+  max-width: 510px;
+  color: var(--repairo-muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.hero-lede {
+  margin-top: 30px;
+}
+
+.hero-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  margin-top: 40px;
+  display: flex;
+}
+
+.text-link {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  transition: color 0.18s;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.asset-frame {
+  background: var(--repairo-ink);
+  position: relative;
+  overflow: hidden;
+}
+
+.asset-frame img {
+  -o-object-fit: cover;
+  object-fit: cover;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hero-art-frame {
+  border: 1px solid var(--repairo-slate);
+}
+
+.hero-art {
+  aspect-ratio: 16/10;
+}
+
+.asset-caption {
+  color: rgba(255, 255, 255, 0.66);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 16px;
+  display: flex;
+}
+
+.workflow-section {
+  padding: 116px 0 126px;
+}
+
+.section-intro {
+  grid-template-columns: 1fr minmax(0, 1.3fr);
+  align-items: start;
+  gap: 40px;
+  display: grid;
+}
+
+.section-intro .eyebrow {
+  grid-column: 1 / -1;
+  margin-bottom: -8px;
+}
+
+.section-intro h2 {
+  grid-column: 1;
+}
+
+.section-intro > p:last-child {
+  grid-column: 2;
+  align-self: end;
+  max-width: 430px;
+}
+
+.workflow-list {
+  border-top: 1px solid var(--repairo-ink);
+  border-bottom: 1px solid var(--repairo-ink);
+  grid-template-columns: repeat(5, 1fr);
+  margin-top: 88px;
+  display: grid;
+}
+
+.workflow-step {
+  border-right: 1px solid var(--repairo-rule);
+  min-height: 230px;
+  padding: 24px 24px 26px 0;
+  position: relative;
+}
+
+.workflow-step + .workflow-step {
+  padding-left: 24px;
+}
+
+.workflow-step:last-child {
+  border-right: 0;
+}
+
+.step-number {
+  color: var(--repairo-purple);
+  margin-bottom: 72px;
+}
+
+.step-copy .mono-label {
+  color: var(--repairo-ink);
+  margin-bottom: 13px;
+  font-weight: 600;
+}
+
+.step-copy > p:last-child {
+  max-width: 150px;
+  color: var(--repairo-muted);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.proof-section,
+.human-section {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: clamp(56px, 10vw, 160px);
+  padding: 128px 0;
+  display: grid;
+}
+
+.proof-copy {
+  padding-right: 8%;
+}
+
+.proof-copy > p {
+  margin-top: 28px;
+}
+
+.proof-stat {
+  border-top: 1px solid var(--repairo-rule);
+  border-bottom: 1px solid var(--repairo-rule);
+  color: var(--repairo-slate);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  align-items: baseline;
+  gap: 18px;
+  margin: 48px 0 38px;
+  padding: 18px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  display: flex;
+}
+
+.stat-number {
+  color: var(--repairo-teal);
+  letter-spacing: -0.05em;
+  font-size: 28px;
+}
+
+.proof-art-frame {
+  border: 1px solid var(--repairo-slate);
+}
+
+.product-section {
+  padding: 128px 0;
+}
+
+.product-demo {
+  border: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+  margin-top: 70px;
+}
+
+.tabs {
+  border-bottom: 1px solid var(--repairo-rule);
+  gap: 0;
+  display: flex;
+}
+
+.tab {
+  border: 0;
+  border-right: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+  color: var(--repairo-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: 1;
+  padding: 18px 20px 16px;
+  font-size: 11px;
+  transition: background 0.18s, color 0.18s;
+  text-align: center;
+}
+
+.tab:last-child {
+  border-right: 0;
+}
+
+.tab:hover,
+.tab-active {
+  background: var(--repairo-ink) !important;
+  color: var(--repairo-white) !important;
+}
+
+.demo-panel {
+  padding: clamp(28px, 5vw, 64px);
+}
+
+.demo-panel-head {
+  justify-content: space-between;
+  gap: 40px;
+  display: flex;
+}
+
+.demo-panel-head .eyebrow,
+.demo-panel-head > div > .mono-label {
+  color: var(--repairo-purple);
+  margin-bottom: 20px;
+}
+
+.demo-panel-head h3 {
+  max-width: 660px;
+}
+
+.demo-panel-head > div > p:last-child {
+  max-width: 610px;
+  margin-top: 18px;
+}
+
+.status-tag {
+  border: 1px solid;
+  border-radius: 999px;
+  flex: none;
+  align-self: start;
+  padding: 8px 10px;
+}
+
+.status-review {
+  color: var(--repairo-purple);
+  border-color: var(--repairo-purple);
+}
+
+.status-verified {
+  color: var(--repairo-teal);
+  border-color: var(--repairo-teal);
+}
+
+.demo-rows {
+  border-top: 1px solid var(--repairo-rule);
+  margin-top: 60px;
+}
+
+.demo-row {
+  border-bottom: 1px solid var(--repairo-rule);
+  font-family: var(--font-mono);
+  grid-template-columns: 1fr 2.2fr 1fr;
+  gap: 20px;
+  padding: 16px 0;
+  font-size: 12px;
+  display: grid;
+  align-items: center;
+}
+
+.demo-row code {
+  color: var(--repairo-slate);
+}
+
+.row-label {
+  color: var(--repairo-muted);
+}
+
+.row-state {
+  color: var(--repairo-muted);
+  justify-self: end;
+}
+
+.state-verified {
+  color: var(--repairo-teal);
+}
+
+.state-review {
+  color: var(--repairo-purple);
+}
+
+.state-neutral {
+  color: var(--repairo-muted);
+}
+
+.demo-panel-foot {
+  color: var(--repairo-muted);
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 24px;
+  display: flex;
+}
+
+.human-copy {
+  order: 2;
+}
+
+.human-media {
+  order: 1;
+}
+
+.human-copy > p {
+  margin-top: 28px;
+}
+
+.control-list {
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 44px;
+  display: flex;
+}
+
+.control-list span {
+  border: 1px solid var(--repairo-rule);
+  color: var(--repairo-slate);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 10px;
+}
+
+.control-list span:nth-child(3) {
+  border-color: var(--repairo-purple);
+  color: var(--repairo-purple);
+}
+
+.control-list span:nth-child(4) {
+  border-color: var(--repairo-teal);
+  color: var(--repairo-teal);
+}
+
+.human-art-frame {
+  border: 1px solid var(--repairo-rule);
+}
+
+.demo-section {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(56px, 10vw, 160px);
+  padding: 132px 0 148px;
+  display: grid;
+}
+
+.demo-intro > p:last-child {
+  margin-top: 26px;
+}
+
+.demo-form-wrap {
+  border-left: 1px solid var(--repairo-rule);
+  padding-left: clamp(28px, 6vw, 88px);
+}
+
+.demo-form {
+  gap: 20px;
+  display: grid;
+}
+
+.demo-form label {
+  color: var(--repairo-slate);
+  font-family: var(--font-mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  gap: 9px;
+  font-size: 10px;
+  display: grid;
+}
+
+.demo-form input,
+.demo-form textarea {
+  border: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+  width: 100%;
+  color: var(--repairo-ink);
+  font: 14px / 1.4 var(--font-sans);
+  border-radius: 0;
+  outline: 0;
+  padding: 15px 14px;
+  transition: border 0.18s, box-shadow 0.18s;
+}
+
+.demo-form textarea {
+  resize: vertical;
+}
+
+.demo-form input:focus,
+.demo-form textarea:focus {
+  border-color: var(--repairo-purple);
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.16);
+}
+
+.demo-form input::placeholder,
+.demo-form textarea::placeholder {
+  color: #9aa2ae;
+}
+
+.form-submit {
+  justify-self: start;
+  margin-top: 8px;
+}
+
+.form-note {
+  color: var(--repairo-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.form-success {
+  padding: 44px 0;
+}
+
+.form-success h3 {
+  margin-top: 12px;
+}
+
+.form-success p:last-child {
+  color: var(--repairo-muted);
+  margin-top: 14px;
+}
+
+.site-footer {
+  justify-content: space-between;
+  gap: 48px;
+  padding: 42px 0 56px;
+  display: flex;
+}
+
+.footer-note {
+  color: var(--repairo-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 18px;
+  font-size: 10px;
+}
+
+.footer-links {
+  gap: clamp(48px, 8vw, 132px);
+  display: flex;
+}
+
+.footer-links > div {
+  align-content: start;
+  gap: 10px;
+  min-width: 120px;
+  display: grid;
+}
+
+.footer-links .mono-label {
+  color: var(--repairo-purple);
+  margin-bottom: 8px;
+}
+
+.footer-links a,
+.footer-links span {
+  color: var(--repairo-muted);
+  font-size: 13px;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 900px) {
+  .main-nav {
+    display: none;
+  }
+  .hero-section,
+  .proof-section,
+  .human-section,
+  .demo-section {
+    grid-template-columns: 1fr;
+  }
+  .hero-section {
+    min-height: auto;
+    padding-top: 60px;
+  }
+  .hero-art-wrap {
+    margin-top: 24px;
+  }
+  .section-intro {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .section-intro .eyebrow,
+  .section-intro h2,
+  .section-intro > p:last-child {
+    grid-column: auto;
+  }
+  .workflow-list {
+    grid-template-columns: 1fr;
+  }
+  .workflow-step,
+  .workflow-step + .workflow-step {
+    border-right: 0;
+    border-bottom: 1px solid var(--repairo-rule);
+    grid-template-columns: 64px 1fr;
+    gap: 16px;
+    min-height: auto;
+    padding: 22px 0;
+    display: grid;
+  }
+  .workflow-step:last-child {
+    border-bottom: 0;
+  }
+  .step-number {
+    margin: 0;
+  }
+  .step-copy > p:last-child {
+    max-width: none;
+  }
+  .human-copy {
+    order: 1;
+  }
+  .human-media {
+    order: 2;
+  }
+  .demo-form-wrap {
+    border-left: 0;
+    border-top: 1px solid var(--repairo-rule);
+    padding: 48px 0 0;
+  }
+  .site-footer {
+    flex-direction: column;
+  }
+  .footer-links {
+    gap: 64px;
+  }
+}
+
+@media (max-width: 560px) {
+  .header-inner,
+  .hero-section,
+  .workflow-section,
+  .proof-section,
+  .product-section,
+  .human-section,
+  .demo-section,
+  .site-footer {
+    width: min(100% - 36px, 1380px);
+  }
+  .header-inner {
+    min-height: 64px;
+  }
+  .header-inner .button-small {
+    padding: 0 10px;
+    font-size: 9px;
+  }
+  .wordmark {
+    font-size: 20px;
+  }
+  .hero-section {
+    padding: 48px 0 60px;
+  }
+  h1 {
+    font-size: clamp(2.8rem, 13vw, 4.4rem);
+  }
+  .workflow-section,
+  .proof-section,
+  .product-section,
+  .human-section {
+    padding: 72px 0;
+  }
+  .demo-section {
+    padding: 72px 0 90px;
+  }
+  .demo-panel-head {
+    flex-direction: column;
+    gap: 24px;
+  }
+  .demo-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .row-state {
+    justify-self: start;
+  }
+  .demo-panel-foot {
+    gap: 8px;
+    display: grid;
+  }
+  .tabs {
+    overflow-x: auto;
+  }
+  .tab {
+    min-width: 100px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .footer-links {
+    flex-direction: column;
+    gap: 30px;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Otto assistant — markdown inside chat bubbles
+
+   These rules are deliberately unlayered. The global reset above
+   (`* { margin: 0; padding: 0 }`) and the site's unlayered h1–h3 rules would
+   otherwise flatten list indentation and blow a "## Pricing" up to the page's
+   own h2 size inside a 400px bubble. Class selectors here outrank the reset,
+   and unlayered CSS outranks Tailwind's layered utilities, so this is the one
+   place the chat's prose styling needs to live.
+
+   Scope: `.otto-md` wraps assistant markdown only (see
+   components/ui/markdown-message.tsx). User messages render as plain text.
+   ────────────────────────────────────────────────────────────────────────── */
+.otto-md {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--repairo-slate);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* The bubble owns the outer padding; the prose must not double it. */
+.otto-md > :first-child { margin-top: 0; }
+.otto-md > :last-child { margin-bottom: 0; }
+
+.otto-md p {
+  margin: 0 0 10px;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.otto-md h1,
+.otto-md h2,
+.otto-md h3,
+.otto-md h4,
+.otto-md h5,
+.otto-md h6 {
+  margin: 14px 0 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--repairo-ink);
+}
+.otto-md h1 { font-size: 15px; }
+
+.otto-md ul,
+.otto-md ol {
+  margin: 8px 0 10px;
+  padding-left: 20px;
+}
+.otto-md ul { list-style: disc; }
+.otto-md ol { list-style: decimal; }
+
+.otto-md li {
+  margin: 0 0 6px;
+  padding-left: 2px;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.otto-md li:last-child { margin-bottom: 0; }
+.otto-md li::marker { color: var(--repairo-muted); }
+/* A list item that remark wraps in <p> must not inherit the paragraph gap. */
+.otto-md li > p { margin: 0 0 4px; }
+.otto-md li > p:last-child { margin-bottom: 0; }
+.otto-md li > ul,
+.otto-md li > ol { margin: 6px 0 0; }
+
+.otto-md strong { color: var(--repairo-ink); font-weight: 600; }
+.otto-md em { font-style: italic; }
+
+.otto-md a {
+  color: var(--repairo-purple);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.otto-md a:hover { text-decoration-thickness: 2px; }
+
+.otto-md code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--repairo-paper);
+  border: 1px solid var(--repairo-rule);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--repairo-slate);
+}
+
+/* Fenced blocks scroll on their own axis rather than widening the bubble. */
+.otto-md pre {
+  margin: 10px 0;
+  padding: 12px 14px;
+  max-width: 100%;
+  border-radius: 10px;
+  background: var(--repairo-ink);
+  color: var(--repairo-paper);
+  overflow-x: auto;
+}
+.otto-md pre code {
+  display: block;
+  font-size: 12px;
+  line-height: 1.55;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: inherit;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.otto-md blockquote {
+  margin: 10px 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--repairo-rule);
+  color: var(--repairo-muted);
+}
+
+.otto-md hr {
+  margin: 14px 0;
+  border: 0;
+  border-top: 1px solid var(--repairo-rule);
+}
+
+/* Tables are discouraged in Otto's prompt, but remark-gfm will render one if
+   the model emits it anyway — so it scrolls inside its wrapper. */
+.otto-md-scroll {
+  margin: 10px 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.otto-md table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 100%;
+}
+.otto-md th,
+.otto-md td {
+  border: 1px solid var(--repairo-rule);
+  padding: 6px 10px;
+  text-align: left;
+}
+.otto-md th {
+  background: var(--repairo-white);
+  color: var(--repairo-ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.otto-md td { color: var(--repairo-slate); }
+
+/* Otto never has a reason to emit an image; drop it rather than break layout. */
+.otto-md img { display: none; }
+
+/* The suggestion block, aligned to the assistant bubble column (24px avatar +
+   8px row gap). Unlayered like the rest of the Otto styles — `sm:pl-8` would be
+   zeroed by the reset above, and a media query cannot be an inline style. */
+.otto-suggestions {
+  padding-top: 8px;
+}
+@media (min-width: 640px) {
+  .otto-suggestions { padding-left: 32px; }
 }

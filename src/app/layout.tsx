@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Geist_Mono } from "next/font/google";
+import { Figtree, Pixelify_Sans } from "next/font/google";
 import "./globals.css";
 import RepairoChatAssistant from "@/components/RepairoChatAssistant";
 import { JsonLd } from "@/components/JsonLd";
@@ -13,57 +13,47 @@ import {
   webSiteJsonLd,
 } from "@/lib/seo";
 
-const inter = Inter({
-  variable: "--font-inter",
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const pixelify = Pixelify_Sans({
+  variable: "--font-pixelify-sans",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: {
-    default: SITE_TITLE,
-    template: `%s · ${SITE_NAME}`,
-  },
-  description: SITE_DESCRIPTION,
-  applicationName: SITE_NAME,
+  title: "Repairo AI | API changes, repaired with evidence",
+  description:
+    "Repairo detects breaking third-party API changes, traces their impact into application code, and proposes compiler-verified repairs while keeping engineers in control.",
+  applicationName: "Repairo AI",
   keywords: SITE_KEYWORDS,
   category: "technology",
   creator: SITE_NAME,
   publisher: SITE_NAME,
-  alternates: { canonical: SITE_URL },
+  alternates: { canonical: "https://repairo-ai.cofounder.company" },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-snippet": -1,
-      "max-image-preview": "large",
-      "max-video-preview": -1,
-    },
   },
   openGraph: {
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
+    title: "Repairo AI | API changes, repaired with evidence",
+    description:
+      "Repairo detects breaking third-party API changes, traces their impact into application code, and proposes compiler-verified repairs while keeping engineers in control.",
     type: "website",
-    url: SITE_URL,
-    siteName: SITE_NAME,
+    url: "https://repairo-ai.cofounder.company",
+    siteName: "Repairo AI",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
+    title: "Repairo AI | API changes, repaired with evidence",
+    description:
+      "Repairo detects breaking third-party API changes, traces their impact into application code, and proposes compiler-verified repairs while keeping engineers in control.",
   },
 };
 
@@ -75,9 +65,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${figtree.variable} ${pixelify.variable} h-full antialiased`}
     >
-      <body className="relative min-h-full bg-canvas text-ink font-sans selection:bg-surface-light selection:text-primary-on">
+      <body className="min-h-screen bg-[#f7f8fa] text-[#0b1220] font-sans">
         <JsonLd data={[organizationJsonLd(), webSiteJsonLd()]} />
         {children}
         <RepairoChatAssistant />

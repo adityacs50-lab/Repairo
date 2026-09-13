@@ -34,7 +34,9 @@ Browser  →  Vercel (pages, /app, /demo)
 | `SESSION_SECRET` | 32+ random characters |
 | `TOKEN_ENCRYPTION_KEY` | optional, same strength |
 | `DATABASE_PATH` | `/app/data/repairo.db` |
-| `ANTHROPIC_API_KEY` | optional — powers the "Otto" chat widget (`/api/chat`) and `--agent-resolve`; without it the widget shows "not configured on the server" |
+| `SARVAM_API_KEY` | optional — powers the "Otto" chat widget (`/api/chat`); without it the widget shows "not configured on the server" |
+| `SARVAM_MODEL` | optional — overrides Otto's model (default `sarvam-105b-conversations`; `sarvam-105b` is a reasoning model and returns empty answers here) |
+| `ANTHROPIC_API_KEY` | optional — only for the CLI's `--agent-resolve` enum-mapping pass; not used by the chat widget |
 | `PORT` | `3000` (Railway usually injects this) |
 
 6. Generate a public domain: **Settings → Networking → Generate domain**  

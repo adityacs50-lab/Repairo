@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { buttonPressVariant } from "@/lib/animationVariants";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface SiteHeaderProps {
@@ -17,51 +17,66 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
     <motion.header
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full bg-canvas/80 backdrop-blur-md border-b border-hairline py-3 px-6 md:px-12 sticky top-0 z-50 transition-colors font-sans"
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 py-4 px-6 md:px-12 sticky top-0 z-50 transition-colors font-sans"
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="hover:opacity-80 transition-opacity flex items-center gap-3">
-          <img src="/logo.jpg" alt="Repairo AI Logo" className="h-8 md:h-9 w-auto object-contain rounded" />
+        <Link href="/" className="hover:opacity-85 transition-opacity flex items-center gap-1.5 group">
+          <span className="text-xl font-bold tracking-tight text-slate-900 font-sans">
+            Repairo
+          </span>
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 tracking-wide">
+            AI
+          </span>
         </Link>
 
         {/* Center Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-mute">
-          <Link href="/#features" className={cn("hover:text-ink transition-colors", active === 'features' && "text-ink font-semibold")}>Product</Link>
-          <Link href="/docs" className={cn("hover:text-ink transition-colors", active === 'docs' && "text-ink font-semibold")}>Docs</Link>
-          <Link href="/pricing" className={cn("hover:text-ink transition-colors", active === 'pricing' && "text-ink font-semibold")}>Pricing</Link>
-          <Link href="/app" className={cn("hover:text-ink transition-colors", active === 'login' && "text-ink font-semibold")}>Login</Link>
+        <nav className="hidden md:flex items-center gap-8 text-xs md:text-sm font-medium text-slate-600">
+          <Link
+            href="/docs"
+            className={cn("hover:text-slate-900 transition-colors", active === "docs" && "text-slate-900 font-semibold")}
+          >
+            Documentation
+          </Link>
+          <Link
+            href="/#architecture"
+            className={cn("hover:text-slate-900 transition-colors", active === "architecture" && "text-slate-900 font-semibold")}
+          >
+            Architecture
+          </Link>
+          <Link
+            href="/#use-cases"
+            className={cn("hover:text-slate-900 transition-colors", active === "use-cases" && "text-slate-900 font-semibold")}
+          >
+            Use Cases
+          </Link>
+          <Link
+            href="/changelog"
+            className={cn("hover:text-slate-900 transition-colors", active === "changelog" && "text-slate-900 font-semibold")}
+          >
+            Changelog
+          </Link>
         </nav>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3 md:gap-6">
-          <Link href="/contact" className="hidden md:inline text-sm font-medium text-mute hover:text-ink transition-colors">
-            Book a demo
+        {/* Right Action Button */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/contact"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-full transition-all duration-150 shadow-sm hover:shadow active:scale-[0.98]"
+          >
+            <span>Book a demo</span>
+            <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
           </Link>
-          <motion.div {...buttonPressVariant}>
-            <Link
-              href="/app"
-              className="inline-block bg-ink text-primary-on text-xs md:text-sm font-medium px-3.5 py-1.5 md:px-4 md:py-2 rounded-full hover:bg-body transition-colors"
-            >
-              Start for free
-            </Link>
-          </motion.div>
 
           {/* Mobile Hamburger Toggle Button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 text-mute hover:text-ink focus:outline-none cursor-pointer"
+            className="md:hidden p-1.5 text-slate-700 hover:text-slate-900 focus:outline-none cursor-pointer rounded-lg hover:bg-slate-100"
             aria-label="Toggle menu"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              {mobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
@@ -73,38 +88,48 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="md:hidden overflow-hidden border-t border-hairline mt-3 pt-4 pb-2 bg-surface-deep"
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="md:hidden overflow-hidden border-t border-slate-200 mt-3 pt-3 pb-3 bg-white"
           >
-            <nav className="flex flex-col space-y-3 text-sm font-medium text-mute px-4 py-2">
-              <Link
-                href="/#features"
-                onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-ink py-1.5 transition-colors"
-              >
-                Product
-              </Link>
+            <nav className="flex flex-col space-y-2 text-sm font-medium text-slate-700 px-4">
               <Link
                 href="/docs"
                 onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-ink py-1.5 transition-colors"
+                className="hover:text-slate-900 py-1.5 transition-colors"
               >
-                Docs
+                Documentation
               </Link>
               <Link
-                href="/pricing"
+                href="/#architecture"
                 onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-ink py-1.5 transition-colors"
+                className="hover:text-slate-900 py-1.5 transition-colors"
               >
-                Pricing
+                Architecture
               </Link>
               <Link
-                href="/app"
+                href="/#use-cases"
                 onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-ink py-1.5 transition-colors"
+                className="hover:text-slate-900 py-1.5 transition-colors"
               >
-                Login
+                Use Cases
               </Link>
+              <Link
+                href="/changelog"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-slate-900 py-1.5 transition-colors"
+              >
+                Changelog
+              </Link>
+              <div className="pt-2">
+                <Link
+                  href="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full inline-flex items-center justify-center gap-1.5 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full"
+                >
+                  <span>Book a demo</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </nav>
           </motion.div>
         )}
