@@ -2,11 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm ci",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://repairo-production.up.railway.app/api/:path*"
-    }
-  ]
+  "installCommand": "npm ci"
 }

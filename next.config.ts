@@ -1,16 +1,17 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-/** Set on Railway/Docker builds. Vercel should leave this unset. */
+/**
+ * Set on Docker builds. Vercel leaves this unset.
+ *
+ * There is deliberately no /api/* rewrite here any more: the app used to proxy
+ * every API route to a separate Node + SQLite backend, and that backend is
+ * gone. Next.js now serves its own routes. A BACKEND_URL left set in the
+ * environment would silently reintroduce the proxy and 404 every API call.
+ */
 const useStandalone =
   process.env.OUTPUT_STANDALONE === "1" ||
   Boolean(process.env.RAILWAY_ENVIRONMENT);
-
-/**
- * On Vercel: set BACKEND_URL to your Railway public URL so /api/* is proxied
- * to the Node + SQLite backend. On Railway: leave BACKEND_URL empty.
- */
-const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.0.7", "192.168.0.6", "localhost"],
@@ -20,15 +21,6 @@ const nextConfig: NextConfig = {
   ...(useStandalone ? { output: "standalone" as const } : {}),
   serverExternalPackages: ["better-sqlite3"],
   poweredByHeader: false,
-  async rewrites() {
-    if (!backendUrl) return [];
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ];
-  },
   async headers() {
     return [
       {
