@@ -23,27 +23,24 @@ export default function AgentsIndexPage() {
       wide
       cta={{ href: "/app?tab=agents", label: "Open app to install" }}
     >
-      <div className="grid gap-px bg-line sm:grid-cols-2">
+      <div className="agent-grid">
         {vendors.map((v) => (
-          <article key={v.id} className="flex flex-col bg-bg px-5 py-6 sm:px-6">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-dim">
-              {v.tags.join(" · ")}
-            </p>
-            <h2 className="mt-2 text-lg font-medium text-fg">{v.name}</h2>
-            <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
-              {v.description}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link href={`/agents/${v.id}`} className="btn-primary !py-2 !text-sm">
-                Install {v.name} agent
+          <article key={v.id} className="agent-card">
+            <p className="mono-label">{v.tags.join(" · ")}</p>
+            <h2>{v.name}</h2>
+            <p>{v.description}</p>
+            <div className="agent-card-actions">
+              <Link href={`/agents/${v.id}`} className="button button-dark button-small">
+                Install {v.name}
+                <span aria-hidden="true" className="arrow-mark">↗</span>
               </Link>
               <a
                 href={v.homepage}
                 target="_blank"
                 rel="noreferrer"
-                className="btn-ghost !py-2 !text-sm"
+                className="text-link"
               >
-                Docs
+                Docs <span aria-hidden="true" className="arrow-mark">↗</span>
               </a>
             </div>
           </article>

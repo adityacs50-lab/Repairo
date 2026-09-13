@@ -48,22 +48,16 @@ function CodeSnippet({ code }: { code: string }) {
   };
 
   return (
-    <div className="bg-surface-elevated text-ink rounded-xl p-4 font-mono text-xs border border-hairline shadow-inner shadow-canvas/50 relative my-6">
-      <div className="absolute top-3 right-3">
-        <button
-          onClick={handleCopy}
-          type="button"
-          className="flex items-center gap-1.5 bg-surface-deep hover:bg-body text-ink border border-hairline px-2 py-1 rounded-md text-[10px] transition-colors cursor-pointer"
-        >
-          {copied ? (
-            <span className="text-emerald-400">Copied</span>
-          ) : (
-            <span>Copy</span>
-          )}
-        </button>
-      </div>
-      <pre className="overflow-x-auto whitespace-pre-wrap pr-16 text-mute leading-relaxed">
-        {code}
+    <div className="docs-code">
+      <button
+        onClick={handleCopy}
+        type="button"
+        className="docs-code-copy"
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+      <pre>
+        <code>{code}</code>
       </pre>
     </div>
   );
@@ -71,10 +65,9 @@ function CodeSnippet({ code }: { code: string }) {
 
 function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="my-6 pl-4 py-2 border-l-2 border-hairline-strong bg-surface-card/30">
-      <div className="text-sm text-mute leading-relaxed">
-        <strong className="text-ink font-medium">Info:</strong> {children}
-      </div>
+    <div className="docs-callout">
+      <p className="mono-label">Info</p>
+      <div>{children}</div>
     </div>
   );
 }
@@ -95,18 +88,22 @@ export default function DocsPage() {
       </Section>
 
       <Section title="Quickstart Guide" id="quickstart">
-        <ol className="list-decimal space-y-6 pl-5 mt-4">
-          <li className="pl-2">
-            <strong className="text-ink font-medium block text-base mb-2">1. Scan Your Repository</strong>
+        <ol className="docs-steps">
+          <li>
+            <strong>Scan your repository</strong>
             <p>Run Repairo locally against any directory to discover third-party API dependencies (Stripe, OpenAI, Supabase, etc.).</p>
           </li>
-          <li className="pl-2">
-            <strong className="text-ink font-medium block text-base mb-2">2. Diff OpenAPI Specs</strong>
+          <li>
+            <strong>Diff OpenAPI specs</strong>
             <p>Compare new OpenAPI 3.0/3.1 specs against baseline snapshots to calculate exact AST call site impacts.</p>
           </li>
-          <li className="pl-2">
-            <strong className="text-ink font-medium block text-base mb-2">3. Validate &amp; Apply Patches</strong>
-            <p>Preview AST transformations with compiler-grade typechecking (<code className="text-ink bg-surface-elevated px-1.5 py-0.5 rounded font-mono text-xs border border-hairline">tsc --noEmit</code>) before applying to disk or opening a GitHub PR.</p>
+          <li>
+            <strong>Validate &amp; apply patches</strong>
+            <p>
+              Preview AST transformations with compiler-grade typechecking (
+              <code className="docs-inline-code">tsc --noEmit</code>
+              ) before applying to disk or opening a GitHub PR.
+            </p>
           </li>
         </ol>
       </Section>
@@ -183,15 +180,15 @@ repairo repair --apply`} />
 
       <Section title="GitHub OAuth Scopes & Permissions" id="oauth">
         <p>
-          OAuth scopes: <code className="text-ink bg-surface-elevated px-1.5 py-0.5 rounded font-mono text-xs border border-hairline">repo</code> (read specs + open
-          PRs) and <code className="text-ink bg-surface-elevated px-1.5 py-0.5 rounded font-mono text-xs border border-hairline">read:user</code> (identity).
+          OAuth scopes: <code className="docs-inline-code">repo</code> (read specs + open
+          PRs) and <code className="docs-inline-code">read:user</code> (identity).
         </p>
       </Section>
 
       <Section title="Enterprise Controls & Compliance" id="soc2">
         <p>
           Enterprise plans can include an isolated VPC runner and SSO integration with Entra ID or Okta — talk to sales about your requirements. Formal SOC 2 / ISO programs are on Repairo&apos;s roadmap, not completed today; see{" "}
-          <Link href="/security#compliance" className="text-ink underline">
+          <Link href="/security#compliance">
             /security
           </Link>{" "}
           for the current state and to request a security questionnaire.

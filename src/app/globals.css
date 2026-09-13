@@ -1062,6 +1062,212 @@ h3 {
   background: var(--repairo-ink);
 }
 
+.docs-code {
+  position: relative;
+  margin: 8px 0 0;
+  padding: 20px 20px 22px;
+  background: var(--repairo-ink);
+  border: 1px solid var(--repairo-slate);
+  color: rgba(247, 248, 250, 0.92);
+}
+
+.docs-code-copy {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.docs-code-copy:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.docs-code pre {
+  margin: 0;
+  padding-right: 72px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.docs-code code {
+  font-family: inherit;
+}
+
+.docs-inline-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--repairo-ink);
+  background: var(--repairo-white);
+  border: 1px solid var(--repairo-rule);
+  padding: 2px 6px;
+}
+
+.docs-callout {
+  border-left: 2px solid var(--repairo-purple);
+  padding: 4px 0 4px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.docs-callout .mono-label {
+  color: var(--repairo-purple);
+  margin: 0;
+}
+
+.docs-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 22px;
+  counter-reset: docs-step;
+}
+
+.docs-steps li {
+  counter-increment: docs-step;
+  display: grid;
+  gap: 8px;
+  padding-left: 36px;
+  position: relative;
+}
+
+.docs-steps li::before {
+  content: counter(docs-step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--repairo-purple);
+}
+
+.docs-steps strong {
+  color: var(--repairo-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.docs-steps p {
+  margin: 0;
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--repairo-rule);
+  border: 1px solid var(--repairo-rule);
+}
+
+.agent-card {
+  background: var(--repairo-white);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.agent-card .mono-label {
+  color: var(--repairo-purple);
+  margin: 0;
+}
+
+.agent-card h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  max-width: none;
+}
+
+.agent-card > p {
+  margin: 0;
+  flex: 1;
+  color: var(--repairo-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.agent-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.demo-page-main {
+  width: min(100% - 64px, 1380px);
+  margin: 0 auto;
+  padding: 56px 0 96px;
+}
+
+.demo-page-intro {
+  max-width: 640px;
+  margin-bottom: 40px;
+}
+
+.demo-page-intro h1 {
+  font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+  max-width: none;
+}
+
+.demo-page-intro > p:last-child {
+  margin-top: 16px;
+  color: var(--repairo-muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--repairo-ink);
+  background: var(--repairo-ink);
+  color: var(--repairo-white);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+  color: var(--repairo-ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.bg-bg { background-color: var(--repairo-white); }
+.bg-line { background-color: var(--repairo-rule); }
+.text-muted { color: var(--repairo-muted); }
+
 .demo-section {
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: clamp(56px, 10vw, 160px);
@@ -1236,6 +1442,12 @@ h3 {
     position: static;
     display: none;
   }
+  .agent-grid {
+    grid-template-columns: 1fr;
+  }
+  .demo-page-main {
+    width: min(100% - 64px, 1380px);
+  }
   .pricing-hero,
   .pricing-board,
   .pricing-footnote,
@@ -1328,6 +1540,7 @@ h3 {
   .pricing-board,
   .pricing-footnote,
   .content-layout,
+  .demo-page-main,
   .site-footer {
     width: min(100% - 36px, 1380px);
   }

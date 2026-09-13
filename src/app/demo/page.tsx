@@ -13,9 +13,16 @@ export const metadata = pageMetadata({
 
 export default function DemoPage() {
   return (
-    <div className="unkey-canvas min-h-screen">
+    <div className="site-shell">
       <SiteHeader active="demo" />
-      <main className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8">
+      <main className="demo-page-main">
+        <div className="demo-page-intro">
+          <p className="eyebrow">INTERACTIVE DEMO</p>
+          <h1>See a breaking change become a repair.</h1>
+          <p>
+            Diff a fixture OpenAPI change, inspect impacted TypeScript call sites, and preview the compiler-validated AST patch.
+          </p>
+        </div>
         <DemoWorkspace />
       </main>
       <SiteFooter />
