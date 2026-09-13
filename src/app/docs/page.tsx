@@ -24,7 +24,8 @@ const docsNav = [
   {
     title: "INTEGRATIONS",
     items: [
-      { href: "#github-webhooks", label: "Automated GitHub Webhooks" },
+      { href: "#github-app", label: "GitHub App" },
+      { href: "#github-webhooks", label: "Hosted integrations" },
       { href: "#vendors", label: "Supported Vendors" },
     ],
   },
@@ -152,9 +153,42 @@ repairo repair --apply`} />
         </p>
       </Section>
 
-      <Section title="Automated GitHub Webhooks" id="github-webhooks">
+      <Section title="GitHub App" id="github-app">
         <p>
-          Configure Repairo to poll remote schemas continuously. We integrate directly with GitHub Webhooks to push branch updates immediately when a dependency drifts.
+          Install the Repairo GitHub App on your repositories. When a pull request touches an OpenAPI
+          spec, Repairo diffs base vs head, posts a breaking-change table on the PR, and can open a
+          compile-verified fix PR when every transform is safe.
+        </p>
+        <p>
+          <a
+            className="text-link"
+            href={`https://github.com/apps/${process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai"}/installations/new`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Install Repairo on GitHub ↗
+          </a>
+        </p>
+        <p>
+          Required permissions: <strong>Contents</strong> read/write, <strong>Pull requests</strong>{" "}
+          read/write, <strong>Metadata</strong> read. Subscribe to <strong>Pull request</strong> and{" "}
+          <strong>Installation</strong> events. Set the webhook URL to{" "}
+          <code className="docs-inline-code">https://www.heyrepairo.in/api/github/webhooks</code> (or your{" "}
+          <code className="docs-inline-code">APP_URL</code> + <code className="docs-inline-code">/api/github/webhooks</code>
+          ).
+        </p>
+        <p>
+          Self-hosting: set <code className="docs-inline-code">APP_ID</code>,{" "}
+          <code className="docs-inline-code">PRIVATE_KEY</code>, and{" "}
+          <code className="docs-inline-code">WEBHOOK_SECRET</code> on Vercel (or run{" "}
+          <code className="docs-inline-code">npm run dev:github-app</code> locally with smee.io).
+        </p>
+      </Section>
+
+      <Section title="Hosted integrations" id="github-webhooks">
+        <p>
+          In the Repairo workspace, vendor agents can register repo webhooks that trigger repair runs
+          when watched OpenAPI paths change on your default branch.
         </p>
       </Section>
 

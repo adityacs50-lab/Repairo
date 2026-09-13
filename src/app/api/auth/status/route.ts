@@ -39,9 +39,10 @@ export async function GET(request: NextRequest) {
     appUrlMatchesPublicOrigin: getAppUrl() === publicOrigin,
     checklist: [
       "Register registerThisCallbackUrl above as the OAuth App's Authorization callback URL (exact match)",
-      "If appUrlMatchesPublicOrigin is false, set APP_URL on Railway to publicOrigin (needed for webhook + Stripe URLs)",
-      "GITHUB_CLIENT_SECRET on Railway must match the secret shown when you generated it",
-      "After changing Railway vars, Redeploy the Railway service",
+      "If appUrlMatchesPublicOrigin is false, set APP_URL to publicOrigin (needed for OAuth, GitHub App webhooks, and Stripe URLs)",
+      "GITHUB_CLIENT_SECRET must match the secret shown when you generated it",
+      "GitHub App webhook URL must be publicOrigin + /api/github/webhooks — check GET /api/health for githubApp status",
+      "After changing env vars, redeploy",
     ],
   });
 }

@@ -17,6 +17,10 @@ const SOCIAL = {
   npm: "https://www.npmjs.com/package/repairo-cli",
 } as const;
 
+const GITHUB_APP_INSTALL_URL = `https://github.com/apps/${
+  process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai"
+}/installations/new`;
+
 const PROVIDERS_AVAILABLE = [
   { name: "Stripe", note: "OpenAPI watch + AST repair" },
   { name: "OpenAI", note: "Platform & Chat APIs" },
@@ -162,12 +166,20 @@ export function HomePage() {
               Repairo detects breaking third-party API changes, traces their impact into application code, and proposes a compiler-verified repair.
             </p>
             <div className="hero-actions">
-              <a className="button button-dark" href="#demo">
-                Book a demo <span aria-hidden="true" className="arrow-mark">↗</span>
+              <a
+                className="button button-dark"
+                href={GITHUB_APP_INSTALL_URL}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Install GitHub App <span aria-hidden="true" className="arrow-mark">↗</span>
               </a>
-              <Link className="text-link" href="/docs">
+              <Link className="text-link" href="/docs#github-app">
                 View docs <span aria-hidden="true" className="arrow-mark">↗</span>
               </Link>
+              <a className="text-link" href="#demo">
+                Book a demo <span aria-hidden="true" className="arrow-mark">↗</span>
+              </a>
             </div>
             <div className="hero-trust-marquee" aria-label="Available vendors and install command">
               <div className="hero-trust-track">

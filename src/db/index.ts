@@ -175,7 +175,11 @@ export class AppDatabase {
 }
 
 export function resolveDatabasePath(): string {
-  return process.env.DATABASE_PATH?.trim() || join(process.cwd(), "data", "repairo.db");
+  const explicit =
+    process.env.GITHUB_APP_DATABASE_PATH?.trim() || process.env.DATABASE_PATH?.trim();
+  if (explicit) return explicit;
+  if (process.env.VERCEL) return join("/tmp", "repairo-github-app.db");
+  return join(process.cwd(), "data", "repairo.db");
 }
 
 let singleton: AppDatabase | undefined;

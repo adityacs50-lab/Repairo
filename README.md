@@ -178,15 +178,19 @@ Details: [docs](https://www.heyrepairo.in/docs) · [security model](https://www.
 
 ## GitHub App
 
-`src/github-app/` watches PRs that touch OpenAPI specs, comments with a breaking-change table, and can open a second PR with a compile-verified consumer fix when every transform is safe and deterministic.
+Install on your repos from [heyrepairo.in](https://www.heyrepairo.in) (when `NEXT_PUBLIC_GITHUB_APP_SLUG` is set) or self-host:
+
+1. Create a GitHub App with webhook URL `{APP_URL}/api/github/webhooks`
+2. Set `APP_ID`, `PRIVATE_KEY`, `WEBHOOK_SECRET`, and `NEXT_PUBLIC_GITHUB_APP_SLUG` on Vercel
+3. Redeploy — `GET /api/github/webhooks` reports whether the app is configured
+
+`src/github-app/` watches PRs that touch OpenAPI specs, comments with a breaking-change table, and can open a compile-verified fix PR when every transform is safe.
 
 ```bash
 cp .env.example .env.local   # APP_ID, PRIVATE_KEY, WEBHOOK_SECRET
-npm run dev:github-app
-# forward webhooks: npx smee-client --url https://smee.io/<channel> --target http://localhost:3000/api/github/webhooks
+npm run dev                  # webhooks at http://localhost:3000/api/github/webhooks
+# or standalone: npm run dev:github-app + smee.io → localhost:3001/api/github/webhooks
 ```
-
-Permissions needed: **Contents** read/write, **Pull requests** read/write, **Metadata** read. Full checklist lives in [Docs](https://www.heyrepairo.in/docs) and `.env.example`.
 
 ```bash
 npm run test:github-app
