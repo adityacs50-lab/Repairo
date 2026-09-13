@@ -97,17 +97,31 @@ Plans: **Free** = 1 integration, 15 runs/mo, 3 seats · **Pro** = 50 / 500 / 15.
 
 ## C3. Vendor OpenAPI polling (cron)
 
-So agents check remote specs without clicking **Run now**:
+So agents check remote specs without clicking **Run now**, `/api/cron/poll-vendors` needs
+something to actually call it — nothing does by default.
+
+**Option 1 — GitHub Actions (ships in this repo, no extra service):**
 
 1. Set `CRON_SECRET` on Railway (long random string)
-2. Call hourly (GitHub Actions, cron-job.org, or Railway cron):
+2. On GitHub: **Settings → Secrets and variables → Actions**, add:
+   - `CRON_TARGET_URL` = `https://YOUR-VERCEL-DOMAIN` (no trailing slash)
+   - `CRON_SECRET` = the same value as step 1
+
+[`.github/workflows/vendor-poll-cron.yml`](.github/workflows/vendor-poll-cron.yml) runs hourly
+and calls the endpoint with those secrets. Missing secrets = silent no-op, not a failing run —
+safe to leave enabled on a fork. Trigger it once manually from the Actions tab
+(**Vendor Spec Poll → Run workflow**) to confirm it's wired up.
+
+**Option 2 — in-process poller (no external trigger at all):**
+
+Set `VENDOR_POLL_MS=3600000` on Railway for an hourly in-process poller.
+
+**Option 3 — any other external scheduler** (cron-job.org, Railway cron, etc.):
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
   "https://YOUR-VERCEL-DOMAIN/api/cron/poll-vendors"
 ```
-
-Or set `VENDOR_POLL_MS=3600000` on Railway for an in-process hourly poller (no external cron).
 
 ---
 

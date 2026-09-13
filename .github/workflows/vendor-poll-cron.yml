@@ -1,0 +1,36 @@
+name: Vendor Spec Poll
+
+# Drives GET /api/cron/poll-vendors on a schedule, so "remote" integrations
+# (spec tracked from the vendor catalog rather than a repo path) get checked
+# without anyone clicking "Run now" — see DEPLOY.md section C3.
+#
+# Needs two repo secrets, set once after the app is deployed:
+#   CRON_TARGET_URL  the public app URL, e.g. https://repairo.vercel.app (no trailing slash)
+#   CRON_SECRET      the same value as the CRON_SECRET env var on the backend
+#
+# Both missing (e.g. on a fork, or before first deploy) is a soft no-op, not a failure.
+
+on:
+  schedule:
+    - cron: "0 * * * *" # hourly; poll-vendors itself rate-limits each integration via minAgeMs
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll vendor specs for breaking changes
+        env:
+          CRON_TARGET_URL: ${{ secrets.CRON_TARGET_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_TARGET_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "CRON_TARGET_URL and/or CRON_SECRET repo secrets are not set — skipping. See DEPLOY.md section C3."
+            exit 0
+          fi
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$CRON_TARGET_URL/api/cron/poll-vendors"
