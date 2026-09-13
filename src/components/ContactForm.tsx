@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { CONTACT_INBOX, FORMSUBMIT_ENDPOINT } from "@/lib/contact";
 
 export function ContactForm() {
   const [name, setName] = useState("");
@@ -9,24 +10,42 @@ export function ContactForm() {
   const [company, setCompany] = useState("");
   const [topic, setTopic] = useState("enterprise");
   const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
+    "idle",
+  );
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const subject = encodeURIComponent(`[Repairo] ${topic} — ${company || name}`);
-    const body = encodeURIComponent(
-      `Name: ${name}\nEmail: ${email}\nCompany: ${company}\nTopic: ${topic}\n\n${message}`,
-    );
-    window.location.href = `mailto:hello@repairo.dev?subject=${subject}&body=${body}`;
-    setSent(true);
+    setStatus("loading");
+    try {
+      const response = await fetch(FORMSUBMIT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          company,
+          topic,
+          message,
+          _subject: `[Repairo] ${topic} — ${company || name}`,
+          _honey: "",
+        }),
+      });
+      setStatus(response.ok ? "sent" : "error");
+    } catch {
+      setStatus("error");
+    }
   }
 
-  if (sent) {
+  if (status === "sent") {
     return (
       <p className="text-sm text-safe">
-        Your mail client should open with a draft. If it didn’t, email{" "}
-        <a href="mailto:hello@repairo.dev" className="text-fg underline">
-          hello@repairo.dev
+        Thanks — we received your message at{" "}
+        <a href={`mailto:${CONTACT_INBOX}`} className="text-fg underline">
+          {CONTACT_INBOX}
         </a>
         .
       </p>
@@ -97,14 +116,23 @@ export function ContactForm() {
           className="w-full border border-line bg-bg p-3 text-sm text-fg outline-none focus:border-accent"
         />
       </label>
+      {status === "error" && (
+        <p className="text-xs text-accent-red">
+          Something went wrong. Email us at {CONTACT_INBOX}.
+        </p>
+      )}
       <p className="text-xs text-muted-dim">
         Prefer docs?{" "}
         <Link href="/docs" className="text-fg underline">
           Read the docs
         </Link>
       </p>
-      <button type="submit" className="btn-primary !py-2 !text-sm">
-        Open email draft
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="btn-primary !py-2 !text-sm"
+      >
+        {status === "loading" ? "Sending..." : "Send message"}
       </button>
     </form>
   );

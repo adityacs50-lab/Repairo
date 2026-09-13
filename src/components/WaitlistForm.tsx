@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { signInWithGoogle, signOutGoogle } from "@/lib/auth/google-actions";
+import { FORMSUBMIT_ENDPOINT } from "@/lib/contact";
 
 async function submitWaitlist(email: string, isGoogle: boolean) {
-  const response = await fetch("https://formsubmit.co/ajax/info@heyrepairo.in", {
+  const response = await fetch(FORMSUBMIT_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

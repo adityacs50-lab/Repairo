@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Auth.js (Google waitlist) lives on Vercel. GitHub product OAuth
- * (`/api/auth/github`, exact `/api/auth/callback`, `/me`, `/logout`, `/status`)
- * still goes to Railway when BACKEND_URL is set.
+ * Routes that must stay on this Next.js deployment (Vercel), never Railway.
+ *
+ * The split-deploy Railway backend is gone — Next.js serves the API itself
+ * (see next.config.ts). If BACKEND_URL is still set by mistake, keep these
+ * local so Auth.js and Otto (Sarvam) are not forwarded to a host that 404s.
  */
-function isAuthJsRoute(pathname: string): boolean {
+function stayOnNext(pathname: string): boolean {
+  if (pathname === "/api/chat" || pathname.startsWith("/api/chat/")) return true;
   if (pathname.startsWith("/api/auth/callback/")) return true;
   if (pathname.startsWith("/api/auth/signin")) return true;
   if (pathname.startsWith("/api/auth/signout")) return true;
@@ -19,18 +22,15 @@ function isAuthJsRoute(pathname: string): boolean {
 }
 
 /**
- * Proxy /api to Railway on Vercel. Explicitly forwards Cookie (fetch often strips it).
+ * Optional legacy proxy: only when BACKEND_URL is explicitly set.
+ * Do NOT default to Railway on Vercel — that 404s /api/chat and other routes.
  */
 export async function proxy(request: NextRequest) {
-  if (isAuthJsRoute(request.nextUrl.pathname)) {
+  if (stayOnNext(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
 
-  const backend = (
-    process.env.BACKEND_URL ||
-    (process.env.VERCEL ? "https://repairo-production.up.railway.app" : "")
-  )?.replace(/\/$/, "");
-
+  const backend = process.env.BACKEND_URL?.trim().replace(/\/$/, "");
   if (!backend) {
     return NextResponse.next();
   }

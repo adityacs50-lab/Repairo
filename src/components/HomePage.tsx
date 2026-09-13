@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { FORMSUBMIT_ENDPOINT } from "@/lib/contact";
 
 type TabId = "impact" | "repair" | "verify";
 
@@ -73,13 +74,34 @@ export function HomePage() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormLoading(true);
-    setTimeout(() => {
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    try {
+      const response = await fetch(FORMSUBMIT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name: data.get("name"),
+          email: data.get("email"),
+          message: data.get("team"),
+          _subject: "New Demo Request - Repairo",
+          _honey: "",
+        }),
+      });
+      if (response.ok) {
+        setFormSubmitted(true);
+      }
+    } catch {
+      // keep form visible so they can retry
+    } finally {
       setFormLoading(false);
-      setFormSubmitted(true);
-    }, 600);
+    }
   };
 
   const currentTab = TAB_DATA[activeTab];

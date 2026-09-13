@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { TextEffect } from "@/components/ui/text-effect";
+import { FORMSUBMIT_ENDPOINT } from "@/lib/contact";
 
 export function BookDemoSection() {
   const [formData, setFormData] = useState({
@@ -17,7 +18,7 @@ export function BookDemoSection() {
     e.preventDefault();
     
     try {
-      await fetch("https://formsubmit.co/ajax/adityashinde@heyrepairo.in", {
+      await fetch(FORMSUBMIT_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
