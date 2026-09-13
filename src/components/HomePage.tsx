@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { WaitlistForm } from "@/components/WaitlistForm";
 
 type TabId = "impact" | "repair" | "verify";
 
@@ -394,7 +395,21 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 8. FOOTER */}
+      {/* 8. BETA WAITLIST + GOOGLE AUTH */}
+      <section className="demo-section section-rule" id="waitlist">
+        <div className="demo-intro">
+          <p className="eyebrow">PRIVATE BETA</p>
+          <h2>Join the waitlist.</h2>
+          <p>
+            Sign up with Google or your work email for early access when Repairo opens.
+          </p>
+        </div>
+        <div className="demo-form-wrap" style={{ maxWidth: "28rem" }}>
+          <WaitlistForm />
+        </div>
+      </section>
+
+      {/* 9. FOOTER */}
       <footer className="site-footer section-rule">
         <div>
           <Link href="#top" className="wordmark" aria-label="Repairo AI home">
@@ -409,6 +424,7 @@ export function HomePage() {
             <a href="#workflow">Workflow</a>
             <a href="#why-repairo">Why Repairo</a>
             <a href="#demo">Book a demo</a>
+            <a href="#waitlist">Beta waitlist</a>
           </div>
           <div>
             <p className="mono-label">Repairo AI</p>

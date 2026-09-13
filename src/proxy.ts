@@ -1,9 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
+ * Auth.js (Google waitlist) lives on Vercel. GitHub product OAuth
+ * (`/api/auth/github`, exact `/api/auth/callback`, `/me`, `/logout`, `/status`)
+ * still goes to Railway when BACKEND_URL is set.
+ */
+function isAuthJsRoute(pathname: string): boolean {
+  if (pathname.startsWith("/api/auth/callback/")) return true;
+  if (pathname.startsWith("/api/auth/signin")) return true;
+  if (pathname.startsWith("/api/auth/signout")) return true;
+  return (
+    pathname === "/api/auth/session" ||
+    pathname === "/api/auth/csrf" ||
+    pathname === "/api/auth/providers" ||
+    pathname === "/api/auth/error" ||
+    pathname === "/api/auth/verify-request"
+  );
+}
+
+/**
  * Proxy /api to Railway on Vercel. Explicitly forwards Cookie (fetch often strips it).
  */
 export async function proxy(request: NextRequest) {
+  if (isAuthJsRoute(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   const backend = (
     process.env.BACKEND_URL ||
     (process.env.VERCEL ? "https://repairo-production.up.railway.app" : "")

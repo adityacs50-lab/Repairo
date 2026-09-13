@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Figtree, Pixelify_Sans } from "next/font/google";
 import "./globals.css";
 import RepairoChatAssistant from "@/components/RepairoChatAssistant";
+import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import { JsonLd } from "@/components/JsonLd";
 import {
   SITE_DESCRIPTION,
@@ -68,9 +69,11 @@ export default function RootLayout({
       className={`${figtree.variable} ${pixelify.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-[#f7f8fa] text-[#0b1220] font-sans">
-        <JsonLd data={[organizationJsonLd(), webSiteJsonLd()]} />
-        {children}
-        <RepairoChatAssistant />
+        <AuthSessionProvider>
+          <JsonLd data={[organizationJsonLd(), webSiteJsonLd()]} />
+          {children}
+          <RepairoChatAssistant />
+        </AuthSessionProvider>
       </body>
     </html>
   );
