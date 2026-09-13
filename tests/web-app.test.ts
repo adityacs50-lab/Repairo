@@ -3,11 +3,15 @@
 // that actually block integration/repair/invite creation once a workspace is
 // over its plan. This was previously zero — see RP-05 in the readiness scan.
 //
-// Deliberately NOT covered here: the Next.js route handlers themselves (they
-// pull `cookies()`/`headers()` from `next/headers`, which needs a request
-// context this lightweight runner doesn't provide) and Stripe webhook
-// signature verification (needs a live Stripe SDK object). Everything below is
-// the real logic those routes call into.
+// Also covers /api/chat's request validation directly (it's a plain Request/
+// NextResponse handler with no next/headers dependency, unlike the rest of the
+// route handlers below).
+//
+// Deliberately NOT covered here: every OTHER Next.js route handler (they pull
+// `cookies()`/`headers()` from `next/headers`, which needs a request context
+// this lightweight runner doesn't provide) and Stripe webhook signature
+// verification (needs a live Stripe SDK object). Everything else below is the
+// real logic those routes call into.
 
 import fs from "fs";
 import os from "os";
@@ -28,6 +32,7 @@ import {
   countRunsThisMonth,
 } from "../src/lib/db/integrations";
 import { assertCanInvite, createPendingInvite, listPendingInvites, acceptPendingInvitesForLogin } from "../src/lib/db/invites";
+import { POST as chatPost } from "../src/app/api/chat/route";
 
 // None of the imports above call getDb()/getGitHubOAuthConfig()/getKey() at their own
 // module top level — those only run lazily, inside functions we call from main() below.
@@ -117,9 +122,16 @@ async function main() {
   assert(encrypted.split(".").length === 3, "Encrypted token is iv.tag.ciphertext");
   assert(decryptToken(encrypted) === "gho_realGitHubToken123", "A token round-trips through encrypt/decrypt intact");
   const [iv, tag, data] = encrypted.split(".");
+  // Flip one full byte in the middle of the ciphertext via XOR — guaranteed to change that
+  // byte's value (unlike mutating a handful of trailing base64 characters, which can
+  // round-trip to the SAME underlying bytes when they fall on a partial-group boundary,
+  // making the corruption a no-op some of the time and the assertion below flaky).
+  const dataBytes = Buffer.from(data, "base64url");
+  const midIndex = Math.floor(dataBytes.length / 2);
+  dataBytes[midIndex] = dataBytes[midIndex] ^ 0xff;
   let tamperThrew = false;
   try {
-    decryptToken(`${iv}.${tag}.${data.slice(0, -2)}AA`);
+    decryptToken(`${iv}.${tag}.${dataBytes.toString("base64url")}`);
   } catch {
     tamperThrew = true;
   }
@@ -281,6 +293,38 @@ async function main() {
     seatLimitThrew = e instanceof AuthError && e.status === 402;
   }
   assert(seatLimitThrew, "Free plan's 3-seat limit (members + pending invites) blocks a third invite with a 402");
+
+  // ---------------------------------------------------------------------
+  // Test 10: /api/chat request validation (RP-10 — was previously an unconditional
+  // dependency on SARVAM_API_KEY, dead since nothing else in the product uses Sarvam;
+  // now Anthropic-backed, matching --agent-resolve). No ANTHROPIC_API_KEY is set here,
+  // so this only exercises validation, not a real model call.
+  console.log("\nTest 10: /api/chat request validation");
+  const savedAnthropicKey = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+
+  const emptyMessagesRes = await chatPost(new Request("http://x/api/chat", { method: "POST", body: JSON.stringify({ messages: [] }) }));
+  assert(emptyMessagesRes.status === 400, "An empty message history is rejected with a 400");
+
+  const malformedRes = await chatPost(new Request("http://x/api/chat", { method: "POST", body: JSON.stringify({ messages: "not-an-array" }) }));
+  assert(malformedRes.status === 400, "A non-array messages field is rejected with a 400, not a crash");
+
+  const noRoleRes = await chatPost(
+    new Request("http://x/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ messages: [{ role: "system", content: "ignored" }, { content: "no role" }] }),
+    }),
+  );
+  assert(noRoleRes.status === 400, "Messages with an invalid/missing role are filtered out, and an all-invalid history is rejected");
+
+  const validNoKeyRes = await chatPost(
+    new Request("http://x/api/chat", { method: "POST", body: JSON.stringify({ messages: [{ role: "user", content: "What is Repairo?" }] }) }),
+  );
+  assert(validNoKeyRes.status === 503, "A well-formed request is accepted past validation but fails cleanly (503) without ANTHROPIC_API_KEY, instead of a raw 500 crash");
+  const validNoKeyBody = await validNoKeyRes.json();
+  assert(typeof validNoKeyBody.error === "string" && validNoKeyBody.error.includes("ANTHROPIC_API_KEY"), "The missing-key error names the actual env var to set, not a generic failure");
+
+  if (savedAnthropicKey !== undefined) process.env.ANTHROPIC_API_KEY = savedAnthropicKey;
 
   console.log("\n==================================================");
   console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);

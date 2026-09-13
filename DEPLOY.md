@@ -34,6 +34,7 @@ Browser  →  Vercel (pages, /app, /demo)
 | `SESSION_SECRET` | 32+ random characters |
 | `TOKEN_ENCRYPTION_KEY` | optional, same strength |
 | `DATABASE_PATH` | `/app/data/repairo.db` |
+| `ANTHROPIC_API_KEY` | optional — powers the "Otto" chat widget (`/api/chat`) and `--agent-resolve`; without it the widget shows "not configured on the server" |
 | `PORT` | `3000` (Railway usually injects this) |
 
 6. Generate a public domain: **Settings → Networking → Generate domain**  
