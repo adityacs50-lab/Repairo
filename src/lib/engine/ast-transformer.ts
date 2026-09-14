@@ -31,10 +31,22 @@ function isApiCallExpression(call: Node, change?: ApiChange): boolean {
   return operationTokens(change).some((token) => token.length > 2 && lowerText.includes(token.toLowerCase()));
 }
 
+/**
+ * True only when `node` is ITSELF a direct argument of a recognized API call — never when
+ * it merely sits somewhere inside one. Walking through a PropertyAssignment means `node` (or
+ * whatever we started from) is a nested property's VALUE inside some other object, e.g. the
+ * `headers` object inside `fetch(url, { method, headers: {...}, body })` — that surrounding
+ * options object may be the call's argument, but `headers` itself is not. Without this check,
+ * a required-field fix meant for the request body could get written into `headers` (or any
+ * other sibling config object) instead, since both live somewhere inside the same call.
+ */
 function enclosingApiCall(node: Node, change?: ApiChange): Node | undefined {
   let child: Node = node;
   let parent = node.getParent();
   while (parent) {
+    if (Node.isPropertyAssignment(parent) || Node.isShorthandPropertyAssignment(parent)) {
+      return undefined;
+    }
     if (
       Node.isCallExpression(parent) &&
       parent.getArguments().some((arg) => arg === child)

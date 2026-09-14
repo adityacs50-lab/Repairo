@@ -335,6 +335,54 @@ assert(requiredResult.content.includes('render({ title: "Refunds" })'), "Non-API
 assert(/createRefund\(\{ chargeId: "ch_1", amount: 100,\s*\n?\s*reason: ""/.test(requiredResult.content.replace(/\r\n/g, "\n")), "API request object DOES receive the required field with a generic, vendor-neutral default");
 assert((requiredResult.content.match(/reason:/g) || []).length === 1, "Required field is inserted exactly once");
 
+// Test 13b: red-team — a required-field fix must never land in a sibling config object
+// (e.g. fetch's `headers`) just because that object also lives somewhere inside the same
+// recognized API call. Found via real `tsc` verification of the generated shipping fixture
+// output: enclosingApiCall didn't stop walking at a PropertyAssignment, so ANY object
+// literal nested anywhere inside a matched call's arguments (not just the actual request
+// body) was treated as eligible.
+console.log("\nTest 13b: red-team — required field never leaks into a sibling object inside the same API call");
+const siblingObjectCode = `
+interface CreateShipmentRequest {
+  originZip: string;
+  carrier: string;
+}
+async function submitShipment(request: CreateShipmentRequest) {
+  return fetch("https://api.acme-shipping.com/v1/shipments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+}
+`;
+const siblingObjectChange = [
+  {
+    id: "chg_020",
+    kind: "field-required" as const,
+    severity: "breaking" as const,
+    path: "/shipments",
+    operation: "post",
+    field: "recipientEmail",
+    fieldType: "string",
+    side: "request" as const,
+    relatedFields: ["originZip", "carrier", "recipientEmail"],
+    summary: 'Field "recipientEmail" is now required',
+  },
+];
+const siblingObjectResult = applyAstTransforms(siblingObjectCode, siblingObjectChange, "src/shipments.ts");
+assert(
+  siblingObjectResult.content.includes('headers: { "Content-Type": "application/json" }'),
+  "the headers object (a sibling of the request body inside the same fetch call) is left byte-for-byte untouched",
+);
+assert(
+  siblingObjectResult.content.includes("recipientEmail: string;"),
+  "the actual CreateShipmentRequest interface still correctly receives the required field",
+);
+assert(
+  (siblingObjectResult.content.match(/recipientEmail/g) || []).length === 1,
+  "recipientEmail appears exactly once in the whole file — only in the interface, nowhere else",
+);
+
 // Test 14: Enum rename scoped to usages of the changed field
 console.log("\nTest 14: Enum rename scoped to usages of the changed field");
 const enumCode = `
