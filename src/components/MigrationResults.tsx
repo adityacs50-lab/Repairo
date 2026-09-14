@@ -31,6 +31,8 @@ import {
 interface Props {
   /** Raw engine output (RepairRunResult) or normalized benchmark JSON */
   data?: unknown;
+  /** Match marketing site (light) vs dashboard (dark) */
+  theme?: "dark" | "light";
   /** Optional title override */
   title?: string;
   /** Optional callback to trigger opening PR or returning to workspace */
@@ -42,6 +44,7 @@ interface Props {
 
 export function MigrationResults({
   data,
+  theme = "dark",
   title = "Migration Results",
   onBack,
   onOpenPR,
@@ -108,8 +111,13 @@ export function MigrationResults({
 
   const visibleChanges = showAllChanges ? model.changes : model.changes.slice(0, 2);
 
+  const rootClass =
+    theme === "light"
+      ? "migration-results-light w-full space-y-6 font-sans text-fg"
+      : "w-full space-y-6 font-sans text-slate-100";
+
   return (
-    <div className="w-full space-y-6 font-sans text-slate-100">
+    <div className={rootClass}>
       {/* 1. COMPACT RESULTS OVERVIEW (HEADER) */}
       <div className="rounded-xl border border-neutral-800 bg-neutral-900/90 p-5 shadow-xl backdrop-blur-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

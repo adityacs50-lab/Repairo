@@ -453,28 +453,29 @@ export function AppWorkspace() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1 border border-line bg-bg p-2">
-        {(
-          [
-            ["try", "Try your repo"],
-            ["agents", "Vendor agents"],
-            ["overview", "Overview"],
-            ["integrations", "Watch"],
-            ["runs", "Runs"],
-            ["settings", "Settings"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={`px-3 py-2 text-sm font-medium ${
-              tab === id ? "bg-fg text-bg" : "text-muted hover:text-fg"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="border border-line border-b-0">
+        <div className="workspace-tabs" role="tablist" aria-label="Workspace">
+          {(
+            [
+              ["try", "Try your repo"],
+              ["agents", "Vendor agents"],
+              ["overview", "Overview"],
+              ["integrations", "Watch"],
+              ["runs", "Runs"],
+              ["settings", "Settings"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === "try" && (
@@ -781,6 +782,7 @@ export function AppWorkspace() {
           {selectedRunResult ? (
             <MigrationResults
               data={selectedRunResult}
+              theme="light"
               showBackButton
               onBack={() => setSelectedRunResult(null)}
             />

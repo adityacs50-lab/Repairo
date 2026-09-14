@@ -16,6 +16,21 @@
   --color-body: var(--repairo-muted);
 }
 
+/* Tailwind v4 color utilities for workspace/demo components */
+@theme {
+  --color-bg: #ffffff;
+  --color-bg-panel: #ffffff;
+  --color-fg: #0b1220;
+  --color-accent: #6c5ce7;
+  --color-accent-bright: #6c5ce7;
+  --color-line: #d9dee7;
+  --color-line-strong: #bcc4d0;
+  --color-warn: #ffb020;
+  --color-safe: #00bfa6;
+  --color-muted: #667080;
+  --color-muted-dim: #667080;
+}
+
 /* Compatibility for pages still using the previous token class names */
 .bg-canvas { background-color: var(--repairo-paper); }
 .bg-surface-elevated,
@@ -34,6 +49,98 @@
 .border-line { border-color: var(--repairo-rule); }
 .bg-hairline-strong { background-color: var(--repairo-rule); }
 .font-display { font-family: var(--font-sans); }
+
+.bg-bg { background-color: var(--repairo-white); }
+.bg-bg-panel { background-color: var(--repairo-white); }
+.bg-fg { background-color: var(--repairo-ink); }
+.text-bg { color: var(--repairo-white); }
+.text-accent,
+.text-accent-bright { color: var(--repairo-purple); }
+.text-warn { color: var(--repairo-amber); }
+.border-accent { border-color: var(--repairo-purple); }
+.border-line-strong { border-color: #bcc4d0; }
+.border-warn { border-color: var(--repairo-amber); }
+.bg-warn\/10 { background-color: color-mix(in srgb, var(--repairo-amber) 12%, transparent); }
+.bg-accent\/10 { background-color: color-mix(in srgb, var(--repairo-purple) 10%, transparent); }
+.bg-safe\/10 { background-color: color-mix(in srgb, var(--repairo-teal) 10%, transparent); }
+.border-safe\/30 { border-color: color-mix(in srgb, var(--repairo-teal) 35%, transparent); }
+
+/* Shared tab strip for demo + app (matches homepage .tabs, scrollable on small screens) */
+.workspace-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.workspace-tabs button {
+  flex: 1 0 auto;
+  min-width: max(7rem, fit-content);
+  border: 0;
+  border-right: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+  color: var(--repairo-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 14px 16px;
+  text-align: center;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+
+.workspace-tabs button:last-child {
+  border-right: 0;
+}
+
+.workspace-tabs button:hover {
+  color: var(--repairo-ink);
+  background: var(--repairo-paper);
+}
+
+.workspace-tabs button[aria-selected="true"] {
+  background: var(--repairo-ink);
+  color: var(--repairo-white);
+}
+
+.workspace-panel {
+  padding: clamp(20px, 4vw, 32px);
+  background: var(--repairo-white);
+  border: 1px solid var(--repairo-rule);
+  border-top: 0;
+}
+
+/* MigrationResults on light workspace/demo surfaces */
+.migration-results-light .rounded-xl {
+  border-radius: 0;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.migration-results-light .border-neutral-800,
+.migration-results-light .border-neutral-700 {
+  border-color: var(--repairo-rule) !important;
+}
+.migration-results-light [class*="bg-neutral-9"],
+.migration-results-light [class*="bg-neutral-8"] {
+  background-color: var(--repairo-white) !important;
+}
+.migration-results-light .text-white {
+  color: var(--repairo-ink) !important;
+}
+.migration-results-light .text-neutral-300,
+.migration-results-light .text-neutral-400 {
+  color: var(--repairo-muted) !important;
+}
+.migration-results-light .text-neutral-500,
+.migration-results-light .text-neutral-600 {
+  color: var(--repairo-muted) !important;
+}
 
 * {
   box-sizing: border-box;

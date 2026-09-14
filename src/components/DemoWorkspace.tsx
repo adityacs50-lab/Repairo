@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import type { RepairRunResult } from "@/lib/engine/types";
 import { HeroEnter, PixelCluster } from "@/components/Motion";
 
-import { MigrationResults } from "@/components/MigrationResults";
 import { DemoGitHubCta } from "@/components/DemoGitHubCta";
 import type { DemoScenarioId } from "@/lib/demo-scenarios";
 import { DEMO_SCENARIOS } from "@/lib/demo-scenarios";
@@ -20,6 +19,8 @@ type DemoPayload = {
   result: RepairRunResult;
   fixtures: FixtureSources;
 };
+
+type DemoTabId = "inputs" | "changes" | "impact" | "diff" | "pr" | "sbom";
 
 const pipeline = [
   "Ingesting OpenAPI specs",
@@ -92,9 +93,16 @@ export function DemoWorkspace({
   const [phase, setPhase] = useState<"idle" | "running" | "done">("idle");
   const [step, setStep] = useState(0);
   const [apiReady, setApiReady] = useState(false);
-  const [tab, setTab] = useState<
-    "results" | "inputs" | "changes" | "impact" | "diff" | "pr" | "sbom"
-  >("inputs");
+  const [tab, setTab] = useState<DemoTabId>("inputs");
+
+  const DEMO_TABS: Array<{ id: DemoTabId; label: string }> = [
+    { id: "inputs", label: "Inputs" },
+    { id: "changes", label: "Changes" },
+    { id: "impact", label: "Impact" },
+    { id: "diff", label: "Patch" },
+    { id: "pr", label: "Pull request" },
+    { id: "sbom", label: "SBOM" },
+  ];
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -134,7 +142,7 @@ export function DemoWorkspace({
     if (!apiReady) return;
     const timeout = window.setTimeout(() => {
       setPhase("done");
-      setTab("results");
+      setTab("changes");
     }, 350);
     return () => window.clearTimeout(timeout);
   }, [phase, step, apiReady]);
@@ -301,9 +309,9 @@ export function DemoWorkspace({
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
               Interactive demo
             </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
               See the repair before you connect GitHub
-            </h1>
+            </h2>
             <p className="mt-1 text-sm text-muted">
               OpenAPI diff → impacted call sites → compiler-checked patches. Version{" "}
               {result.fromVersion} → {result.toVersion}.
@@ -447,41 +455,22 @@ export function DemoWorkspace({
       </AnimatePresence>
 
       <HeroEnter delay={0.1}>
-        <div className="overflow-hidden border border-line bg-bg-panel">
-          <div className="flex flex-wrap gap-1.5 border-b border-line bg-bg p-2.5">
-            {(
-              [
-                ["results", "Migration Results"],
-                ["inputs", "Inputs"],
-                ["changes", "Changes"],
-                ["impact", "Impact"],
-                ["diff", "Patch"],
-                ["pr", "Pull request"],
-                ["sbom", "Security & SBOM"],
-              ] as const
-            ).map(([id, label]) => {
-              const isActive = tab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTab(id)}
-                  className={`relative px-4 py-2 text-sm font-semibold transition-all rounded ${
-                    isActive
-                      ? "bg-fg text-bg font-bold shadow-md"
-                      : "text-muted hover:text-fg hover:bg-bg-panel/60"
-                  }`}
-                >
-                  {label}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent-bright rounded-full" />
-                  )}
-                </button>
-              );
-            })}
+        <div className="border border-line bg-bg-panel">
+          <div className="workspace-tabs" role="tablist" aria-label="Demo views">
+            {DEMO_TABS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          <div className="p-5 sm:p-6">
+          <div className="workspace-panel">
             <AnimatePresence mode="wait">
               <motion.div
                 key={tab + phase}
@@ -490,10 +479,6 @@ export function DemoWorkspace({
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.25 }}
               >
-                {tab === "results" && (
-                  <MigrationResults data={result} />
-                )}
-
                 {tab === "inputs" && (
                   <div className="space-y-6">
                     <div className="grid gap-4 lg:grid-cols-2">
@@ -821,11 +806,11 @@ export function DemoWorkspace({
                               Spec version · 1.5 | Format · CycloneDX JSON
                             </p>
                           </div>
-                          <div className="border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-center rounded-lg">
-                            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-emerald-400">
+                          <div className="border border-safe/30 bg-safe/10 px-4 py-2 text-center">
+                            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-safe">
                               Trivy CVE Audit
                             </p>
-                            <p className="text-base font-semibold text-emerald-400">
+                            <p className="text-base font-semibold text-safe">
                               PASS
                             </p>
                             <p className="text-[10px] text-muted-dim">
@@ -848,7 +833,7 @@ export function DemoWorkspace({
                                 <div>
                                   <div className="flex items-center justify-between">
                                     <span className="font-semibold text-fg text-sm">{comp.name}</span>
-                                    <span className="font-mono text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-muted-dim">
+                                    <span className="font-mono text-[10px] border border-line bg-bg px-1.5 py-0.5 text-muted-dim">
                                       v{comp.version}
                                     </span>
                                   </div>
@@ -856,9 +841,9 @@ export function DemoWorkspace({
                                     {comp.description}
                                   </p>
                                 </div>
-                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5 font-mono text-[10px]">
+                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-line font-mono text-[10px]">
                                   <span className="text-muted-dim">purl: {comp.purl || "N/A"}</span>
-                                  <span className="text-emerald-400 font-medium">Scanned</span>
+                                  <span className="text-safe font-medium">Scanned</span>
                                 </div>
                               </div>
                             ))}
@@ -870,7 +855,7 @@ export function DemoWorkspace({
                           <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-dim">
                             CycloneDX JSON Output
                           </p>
-                          <pre className="max-h-[300px] overflow-y-auto whitespace-pre-wrap border border-line bg-black/40 p-4 font-mono text-xs leading-relaxed text-muted scrollbar-thin">
+                          <pre className="max-h-[300px] overflow-y-auto whitespace-pre-wrap border border-line bg-bg p-4 font-mono text-xs leading-relaxed text-fg scrollbar-thin">
                             {JSON.stringify(result.sbom, null, 2)}
                           </pre>
                         </div>
