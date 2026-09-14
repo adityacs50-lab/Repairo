@@ -217,7 +217,7 @@ export function HomePage() {
         <div className="hero-art-wrap">
           <motion.div
             className="asset-frame hero-product-frame"
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
@@ -249,20 +249,22 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 3. SOCIAL PROOF */}
       <section className="social-section section-rule" id="proof">
         <div className="social-proof-stack">
-          <div className="logo-strip" aria-label="Vendors Repairo watches">
+          <div className="home-logo-strip" aria-label="Vendors Repairo watches">
             <p className="mono-label">Works with</p>
-            <ul className="logo-strip-list">
-              {VENDOR_MARKS.map((name) => (
-                <li key={name} className="logo-mark">
-                  {name}
-                </li>
-              ))}
-            </ul>
+            <div className="home-logo-strip-scroll">
+              <ul className="logo-strip-list">
+                {VENDOR_MARKS.map((name) => (
+                  <li key={name} className="logo-mark">
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <div className="social-quotes">
-            <figure className="social-quote-block">
-              <p className="eyebrow">DESIGN PARTNER</p>
+          <div className="home-proof-grid">
+            <figure className="home-proof-card social-quote-block">
+              <p className="eyebrow">Design partner</p>
               <blockquote className="social-quote">
                 “{DESIGN_PARTNER.beforeCode}
                 <code>{DESIGN_PARTNER.code}</code>
@@ -276,8 +278,8 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
                 {DESIGN_PARTNER.org}
               </figcaption>
             </figure>
-            <figure className="social-quote-block social-quote-secondary">
-              <p className="eyebrow">WORKS WITH</p>
+            <figure className="home-proof-card home-proof-card--trust social-quote-block">
+              <p className="eyebrow">Open source</p>
               <blockquote className="social-quote social-quote-sm">
                 Apache-2.0 CLI on npm. Public engine suite. Human merge required — including every
                 AI-assisted mapping.
@@ -296,15 +298,15 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
             </figure>
           </div>
 
-          <div className="metrics-strip" aria-label="Engine-verified metrics">
+          <div className="home-metrics-strip" aria-label="Engine-verified metrics">
             {ENGINE_METRICS.map((m) => (
-              <div key={m.label} className="metric-cell">
+              <div key={m.label} className="home-metric-card">
                 <span className="metric-value">{m.value}</span>
                 <span className="metric-label">{m.label}</span>
               </div>
             ))}
           </div>
-          <p className="metrics-footnote">
+          <p className="home-metrics-footnote">
             Engine facts from the open catalog, change taxonomy, and test suite — not production
             usage telemetry.
           </p>
