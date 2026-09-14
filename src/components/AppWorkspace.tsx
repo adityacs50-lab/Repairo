@@ -186,7 +186,7 @@ export function AppWorkspace() {
       const detail = params.get("detail");
       const messages: Record<string, string> = {
         oauth_not_configured:
-          "GitHub OAuth is not configured on the server. Check Railway env vars.",
+          "GitHub OAuth is not configured on the server. Set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, and SESSION_SECRET on Vercel, then redeploy.",
         invalid_oauth_state:
           "Sign-in expired or was interrupted. Click Continue with GitHub again.",
         oauth_failed:
@@ -978,7 +978,7 @@ export function AppWorkspace() {
             {!billingConfigured ? (
               <p className="mt-3 text-sm text-muted-dim">
                 Stripe is not configured on this server. Set STRIPE_SECRET_KEY,
-                STRIPE_PRICE_PRO, and STRIPE_WEBHOOK_SECRET on Railway.
+                STRIPE_PRICE_PRO, and STRIPE_WEBHOOK_SECRET on Vercel.
               </p>
             ) : (
               <div className="mt-4 flex flex-wrap gap-2">

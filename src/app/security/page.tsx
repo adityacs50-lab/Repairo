@@ -60,8 +60,9 @@ export default function SecurityPage() {
       <Section title="Architecture" id="architecture">
         <BulletList
           items={[
-            "UI on Vercel; API + SQLite on Railway (persistent volume)",
-            "/api/* proxied to the backend — sessions set on the app domain",
+            "UI and API on Vercel (Next.js serverless)",
+            "Workspace data in Neon Postgres (DATABASE_URL)",
+            "Sessions and OAuth run on the app domain (no separate API host)",
             "GitHub and Stripe webhooks verified with HMAC signatures",
             "SESSION_SECRET / TOKEN_ENCRYPTION_KEY required in production",
           ]}

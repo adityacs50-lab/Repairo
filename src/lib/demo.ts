@@ -1,4 +1,5 @@
-import { loadScenarioFixtures, parseScenarioId, type DemoScenarioId } from "@/lib/demo-scenarios";
+import { parseScenarioId, type DemoScenarioId } from "@/lib/demo-scenarios";
+import { loadScenarioFixtures } from "@/lib/fixtures";
 import { runRepair, type RepairRunResult } from "@/lib/engine";
 
 const cached = new Map<DemoScenarioId, RepairRunResult>();

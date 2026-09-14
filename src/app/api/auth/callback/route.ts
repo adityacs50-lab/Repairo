@@ -14,14 +14,10 @@ export const runtime = "nodejs";
 /**
  * Redirect back to /app using a RELATIVE Location header.
  *
- * Deliberately relative. This route runs on the Railway backend but is reached
- * through the Vercel proxy at the public origin, so an absolute URL built from
- * getAppUrl() lands on whatever APP_URL/RAILWAY_PUBLIC_DOMAIN happens to be —
- * and Railway always sets RAILWAY_PUBLIC_DOMAIN, so a missing or stale APP_URL
- * silently bounced every signed-in user onto the raw *.up.railway.app domain,
- * where the session cookie just set on the public origin does not exist. A
- * relative Location keeps the user on the exact origin they signed in from and
- * needs no environment configuration to be correct.
+ * Deliberately relative so the browser stays on the same origin the user opened
+ * (e.g. www vs apex). An absolute redirect built from APP_URL can bounce users
+ * to a different host and drop the session cookie. Relative Location needs no
+ * env tuning to be correct on Vercel.
  */
 function redirectToApp(query?: URLSearchParams) {
   const search = query?.toString();
@@ -94,7 +90,7 @@ export async function GET(request: NextRequest) {
         "oauth_failed",
         tokenJson.error_description ||
           tokenJson.error ||
-          "Token exchange failed — re-check Client Secret on Railway",
+          "Token exchange failed — re-check GITHUB_CLIENT_SECRET on Vercel",
       );
     }
 

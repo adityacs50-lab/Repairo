@@ -1,125 +1,91 @@
-# Deploy: Vercel (frontend) + Railway (backend)
+# Deploy on Vercel
 
-Repairo’s API uses SQLite + Node native modules, so **the backend must run on Railway**.  
-Vercel serves the UI and proxies `/api/*` to Railway.
+Production runs as a **single Next.js app on Vercel**. Pages (`/`, `/demo`, `/app`) and API routes (`/api/*`) execute in the same deployment — there is **no** separate Railway backend and **no** `/api` proxy.
 
 ```text
-Browser  →  Vercel (pages, /app, /demo)
+Browser  →  Vercel (UI + /api/auth, /api/repair, webhooks, cron, …)
                 │
-                └── /api/*  rewrite  →  Railway (OAuth, repair, PRs, SQLite, webhooks)
+                └── Neon Postgres (DATABASE_URL / POSTGRES_URL)
 ```
+
+Do **not** set `BACKEND_URL` on Vercel unless you are deliberately proxying some routes to another host (legacy). Leaving it unset is correct for heyrepairo.in-style deploys.
 
 ## Order of operations
 
-1. Deploy **Railway** first (get a public URL)
-2. Deploy **Vercel** with `BACKEND_URL` = that Railway URL
-3. Set `APP_URL` on **both** to your **Vercel** URL
-4. Point GitHub OAuth callback at the **Vercel** URL
+1. Create a **Neon** database (or Vercel → Storage → Postgres) and copy the connection string.
+2. Import the repo on **Vercel** → add environment variables below.
+3. Run migrations once (local or CI): `npm run db:migrate` with `DATABASE_URL` set.
+4. Create a **GitHub OAuth App** with callback on your Vercel domain.
+5. Deploy → smoke test `/api/health`, `/demo`, `/app` → **Continue with GitHub**.
 
 ---
 
-## A. Railway (backend)
+## Vercel environment variables
 
-1. Push this repo to GitHub
-2. [Railway](https://railway.app) → **New Project** → **Deploy from GitHub**
-3. Railway will use `Dockerfile` via [`railway.toml`](railway.toml)
-4. **Add a volume** mounted at `/app/data` (SQLite persistence)
-5. Variables:
+**Project → Settings → Environment Variables** (Production, Preview, and Development as needed).
+
+### Required (hosted `/app` + Quick Repair)
 
 | Variable | Value |
 |----------|--------|
-| `APP_URL` | Your Vercel URL later, e.g. `https://repairo.vercel.app` (can update after Vercel deploy) |
-| `GITHUB_CLIENT_ID` | from GitHub OAuth App |
-| `GITHUB_CLIENT_SECRET` | from GitHub OAuth App |
-| `SESSION_SECRET` | 32+ random characters |
-| `TOKEN_ENCRYPTION_KEY` | optional, same strength |
-| `DATABASE_PATH` | `/app/data/repairo.db` |
-| `SARVAM_API_KEY` | optional — powers the "Otto" chat widget (`/api/chat`); without it the widget shows "not configured on the server" |
-| `SARVAM_MODEL` | optional — overrides Otto's model (default `sarvam-105b-conversations`; `sarvam-105b` is a reasoning model and returns empty answers here) |
-| `ANTHROPIC_API_KEY` | optional — only for the CLI's `--agent-resolve` enum-mapping pass; not used by the chat widget |
-| `PORT` | `3000` (Railway usually injects this) |
+| `APP_URL` | Public site URL, no trailing slash — e.g. `https://www.heyrepairo.in` |
+| `DATABASE_URL` | Neon connection string (or use `POSTGRES_URL` from Vercel Postgres) |
+| `GITHUB_CLIENT_ID` | GitHub OAuth App |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App |
+| `SESSION_SECRET` | 32+ random characters (`openssl rand -base64 32`) |
 
-6. Generate a public domain: **Settings → Networking → Generate domain**  
-   Example: `https://repairo-production.up.railway.app`
-7. Check: `https://YOUR-RAILWAY-DOMAIN/api/health` → `{ "ok": true, ... }`
-
-Do **not** set `BACKEND_URL` on Railway.
-
----
-
-## B. Vercel (frontend)
-
-1. [Vercel](https://vercel.com) → **Add New Project** → import the same GitHub repo
-2. Framework: Next.js (auto)
-3. Environment variables:
+Optional but recommended:
 
 | Variable | Value |
 |----------|--------|
-| `BACKEND_URL` | `https://YOUR-RAILWAY-DOMAIN` (no trailing slash) |
-| `APP_URL` | `https://YOUR-VERCEL-DOMAIN` (e.g. `https://repairo.vercel.app`) |
+| `TOKEN_ENCRYPTION_KEY` | 32+ chars — encrypts stored GitHub tokens at rest |
+| `NEXT_PUBLIC_GITHUB_APP_SLUG` | Slug from `https://github.com/apps/<slug>` — Install App CTA |
+| `APP_ID`, `PRIVATE_KEY`, `WEBHOOK_SECRET` | GitHub App — webhooks at `{APP_URL}/api/github/webhooks` |
 
-4. Deploy
-5. Open the Vercel URL — UI loads from Vercel; API calls go to Railway via rewrite
+### Optional
 
-You do **not** need GitHub/Stripe secrets on Vercel if all `/api` traffic is rewritten.
+| Variable | Purpose |
+|----------|---------|
+| `SARVAM_API_KEY` | Otto chat widget (`/api/chat`) |
+| `SARVAM_MODEL`, `SARVAM_BASE_URL`, `SARVAM_REASONING_EFFORT` | Otto tuning |
+| `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PRO`, `STRIPE_WEBHOOK_SECRET` | Pro billing |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Checkout UI |
+| `CRON_SECRET` | Protect `/api/cron/poll-vendors` (Vercel Cron in `vercel.json` also runs daily) |
+| `ANTHROPIC_API_KEY` | Not used by the website — CLI `--agent-resolve` only |
+| `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google waitlist sign-in (if enabled) |
+
+After changing secrets, **redeploy** Vercel so serverless functions pick them up.
 
 ---
 
-## C. GitHub OAuth App
+## GitHub OAuth App
 
-1. https://github.com/settings/developers → **OAuth Apps** → New
+1. https://github.com/settings/developers → **OAuth Apps** → New (or edit existing)
 2. **Homepage URL:** `https://YOUR-VERCEL-DOMAIN`
 3. **Authorization callback URL:** `https://YOUR-VERCEL-DOMAIN/api/auth/callback`
-4. Put Client ID + Secret on **Railway** (not required on Vercel)
-5. Update Railway `APP_URL` to the Vercel URL if you hadn’t yet → **redeploy Railway**
+4. Copy **Client ID** and generate **Client secret** → set on **Vercel** (`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`), not Railway.
+5. Set `APP_URL` on Vercel to the same domain (including `www` if that is canonical).
+6. Redeploy.
+
+If login fails with `redirect_uri_mismatch`, either register the exact callback above on the OAuth App, or set `EXPLICIT_REDIRECT_URI=true` and `GITHUB_CALLBACK_URL` to that same URL.
 
 ---
 
-## C2. Stripe billing (optional but required for Pro)
+## Stripe billing (optional, required for Pro)
 
-1. Create a Stripe account → **Product** “Repairo Pro” → recurring **$29/mo** price  
-2. Copy the **Price ID** (`price_…`) into Railway as `STRIPE_PRICE_PRO`  
-3. Railway vars:
-
-| Variable | Value |
-|----------|--------|
-| `STRIPE_SECRET_KEY` | `sk_live_…` or `sk_test_…` |
-| `STRIPE_PRICE_PRO` | `price_…` |
-| `STRIPE_WEBHOOK_SECRET` | from step 4 |
-
-4. Stripe Dashboard → **Developers → Webhooks → Add endpoint**  
-   - URL: `https://YOUR-VERCEL-DOMAIN/api/webhooks/stripe` (proxied to Railway)  
-   - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`  
-   - Copy signing secret → `STRIPE_WEBHOOK_SECRET`  
-5. Redeploy Railway. Health should show `"stripe": true`.  
-6. Smoke: `/app` → Settings → **Upgrade to Pro** → complete Checkout → plan becomes `pro`.
-
-Plans: **Free** = 1 integration, 15 runs/mo, 3 seats · **Pro** = 50 / 500 / 15.
+1. Stripe → Product “Repairo Pro” → **$29/mo** price → copy `price_…`
+2. On **Vercel**: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PRO`, `STRIPE_WEBHOOK_SECRET`
+3. Webhook endpoint: `https://YOUR-VERCEL-DOMAIN/api/webhooks/stripe`  
+   Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+4. Redeploy → `/api/health` should report `"stripe": true` when configured.
 
 ---
 
-## C3. Vendor OpenAPI polling (cron)
+## Vendor OpenAPI polling (cron)
 
-So agents check remote specs without clicking **Run now**, `/api/cron/poll-vendors` needs
-something to actually call it — nothing does by default.
+`vercel.json` schedules `/api/cron/poll-vendors` daily. Set `CRON_SECRET` on Vercel and ensure the cron route checks it (or use GitHub Actions — see `.github/workflows/vendor-poll-cron.yml` with `CRON_TARGET_URL` = your Vercel URL).
 
-**Option 1 — GitHub Actions (ships in this repo, no extra service):**
-
-1. Set `CRON_SECRET` on Railway (long random string)
-2. On GitHub: **Settings → Secrets and variables → Actions**, add:
-   - `CRON_TARGET_URL` = `https://YOUR-VERCEL-DOMAIN` (no trailing slash)
-   - `CRON_SECRET` = the same value as step 1
-
-[`.github/workflows/vendor-poll-cron.yml`](.github/workflows/vendor-poll-cron.yml) runs hourly
-and calls the endpoint with those secrets. Missing secrets = silent no-op, not a failing run —
-safe to leave enabled on a fork. Trigger it once manually from the Actions tab
-(**Vendor Spec Poll → Run workflow**) to confirm it's wired up.
-
-**Option 2 — in-process poller (no external trigger at all):**
-
-Set `VENDOR_POLL_MS=3600000` on Railway for an hourly in-process poller.
-
-**Option 3 — any other external scheduler** (cron-job.org, Railway cron, etc.):
+Manual trigger:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
@@ -128,23 +94,22 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 
 ---
 
-## D. Smoke test
+## Smoke test
 
-1. `https://YOUR-VERCEL-DOMAIN/api/health` — should proxy Railway and return `ok`
+1. `https://YOUR-VERCEL-DOMAIN/api/health` → `{ "ok": true, ... }`
 2. `/app` → **Continue with GitHub** → authorize
-3. **Try your repo** → run repair → **Open pull request**
-4. Confirm PR on github.com
-
-Fixture demo: `/demo` (also uses `/api/repair` via Railway).
+3. Connect a repo → run repair → **Open pull request**
+4. `/demo` — fixture flow without OAuth
+5. Install **GitHub App** from the site CTA (separate from OAuth)
 
 ---
 
-## E. Custom domain (optional)
+## Custom domain
 
-- Apex/www on **Vercel**
-- Set `APP_URL` to that domain on Railway + Vercel
-- Update GitHub OAuth homepage + callback to the custom domain
-- Redeploy both
+- Add apex/www on **Vercel**
+- Update `APP_URL` to the canonical domain
+- Update GitHub OAuth homepage + callback URLs
+- Redeploy
 
 ---
 
@@ -152,16 +117,21 @@ Fixture demo: `/demo` (also uses `/api/repair` via Railway).
 
 | Issue | Fix |
 |-------|-----|
-| OAuth lands then fails | Callback URL must match Vercel `APP_URL` exactly; Railway `APP_URL` same |
-| `/api/health` 502 on Vercel | `BACKEND_URL` wrong or Railway sleeping/crashed |
-| Cookie / signed-out after login | Same `APP_URL` on Railway; don’t open Railway URL for login — use Vercel |
-| Webhook never fires | Integration webhook URL uses `APP_URL` (Vercel); Vercel must rewrite `/api/webhooks/*` |
-| Data lost on Railway restart | Attach volume at `/app/data` |
-| Stripe checkout works but plan stays free | Webhook URL must hit Vercel `/api/webhooks/stripe`; check `STRIPE_WEBHOOK_SECRET` |
-| Upgrade button missing | Stripe vars not set — health shows `"stripe": false` |
+| “OAuth not configured” on `/app` | Set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SESSION_SECRET` on **Vercel** and redeploy |
+| OAuth lands then fails | Callback URL must match OAuth App registration; `APP_URL` must match the URL users open |
+| DB errors / empty workspace | `DATABASE_URL` missing or migrations not applied (`npm run db:migrate`) |
+| `BACKEND_URL` set | Unset it on Vercel unless you still proxy to another API host |
+| Stripe checkout OK but plan stays free | Webhook URL + `STRIPE_WEBHOOK_SECRET` on Vercel |
+| Otto chat unavailable | `SARVAM_API_KEY` on Vercel (optional product surface) |
 
 ---
 
-## LinkedIn
+## Optional: Docker / Railway (self-host)
 
-Use the Vercel URL in your post. Full copy: [LAUNCH.md](LAUNCH.md).
+`Dockerfile` + `railway.toml` remain for running a **standalone** Node image (e.g. local Docker, `OUTPUT_STANDALONE=1`). That path is **not** the current heyrepairo.in architecture. For the public product, use Vercel + Neon only.
+
+---
+
+## LinkedIn / launch copy
+
+Use your Vercel URL in posts. See [LAUNCH.md](LAUNCH.md) if present.
