@@ -312,7 +312,10 @@ async function main() {
   }
   assert(emptyMessage.includes("finish_reason=length"), "The empty-response error reports finish_reason");
   assert(emptyMessage.includes("reasoning_content=900"), "It reports that the token budget went to reasoning");
-  assert(emptyMessage.includes("SARVAM_REASONING_EFFORT=none"), "It names the setting that fixes a reasoning overrun");
+  assert(
+    emptyMessage.includes("MAX_TOKENS"),
+    "It names the server setting that fixes a reasoning overrun (raise the chat token budget)",
+  );
 
   let nonJsonKind = "";
   try {
@@ -331,27 +334,27 @@ async function main() {
   }
   assert(nonJsonKind === "empty", "An HTML/non-JSON body is reported rather than crashing the JSON parse");
 
-  const noReasoning = stubFetch([{ status: 200, body: okBody("ok") }]);
+  const defaultEffort = stubFetch([{ status: 200, body: okBody("ok") }]);
   await createSarvamCompletion({
     apiKey: "sk_test",
     messages: [{ role: "user", content: "hi" }],
-    fetchImpl: noReasoning.impl,
+    fetchImpl: defaultEffort.impl,
   });
   assert(
-    !("reasoning_effort" in JSON.parse(String(noReasoning.calls[0].init.body))),
-    "reasoning_effort is omitted unless explicitly configured",
+    JSON.parse(String(defaultEffort.calls[0].init.body)).reasoning_effort === "low",
+    "reasoning_effort defaults to low (least thinking the API allows) when unset",
   );
 
-  const withReasoning = stubFetch([{ status: 200, body: okBody("ok") }]);
+  const omitEffort = stubFetch([{ status: 200, body: okBody("ok") }]);
   await createSarvamCompletion({
     apiKey: "sk_test",
     messages: [{ role: "user", content: "hi" }],
     reasoningEffort: "none",
-    fetchImpl: withReasoning.impl,
+    fetchImpl: omitEffort.impl,
   });
   assert(
-    JSON.parse(String(withReasoning.calls[0].init.body)).reasoning_effort === "none",
-    "reasoning_effort is forwarded when set",
+    !("reasoning_effort" in JSON.parse(String(omitEffort.calls[0].init.body))),
+    "reasoning_effort is omitted when explicitly set to none/off (provider default)",
   );
 
   console.log("\n==================================================");
