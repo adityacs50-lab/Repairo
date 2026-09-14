@@ -422,7 +422,7 @@ export function DemoWorkspace({
       <AnimatePresence>
         {phase !== "idle" && (
           <motion.div
-            className="grid gap-px bg-line sm:grid-cols-4"
+            className="demo-metrics-strip"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -435,7 +435,7 @@ export function DemoWorkspace({
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
-                className="bg-bg px-4 py-4"
+                className="demo-metric-card"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
@@ -841,11 +841,11 @@ export function DemoWorkspace({
                         </div>
 
                         {/* Raw JSON scroll box */}
-                        <div className="space-y-2">
+                        <div className="demo-sbom-json-block">
                           <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-dim">
                             CycloneDX JSON Output
                           </p>
-                          <pre className="max-h-[300px] overflow-y-auto whitespace-pre-wrap border border-line bg-bg p-4 font-mono text-xs leading-relaxed text-fg scrollbar-thin">
+                          <pre className="demo-sbom-json">
                             {JSON.stringify(result.sbom, null, 2)}
                           </pre>
                         </div>

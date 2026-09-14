@@ -30,21 +30,25 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
         </Link>
 
         <nav className="main-nav" aria-label="Main navigation">
-          {NAV.map((item) => (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={active === item.key ? "nav-active" : undefined}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAV.map((item) =>
+            active === item.key ? (
+              <span key={item.key} className="nav-current" aria-current="page">
+                {item.label}
+              </span>
+            ) : (
+              <Link key={item.key} href={item.href}>
+                {item.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="header-actions">
-          <Link className="button button-dark button-small" href="/demo">
-            Try demo <span aria-hidden="true" className="arrow-mark">↗</span>
-          </Link>
+          {active !== "demo" ? (
+            <Link className="button button-dark button-small" href="/demo">
+              Try demo <span aria-hidden="true" className="arrow-mark">↗</span>
+            </Link>
+          ) : null}
           <button
             type="button"
             className="header-menu-btn"
@@ -59,19 +63,26 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
 
       {mobileMenuOpen ? (
         <div className="header-mobile-panel">
-          {NAV.map((item) => (
-            <Link
-              key={item.key}
-              href={item.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className={active === item.key ? "nav-active" : undefined}
-            >
-              {item.label}
+          {NAV.map((item) =>
+            active === item.key ? (
+              <span key={item.key} className="nav-current" aria-current="page">
+                {item.label}
+              </span>
+            ) : (
+              <Link
+                key={item.key}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
+          {active !== "demo" ? (
+            <Link href="/demo" onClick={() => setMobileMenuOpen(false)}>
+              Try demo
             </Link>
-          ))}
-          <Link href="/demo" onClick={() => setMobileMenuOpen(false)}>
-            Try demo
-          </Link>
+          ) : null}
         </div>
       ) : null}
     </header>
