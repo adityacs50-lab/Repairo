@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import {
+  collectConsumerFiles,
   diffOpenApi,
   findImpactedCode,
   getReportsDir,
@@ -61,29 +62,7 @@ export function handleDiffCommand(options: DiffOptions = {}): void {
   }
 
   const targetDir = path.resolve(options.target || "./src");
-  let consumerFiles: ConsumerFile[] = [];
-
-  function collectConsumerFiles(dir: string): ConsumerFile[] {
-    const files: ConsumerFile[] = [];
-    if (!fs.existsSync(dir)) return files;
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullP = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (!["node_modules", ".next", ".git", "dist", ".repairo", "__pycache__", ".venv", "venv"].includes(entry.name)) {
-          files.push(...collectConsumerFiles(fullP));
-        }
-      } else if (/\.(ts|tsx|js|jsx|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
-        files.push({
-          path: path.relative(process.cwd(), fullP).replace(/\\/g, "/"),
-          content: fs.readFileSync(fullP, "utf-8"),
-        });
-      }
-    }
-    return files;
-  }
-
-  consumerFiles = collectConsumerFiles(targetDir);
+  const consumerFiles: ConsumerFile[] = collectConsumerFiles(targetDir);
   const impacts = findImpactedCode(changes, consumerFiles);
 
   const breakingChanges = changes.filter((c) => c.severity === "breaking");

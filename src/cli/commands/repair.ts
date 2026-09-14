@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
 import {
-  applyAstTransforms,
-  applyPythonTransforms,
+  collectConsumerFiles,
+  collectPyrightDiagnostics,
   collectTypeDiagnostics,
   createGitHubPR,
   diffOpenApi,
   findImpactedCode,
+  generateFixes,
   getGitStatus,
   getReportsDir,
   getSnapshotsDir,
@@ -107,27 +108,7 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
     return;
   }
 
-  function collectFiles(dir: string): ConsumerFile[] {
-    const res: ConsumerFile[] = [];
-    if (!fs.existsSync(dir)) return res;
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullP = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (!["node_modules", ".next", ".git", "dist", ".repairo", "__pycache__", ".venv", "venv"].includes(entry.name)) {
-          res.push(...collectFiles(fullP));
-        }
-      } else if (/\.(ts|tsx|js|jsx|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
-        res.push({
-          path: path.relative(process.cwd(), fullP).replace(/\\/g, "/"),
-          content: fs.readFileSync(fullP, "utf-8"),
-        });
-      }
-    }
-    return res;
-  }
-
-  const files = collectFiles(targetDir);
+  const files = collectConsumerFiles(targetDir);
   if (files.length === 0) {
     console.log(`No source files found in ${targetDir}\n`);
     return;
@@ -146,20 +127,23 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
     }
   }
 
+  // Same pipeline as the GitHub App and `runRepair`: scope transforms to the files impact
+  // analysis actually flagged, instead of running every transform against every file.
+  const impacts = findImpactedCode(changes, files);
+  const { fixes, updatedFiles } = generateFixes(changes, files, impacts, agentResolutions);
+
   const modifiedFiles: Array<{ file: ConsumerFile; updatedContent: string; diffText: string; agentFixes: number }> = [];
+  const updatedByPath = new Map(updatedFiles.map((f) => [f.path, f]));
 
   for (const f of files) {
-    const transformResult = /\.py$/i.test(f.path)
-      ? applyPythonTransforms(f.content, changes, f.path, [])
-      : applyAstTransforms(f.content, changes, f.path, [], agentResolutions);
-    if (transformResult.content !== f.content) {
-      modifiedFiles.push({
-        file: f,
-        updatedContent: transformResult.content,
-        diffText: makeConsoleDiff(f.content, transformResult.content, f.path),
-        agentFixes: transformResult.fixes.filter((fix) => fix.origin === "agent-proposed").length,
-      });
-    }
+    const updated = updatedByPath.get(f.path);
+    if (!updated || updated.content === f.content) continue;
+    modifiedFiles.push({
+      file: f,
+      updatedContent: updated.content,
+      diffText: makeConsoleDiff(f.content, updated.content, f.path),
+      agentFixes: fixes.filter((fix) => fix.file === f.path && fix.origin === "agent-proposed").length,
+    });
   }
 
   if (modifiedFiles.length === 0) {
@@ -183,11 +167,15 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
   console.log("REPAIRO VALIDATION");
   console.log("──────────────────────────────");
 
-  // Baseline BEFORE writing repairs: pre-existing type errors are the
-  // user's, not ours — validation only fails on errors the repair adds.
+  // Baselines BEFORE writing repairs: pre-existing errors are the user's, not ours —
+  // validation only fails on errors the repair itself introduces.
   const baseline = collectTypeDiagnostics(targetDir);
   if (baseline.length > 0) {
-    console.log(`Pre-existing type errors: ${baseline.length} (ignored — validating new errors only)`);
+    console.log(`Pre-existing TS/JS type errors: ${baseline.length} (ignored — validating new errors only)`);
+  }
+  const pythonBaseline = collectPyrightDiagnostics(targetDir);
+  if (pythonBaseline.ran && pythonBaseline.diagnostics.length > 0) {
+    console.log(`Pre-existing Pyright errors: ${pythonBaseline.diagnostics.length} (ignored — validating new errors only)`);
   }
 
   const backupMap = new Map<string, string>();
@@ -197,10 +185,21 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
       fs.writeFileSync(path.resolve(mod.file.path), mod.updatedContent, "utf-8");
     }
 
-    const validation = validateCodebase(targetDir, { runTests: true, baseline });
+    const validation = validateCodebase(targetDir, {
+      runTests: true,
+      baseline,
+      pythonBaseline: pythonBaseline.diagnostics,
+    });
 
-    console.log(`AST transformation      PASS`);
-    console.log(`TypeScript compilation  ${validation.typecheckPassed ? "PASS" : "FAIL"}`);
+    console.log(`AST transformation       PASS`);
+    console.log(`Typecheck (TS/JS)        ${validation.tsJsPassed ? "PASS" : "FAIL"}`);
+    if (validation.pythonFileCount > 0) {
+      const label = validation.pyrightRan ? "Python (syntax + Pyright)" : "Python (syntax only)";
+      console.log(`${label.padEnd(24, " ")} ${validation.pythonPassed ? "PASS" : "FAIL"}`);
+    }
+    if (validation.goFileCount > 0) {
+      console.log(`Go (syntax)              ${validation.goPassed ? "PASS" : "FAIL"}`);
+    }
     if (validation.testsPassed !== null) {
       console.log(`Tests                    ${validation.testsPassed ? "PASS" : "FAIL"}`);
     } else {

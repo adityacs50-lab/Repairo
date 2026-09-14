@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { Node, Project, SyntaxKind, CallExpression } from "ts-morph";
 import type { ApiChange, ConsumerFile, ImpactMatch } from "./types";
+import { CONSUMER_IGNORE_DIRS } from "./consumer-files";
 
 export interface VendorUsage {
   vendor: string;
@@ -118,19 +119,17 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
     compilerOptions: { allowJs: true },
   });
 
-  const ignoreDirs = new Set(["node_modules", ".next", ".git", "dist", "build", ".repairo", "__pycache__", ".venv", "venv"]);
-
   function collectFiles(dir: string): string[] {
     const results: string[] = [];
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!ignoreDirs.has(entry.name)) {
+        if (!CONSUMER_IGNORE_DIRS.has(entry.name)) {
           results.push(...collectFiles(fullPath));
         }
       } else if (
-        (/\.(ts|tsx|js|jsx|mjs|cjs|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts"))
+        (/\.(ts|tsx|js|jsx|mts|cts|mjs|cjs|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts"))
       ) {
         results.push(fullPath);
       }

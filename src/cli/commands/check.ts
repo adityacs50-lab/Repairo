@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import {
+  collectConsumerFiles,
   diffOpenApi,
   fetchSpecText,
   findImpactedCode,
@@ -35,25 +36,6 @@ interface VendorCheckResult {
   error?: string;
 }
 
-function collectConsumerFiles(dir: string): ConsumerFile[] {
-  const res: ConsumerFile[] = [];
-  if (!fs.existsSync(dir)) return res;
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullP = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (!["node_modules", ".next", ".git", "dist", ".repairo", "__pycache__", ".venv", "venv"].includes(entry.name)) {
-        res.push(...collectConsumerFiles(fullP));
-      }
-    } else if (/\.(ts|tsx|js|jsx|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
-      res.push({
-        path: path.relative(process.cwd(), fullP).replace(/\\/g, "/"),
-        content: fs.readFileSync(fullP, "utf-8"),
-      });
-    }
-  }
-  return res;
-}
 
 export async function handleCheckCommand(options: CheckOptions = {}): Promise<void> {
   const log = (msg = "") => {

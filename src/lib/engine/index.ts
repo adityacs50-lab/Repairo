@@ -211,8 +211,17 @@ export { applyPythonTransforms, findPythonImpacts } from "./python-transformer";
 export { applyGoTransforms, findGoImpacts } from "./go-transformer";
 export { PY_LIKE, tokenizePython, validatePythonSyntax } from "./python-syntax";
 export { GO_LIKE, tokenizeGo, validateGoSyntax } from "./go-syntax";
+export { CONSUMER_FILE_RE, CONSUMER_IGNORE_DIRS, collectConsumerFiles } from "./consumer-files";
 export { normalizeMaxAgentResolutions, proposeEnumMapping, resolveAmbiguousEnums, validateProposal } from "./agent-resolve";
-export { validateCodebase, validateInMemory, collectTypeDiagnostics, type TypeDiagnostic } from "./validation";
+export {
+  validateCodebase,
+  validateInMemory,
+  collectTypeDiagnostics,
+  collectPyrightDiagnostics,
+  type TypeDiagnostic,
+  type PyrightDiagnostic,
+  type ValidationResult,
+} from "./validation";
 export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";
 export { getGitStatus, createGitHubPR } from "./github";
 export { VENDOR_CATALOG, getVendor, listVendors, type VendorCatalogEntry } from "./catalog";
