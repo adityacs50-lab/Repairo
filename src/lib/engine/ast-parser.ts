@@ -118,7 +118,7 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
     compilerOptions: { allowJs: true },
   });
 
-  const ignoreDirs = new Set(["node_modules", ".next", ".git", "dist", "build", ".repairo"]);
+  const ignoreDirs = new Set(["node_modules", ".next", ".git", "dist", "build", ".repairo", "__pycache__", ".venv", "venv"]);
 
   function collectFiles(dir: string): string[] {
     const results: string[] = [];
@@ -129,7 +129,9 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
         if (!ignoreDirs.has(entry.name)) {
           results.push(...collectFiles(fullPath));
         }
-      } else if (/\.(ts|tsx|js|jsx|mjs|cjs)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
+      } else if (
+        (/\.(ts|tsx|js|jsx|mjs|cjs|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts"))
+      ) {
         results.push(fullPath);
       }
     }
@@ -137,7 +139,9 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
   }
 
   const filePaths = collectFiles(absPath);
-  for (const file of filePaths) {
+  const tsLikePaths = filePaths.filter((file) => !/\.py$/i.test(file));
+  const pyPaths = filePaths.filter((file) => /\.py$/i.test(file));
+  for (const file of tsLikePaths) {
     project.addSourceFileAtPath(file);
   }
 
@@ -256,6 +260,27 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
           snippet: call.getText().split("\n")[0].substring(0, 80),
         });
       }
+    }
+  }
+
+  for (const file of pyPaths) {
+    const relPath = path.relative(absPath, file).replace(/\\/g, "/");
+    const content = fs.readFileSync(file, "utf-8");
+    const importRe = /(?:^|\n)\s*(?:from|import)\s+([A-Za-z0-9_]+)/g;
+    let match: RegExpExecArray | null;
+    while ((match = importRe.exec(content)) !== null) {
+      const vendorName = vendorNameForPackage(match[1]);
+      if (!vendorName) continue;
+      if (!vendorsDetected[vendorName]) vendorsDetected[vendorName] = new Set();
+      vendorsDetected[vendorName].add(relPath);
+      totalCallSites += 1;
+      callSiteDetails.push({
+        file: relPath,
+        line: content.slice(0, match.index).split("\n").length,
+        column: 1,
+        vendor: vendorName,
+        snippet: match[0].trim().slice(0, 80),
+      });
     }
   }
 

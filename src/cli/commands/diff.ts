@@ -70,10 +70,10 @@ export function handleDiffCommand(options: DiffOptions = {}): void {
     for (const entry of entries) {
       const fullP = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!["node_modules", ".next", ".git", "dist", ".repairo"].includes(entry.name)) {
+        if (!["node_modules", ".next", ".git", "dist", ".repairo", "__pycache__", ".venv", "venv"].includes(entry.name)) {
           files.push(...collectConsumerFiles(fullP));
         }
-      } else if (/\.(ts|tsx|js|jsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
+      } else if (/\.(ts|tsx|js|jsx|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
         files.push({
           path: path.relative(process.cwd(), fullP).replace(/\\/g, "/"),
           content: fs.readFileSync(fullP, "utf-8"),

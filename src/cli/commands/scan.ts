@@ -20,7 +20,7 @@ export function handleScanCommand(targetPath?: string, options: ScanOptions = {}
     console.log(`\nRepository:`);
     console.log(`  ${result.repositoryPath}\n`);
 
-    console.log(`✓ Parsed ${result.filesScanned} TypeScript files`);
+    console.log(`✓ Parsed ${result.filesScanned} source files`);
     const vendorCount = Object.keys(result.vendorsDetected).length;
     console.log(`✓ Found ${vendorCount} API dependencies`);
     console.log(`✓ Found ${result.totalCallSites} API call sites\n`);

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Detect third-party API breaking changes · map TypeScript impact · open a compiler-verified AST repair PR
+  Detect third-party API breaking changes · map TypeScript and Python impact · open a verified repair PR
 </p>
 
 <p align="center">
@@ -71,9 +71,9 @@ Requires **Node ≥ 22**.
 ## Features
 
 - **OpenAPI diff** — structural before → after on live vendor specs (or your own pins)
-- **AST impact map** — `ts-morph` finds the real call sites, not string matches
-- **Deterministic transforms** — renames, required fields, URL bumps, enum updates on the syntax tree
-- **Compiler gate** — patch must typecheck before it’s proposed
+- **AST impact map** — `ts-morph` for TypeScript/JavaScript; Python tokenizer that skips comments
+- **Deterministic transforms** — renames, required fields, URL bumps, enum updates (TS AST + Python)
+- **Compiler gate** — TypeScript must typecheck; Python must still parse before a patch is proposed
 - **Human review** — PRs never auto-merge when any fix was AI-assisted
 - **CI check** — fail the job when a watched vendor contract drifts
 - **Vendor agents** — Stripe, OpenAI, Anthropic, Supabase, Gemini, GitHub REST ([marketplace](https://www.heyrepairo.in/agents))

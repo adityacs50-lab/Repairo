@@ -109,7 +109,7 @@ export async function getFileContent(
   } catch (error) {
     if (error instanceof GitHubError && error.status === 404) {
       throw new GitHubError(
-        `File not found: ${path}${ref ? ` @ ${ref}` : ""} — this repo needs an OpenAPI file and TypeScript consumers`,
+        `File not found: ${path}${ref ? ` @ ${ref}` : ""} — this repo needs an OpenAPI file and TypeScript or Python consumers`,
         404,
       );
     }

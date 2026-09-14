@@ -20,9 +20,9 @@ import type { GitHubClient } from "./octokit";
 // ---------------------------------------------------------------------------
 
 /** Code file extensions the AST-repair engine can actually patch. */
-const CODE_LIKE = /\.(ts|tsx|js|jsx|mts|cts|mjs|cjs)$/i;
+const CODE_LIKE = /\.(ts|tsx|js|jsx|mts|cts|mjs|cjs|py)$/i;
 /** Directories never worth scanning for hand-written consumer code. */
-const EXCLUDED_DIR = /(^|\/)(node_modules|dist|build|out|\.next|\.git|vendor|coverage)(\/|$)/i;
+const EXCLUDED_DIR = /(^|\/)(node_modules|dist|build|out|\.next|\.git|vendor|coverage|__pycache__|\.venv|venv|site-packages)(\/|$)/i;
 /** Hard cap on how many files get fetched and AST-scanned per PR, to bound API calls and time. */
 const MAX_SCAN_FILES = 250;
 
@@ -362,8 +362,8 @@ async function attemptAutoFix(
       "### Files patched",
       fileList,
       "",
-      "Every change here is a deterministic AST transform, verified against an in-memory " +
-        "TypeScript compile before this PR was opened — no AI was involved in generating " +
+      "Every change here is a deterministic transform, verified before this PR was opened " +
+        "(TypeScript compile and/or Python syntax check) — no AI was involved in generating " +
         `these fixes. Merge this branch into #${pr.number} (or apply the diff directly) before that PR merges.`,
     ].join("\n"),
   });

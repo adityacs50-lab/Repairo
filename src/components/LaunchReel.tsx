@@ -36,7 +36,7 @@ const scenes: Scene[] = [
     duration: 6500,
     eyebrow: "the product",
     title: "Detect. Impact. Apply.",
-    subtitle: "Diff OpenAPI → map TypeScript consumers → open a safe GitHub PR.",
+    subtitle: "Diff OpenAPI → map TypeScript and Python consumers → open a safe GitHub PR.",
     visual: "pipeline",
   },
   {

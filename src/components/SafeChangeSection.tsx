@@ -33,7 +33,7 @@ export function SafeChangeSection() {
                 <div className="space-y-1.5 text-[11px] text-slate-300">
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
-                    <span>[AST] 24 node mutations checked against TypeScript compiler</span>
+                    <span>[AST] TypeScript compile + Python syntax gate</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>

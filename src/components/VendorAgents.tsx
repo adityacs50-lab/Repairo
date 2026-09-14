@@ -100,7 +100,7 @@ export function VendorAgents({
         );
       } else {
         setDiscoveredNote(
-          "No *client* / sdk-like TypeScript files found. Enter consumer paths manually.",
+          "No *client* / sdk-like TypeScript or Python files found. Enter consumer paths manually.",
         );
       }
     } catch (err) {

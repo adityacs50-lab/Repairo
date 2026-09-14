@@ -17,7 +17,7 @@ const docsNav = [
     title: "CORE CONCEPTS",
     items: [
       { href: "#diffing-engine", label: "OpenAPI Diffing Engine" },
-      { href: "#impact-mapping", label: "TypeScript Impact Mapping" },
+      { href: "#impact-mapping", label: "Impact Mapping" },
       { href: "#ast-transforms", label: "Deterministic AST Transforms" },
     ],
   },
@@ -84,7 +84,7 @@ export default function DocsPage() {
     >
       <Section title="Overview & Architecture" id="overview">
         <p>
-          Instead of manually tracking down API changes, Repairo provides a seamless pipeline from an upstream OpenAPI spec directly into your TypeScript codebase.
+          Instead of manually tracking down API changes, Repairo provides a seamless pipeline from an upstream OpenAPI spec directly into TypeScript, JavaScript, and Python consumers.
         </p>
       </Section>
 
@@ -138,18 +138,21 @@ repairo repair --apply`} />
         </p>
       </Section>
 
-      <Section title="TypeScript Impact Mapping" id="impact-mapping">
+      <Section title="Impact Mapping" id="impact-mapping">
         <p>
-          For each classified change, Repairo traces TypeScript call sites,
-          types, and status checks in the consumer files you list. Output is a
+          For each classified change, Repairo traces call sites in TypeScript/JavaScript
+          (ts-morph) and Python (tokenizer that skips comments). Output is a
           blast-radius summary: which files and symbols are likely affected.
         </p>
       </Section>
 
       <Section title="Deterministic AST Transforms" id="ast-transforms">
         <p>
-          Patches are rule-based, not free-form LLM rewrites. Supported safe
-          transforms include URL path bumps, required field additions where a default is unambiguous, enum rename updates in string literals, and parameter property renames.
+          Patches are rule-based, not free-form LLM rewrites. TypeScript/JavaScript use ts-morph AST
+          transforms; Python uses a tokenizer that skips comments and string literals. Supported safe
+          transforms include URL path bumps, required field additions where a default is unambiguous,
+          enum rename updates in string literals, and parameter property renames. Go consumers only
+          receive URL-constant updates today.
         </p>
       </Section>
 
@@ -202,6 +205,7 @@ repairo repair --apply`} />
             "Google Gemini",
             "GitHub REST",
             "Custom OpenAPI 3.x / 2.0 schemas",
+            "Languages: TypeScript, JavaScript, Python (Go is URL-only)",
             "Upcoming: Clerk, private / team-pinned specs",
           ]}
         />

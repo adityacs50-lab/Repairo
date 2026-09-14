@@ -76,7 +76,7 @@ export function QuickRepair({ repos, onDone }: Props) {
         setConsumerPaths(data.suggested.consumerPaths.join("\n"));
       } else {
         throw new Error(
-          "No OpenAPI or client-like TypeScript files found. Enter paths manually.",
+          "No OpenAPI or client-like TypeScript/Python files found. Enter paths manually.",
         );
       }
     } catch (err) {
@@ -290,7 +290,7 @@ export function QuickRepair({ repos, onDone }: Props) {
 
           <label className="block space-y-1 text-sm">
             <span className="font-mono text-[11px] uppercase text-muted-dim">
-              Consumer TypeScript paths
+              Consumer TypeScript / Python paths
             </span>
             <textarea
               value={consumerPaths}

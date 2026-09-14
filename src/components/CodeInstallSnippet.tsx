@@ -13,7 +13,7 @@ npx repairo-cli init --repo owner/your-app
 # 3. Detect API drift & map code impact from an OpenAPI spec
 npx repairo-cli diff --spec ./specs/new-openapi.json
 
-# 4. Preview AST repairs with real TypeScript compilation checks
+# 4. Preview repairs (TypeScript typecheck + Python syntax)
 npx repairo-cli repair --dry-run
 
 # 5. Apply validated AST repairs to your local working tree

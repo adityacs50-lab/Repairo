@@ -2,6 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { Project, ts } from "ts-morph";
+import { PY_LIKE, validatePythonSyntax } from "./python-syntax";
 
 export interface TypeDiagnostic {
   file: string;
@@ -139,6 +140,30 @@ export function validateCodebase(
     errors.push("Typecheck execution error.");
   }
 
+  function collectPyFiles(dir: string): string[] {
+    const out: string[] = [];
+    if (!fs.existsSync(dir)) return out;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (["node_modules", ".next", ".git", "dist", ".repairo", "__pycache__", ".venv", "venv"].includes(entry.name)) {
+          continue;
+        }
+        out.push(...collectPyFiles(full));
+      } else if (PY_LIKE.test(entry.name)) {
+        out.push(full);
+      }
+    }
+    return out;
+  }
+  for (const pyFile of collectPyFiles(targetDir)) {
+    const syntax = validatePythonSyntax(fs.readFileSync(pyFile, "utf-8"));
+    if (!syntax.ok) {
+      typecheckPassed = false;
+      errors.push(`${pyFile}: ${syntax.error ?? "invalid Python syntax"}`);
+    }
+  }
+
   // 2. Run tests if package.json has a test script and runTests is enabled
   if (options.runTests) {
     const pkgPath = path.join(rootDir, "package.json");
@@ -190,13 +215,24 @@ export function validateCodebase(
 export function validateInMemory(
   files: { path: string; content: string }[],
 ): { passed: boolean; errors: string[] } {
+  const pyErrors: string[] = [];
+  for (const file of files) {
+    if (!PY_LIKE.test(file.path)) continue;
+    const syntax = validatePythonSyntax(file.content);
+    if (!syntax.ok) {
+      pyErrors.push(`${file.path}: ${syntax.error ?? "invalid Python syntax"}`);
+    }
+  }
+
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: 2, skipLibCheck: true, strict: false, noEmit: true },
   });
 
+  let hasTs = false;
   for (const file of files) {
     if (!/\.(ts|tsx)$/i.test(file.path)) continue;
+    hasTs = true;
     try {
       project.createSourceFile(file.path, file.content);
     } catch {
@@ -204,13 +240,19 @@ export function validateInMemory(
     }
   }
 
-  try {
-    const diagnostics = project.getPreEmitDiagnostics();
-    const errors = diagnostics
-      .slice(0, 20)
-      .map((d) => `${d.getSourceFile()?.getFilePath() ?? "?"}:${d.getLineNumber() ?? "?"}: ${d.getMessageText()}`);
-    return { passed: errors.length === 0, errors };
-  } catch (e: any) {
-    return { passed: false, errors: [e.message || String(e)] };
+  const errors: string[] = [...pyErrors];
+  if (hasTs) {
+    try {
+      const diagnostics = project.getPreEmitDiagnostics();
+      errors.push(
+        ...diagnostics
+          .slice(0, 20)
+          .map((d) => `${d.getSourceFile()?.getFilePath() ?? "?"}:${d.getLineNumber() ?? "?"}: ${d.getMessageText()}`),
+      );
+    } catch (e: any) {
+      errors.push(e.message || String(e));
+    }
   }
+
+  return { passed: errors.length === 0, errors };
 }

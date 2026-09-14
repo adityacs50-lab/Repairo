@@ -207,6 +207,8 @@ export { findImpactedCode } from "./impact";
 export { buildPullRequest, generateFixes } from "./repair";
 export { scanDirectory, scanCodebase } from "./ast-parser";
 export { applyAstTransforms, groupEnumChanges, type AgentEnumResolution } from "./ast-transformer";
+export { applyPythonTransforms, findPythonImpacts } from "./python-transformer";
+export { PY_LIKE, tokenizePython, validatePythonSyntax } from "./python-syntax";
 export { normalizeMaxAgentResolutions, proposeEnumMapping, resolveAmbiguousEnums, validateProposal } from "./agent-resolve";
 export { validateCodebase, validateInMemory, collectTypeDiagnostics, type TypeDiagnostic } from "./validation";
 export { initRepairoConfig, loadRepairoConfig, getSnapshotsDir, getReportsDir } from "./config";

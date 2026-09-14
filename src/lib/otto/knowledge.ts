@@ -58,7 +58,7 @@ export const KNOWLEDGE: KnowledgeSection[] = [
     keywords: ["what", "repairo", "product", "overview", "about", "do", "explain"],
     content: `${SITE_NAME} — ${SITE_TAGLINE}.
 
-Canonical definition (reuse this wording): Repairo is an automated API maintenance tool for TypeScript/JavaScript codebases. It detects breaking changes in third-party vendor OpenAPI specs, maps the impact to concrete call sites in the codebase, and generates compiler-validated AST repairs delivered as a reviewable diff or a GitHub pull request.
+Canonical definition (reuse this wording): Repairo is an automated API maintenance tool for TypeScript, JavaScript, and Python codebases. It detects breaking changes in third-party vendor OpenAPI specs, maps the impact to concrete call sites in the codebase, and generates compiler-validated AST repairs delivered as a reviewable diff or a GitHub pull request.
 
 One-line positioning: "Dependabot updates your package.json. Repairo fixes the code that breaks when it does."
 
@@ -96,9 +96,9 @@ The problem it solves: when a vendor ships a breaking change (renamed field, rem
     ],
     content: `Pipeline, in order:
 1. diffOpenApi() — structural diff of the vendor's OpenAPI spec (before -> after). Classifies every change as breaking, non-breaking, or additive: path/method moves, removed endpoints, removed or renamed parameters, newly required fields, enum renames, base URL / version bumps, status-code shifts.
-2. findImpactedCode() — a ts-morph AST scan of the repository that maps each change to the concrete call sites, types, and status checks affected. Output is a blast-radius summary: which files and symbols are hit.
-3. applyAstTransforms() — deterministic AST mutation on the real syntax tree (rename a parameter property, bump a URL path, insert a newly required field where the default is unambiguous, update an enum rename in string literals). This is not regex find-and-replace: an unrelated object literal with a field of the same name is left untouched.
-4. validateInMemory() / tsc — the patch must actually compile (\`tsc --noEmit\`) before it is ever shown. A patch that does not compile is blocked, never committed.
+2. findImpactedCode() — maps each change to concrete call sites. TypeScript/JavaScript uses ts-morph; Python uses a tokenizer that skips comments. Output is a blast-radius summary: which files and symbols are hit.
+3. applyAstTransforms() / applyPythonTransforms() — deterministic mutation (rename a parameter property, bump a URL path, insert a newly required field where the default is unambiguous, update an enum rename in string literals). This is not file-wide regex: comments and unrelated literals are left untouched.
+4. validateInMemory() — TypeScript patches must compile (\`tsc --noEmit\`); Python patches must still tokenize as balanced syntax. A patch that fails is blocked, never committed.
 5. Pull request — labeled and scored. Never auto-merged when AI-assisted.
 
 Ingests OpenAPI 3.0 / 3.1 (and 2.0 schemas). Every step through the compile check is deterministic — no model in the loop.`,
@@ -189,7 +189,7 @@ The first run saves a baseline snapshot — commit it. Every run after that fail
 
 What it does: when a pull request touches an OpenAPI spec — \`openapi.{yaml,yml,json}\`, \`swagger.{yaml,yml,json}\`, or any YAML under an \`api/spec/\` directory — it diffs base vs head and, if the change is breaking, posts a "⚠️ Breaking API Changes Detected" comment with a rule / endpoint / details table and an action checklist. A later push to the same PR updates that comment instead of adding another. Installations and detected breaking changes are stored in SQLite (\`installations\`, \`breaking_change_events\`).
 
-It then scans the repo at the PR's head SHA for impacted consumer code through the same deterministic engine the CLI uses. When — and only when — every generated fix is deterministic (nothing ambiguous, no AI involved) and passes an in-memory TypeScript compile, it pushes a branch, opens a second PR with the compile-verified patch, and links it from the original comment. PRs from forks are skipped (no write access to push there); anything ambiguous is left for manual review.
+It then scans the repo at the PR's head SHA for impacted consumer code through the same deterministic engine the CLI uses. When — and only when — every generated fix is deterministic (nothing ambiguous, no AI involved) and passes in-memory TypeScript compile and/or Python syntax validation, it pushes a branch, opens a second PR with the verified patch, and links it from the original comment. PRs from forks are skipped (no write access to push there); anything ambiguous is left for manual review.
 
 Setup: create a GitHub App with webhook URL ending in \`/api/github/webhooks\`, a webhook secret, repository permissions Contents: Read and write (read-only is not enough — the fix-PR push fails with 403), Pull requests: Read and write, Metadata: Read-only, and subscribe to the Pull request event. Then set \`APP_ID\`, \`PRIVATE_KEY\` (the .pem contents), and \`WEBHOOK_SECRET\` in \`.env.local\`, and run \`npm run dev:github-app\` (or \`docker compose up --build github-app\`, published on localhost:3001). \`GET /healthz\` returns \`{"ok":true}\`. For local development, forward webhooks with smee.io.
 
@@ -220,7 +220,7 @@ There is also a fixture playground / interactive demo at ${LINKS.demo} that runs
 ${REAL_VENDORS.map((v) => `- ${v.name}: ${v.description} (${SITE_URL}/agents/${v.id})`).join("\n")}
 Plus custom OpenAPI 3.x / 2.0 schemas of your own, and a Petstore sandbox used for demos.
 
-Language support: TypeScript and JavaScript only today. Other languages are on the roadmap — say so plainly rather than implying support.`,
+Language support: TypeScript, JavaScript, and Python for deterministic repairs (URL, 1:1 enum remaps, required fields, explicit field renames). Go still has URL-only fallback. Other languages are on the roadmap — say so plainly rather than implying support.`,
   },
   {
     id: "pricing",
@@ -275,7 +275,7 @@ Billing runs through Stripe, with a self-serve billing portal and invoices on Pr
 | Ambiguous cases | n/a | guessed silently | flagged, or LLM-proposed with mandatory review — never auto-merged |
 | What leaves your machine for an ambiguous case | nothing | full file context | field names, path, candidate values only — never source code |
 
-Framing to use: Dependabot and Renovate bump dependency versions; they do not touch the code that breaks. Copilot/Cursor/Devin generate code probabilistically and can produce a fix that compiles and is still wrong. Repairo applies deterministic AST transforms derived from the OpenAPI diff and rejects any patch that fails TypeScript compilation. Who should use which: keep Dependabot for version bumps, use an agent for open-ended feature work, use Repairo for the specific job of keeping consumer code in sync with a vendor's API contract.`,
+Framing to use: Dependabot and Renovate bump dependency versions; they do not touch the code that breaks. Copilot/Cursor/Devin generate code probabilistically and can produce a fix that compiles and is still wrong. Repairo applies deterministic transforms derived from the OpenAPI diff and rejects any patch that fails TypeScript compilation or Python syntax validation. Who should use which: keep Dependabot for version bumps, use an agent for open-ended feature work, use Repairo for the specific job of keeping consumer code in sync with a vendor's API contract.`,
   },
   {
     id: "troubleshooting",

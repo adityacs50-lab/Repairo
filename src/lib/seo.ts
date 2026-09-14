@@ -9,7 +9,7 @@ export const SITE_NAME = "Repairo";
 export const SITE_TAGLINE = "Dependabot for third-party APIs";
 export const SITE_TITLE = `${SITE_NAME} — ${SITE_TAGLINE}`;
 export const SITE_DESCRIPTION =
-  "Repairo detects breaking changes in third-party APIs (Stripe, OpenAI, Supabase, Anthropic, Gemini, GitHub), maps the impact across your TypeScript codebase, and opens compiler-validated AST repair pull requests automatically.";
+  "Repairo detects breaking changes in third-party APIs (Stripe, OpenAI, Supabase, Anthropic, Gemini, GitHub), maps the impact across TypeScript and Python consumers, and opens verified repair pull requests automatically.";
 
 export const SITE_KEYWORDS = [
   "breaking API changes",
@@ -20,6 +20,7 @@ export const SITE_KEYWORDS = [
   "Dependabot for APIs",
   "SDK migration",
   "TypeScript codemod",
+  "Python API repair",
   "GitHub pull request automation",
   "API maintenance",
 ];
@@ -137,11 +138,12 @@ export function softwareApplicationJsonLd(options?: {
     license: "https://www.apache.org/licenses/LICENSE-2.0",
     downloadUrl: SOCIAL.npm,
     installUrl: SOCIAL.npm,
-    programmingLanguage: ["TypeScript", "JavaScript"],
+    programmingLanguage: ["TypeScript", "JavaScript", "Python"],
     featureList: [
       "OpenAPI 3.0/3.1 spec diffing with breaking-change classification",
       "TypeScript impact mapping with ts-morph",
-      "Deterministic AST repairs validated by the TypeScript compiler",
+      "Python consumer repair (URL, enums, required fields, explicit renames)",
+      "Deterministic repairs gated by tsc or Python syntax validation",
       "Automatic GitHub pull requests",
       "Background polling of vendor API specs",
     ],

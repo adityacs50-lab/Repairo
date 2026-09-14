@@ -77,7 +77,7 @@ export function BookDemoSection() {
           <ul className="space-y-4 mb-8">
             {[
               "Custom OpenAPI diffing analysis on your specific specs.",
-              "Deep dive into TypeScript AST impact mapping.",
+              "Deep dive into TypeScript and Python impact mapping.",
               "Security and SOC2 compliance overview.",
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-3">

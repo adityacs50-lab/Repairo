@@ -84,7 +84,7 @@ export function FeaturePanel() {
                 Impact mapping across the codebase
               </h3>
               <p className="text-xs text-mute leading-relaxed mb-6">
-                Repairo scans your entire codebase to find every affected call site, type definition, and status check. We understand TypeScript at a deep level.
+                Repairo scans your entire codebase to find every affected call site. TypeScript uses ts-morph; Python uses a tokenizer that skips comments.
               </p>
             </div>
 

@@ -63,7 +63,7 @@ const TAB_DATA: Record<TabId, TabContent> = {
     statusType: "review",
     rows: [
       { label: "stripe-node", code: "src/payments/customer.ts", stateText: "12 references", stateType: "neutral" },
-      { label: "customer.source", code: "src/payments/customer.ts", stateText: "breaking", stateType: "review" },
+      { label: "stripe-python", code: "src/shipments_client.py", stateText: "breaking", stateType: "review" },
       { label: "billing.sync", code: "src/jobs/reconcile.ts", stateText: "indirect", stateType: "neutral" },
     ],
     foot: ["confidence / 0.86", "provenance / vendor diff + compiler", "review / required"],
@@ -84,17 +84,17 @@ const TAB_DATA: Record<TabId, TabContent> = {
   },
   verify: {
     eyebrow: "04 / compiler verification",
-    title: "Prove the code compiles before opening the PR.",
+    title: "Prove the repair is safe before opening the PR.",
     description:
-      "Repairo runs type checking and test suites in a clean environment to ensure zero runtime drift.",
+      "TypeScript patches must typecheck. Python patches must still parse. Tests run when the repo has them.",
     statusText: "Passed",
     statusType: "verified",
     rows: [
       { label: "tsc --noEmit", code: "0 type errors", stateText: "passed", stateType: "verified" },
+      { label: "python syntax", code: "balanced tokens", stateText: "passed", stateType: "verified" },
       { label: "vitest run", code: "48 / 48 tests passing", stateText: "passed", stateType: "verified" },
-      { label: "ast-integrity", code: "14 nodes verified", stateText: "passed", stateType: "verified" },
     ],
-    foot: ["confidence / 1.00", "provenance / TypeScript 5.7", "review / ready to ship"],
+    foot: ["confidence / 1.00", "provenance / tsc + Python syntax gate", "review / ready to ship"],
   },
 };
 
@@ -163,7 +163,7 @@ export function HomePage() {
             <p className="eyebrow">AI-ASSISTED API REPAIR / 01</p>
             <h1>When the API changes, know exactly what to repair.</h1>
             <p className="hero-lede">
-              Repairo detects breaking third-party API changes, traces their impact into application code, and proposes a compiler-verified repair.
+              Repairo detects breaking third-party API changes, traces their impact into TypeScript and Python application code, and proposes a verified repair.
             </p>
             <div className="hero-actions">
               <a
@@ -189,6 +189,10 @@ export function HomePage() {
                     className="hero-trust"
                     aria-hidden={copy > 0 ? true : undefined}
                   >
+                    Languages: TypeScript · JavaScript · Python
+                    <span className="hero-trust-sep" aria-hidden="true">
+                      /
+                    </span>
                     Available: Stripe · OpenAI · Anthropic · Supabase · Gemini · GitHub
                     <span className="hero-trust-sep" aria-hidden="true">
                       /
@@ -219,20 +223,20 @@ export function HomePage() {
           >
             <div className="hero-product-bar">
               <span>repairo · scan</span>
-              <span>tsc --noEmit · pass</span>
+              <span>ts + python · pass</span>
             </div>
             <pre className="hero-product-body" aria-label="Example Repairo CLI output">
               <code>{`$ npx repairo-cli scan ./src --vendors stripe,openai
-watching 2 vendors · OpenAPI diff · AST impact
+watching 2 vendors · OpenAPI diff · TS + Python impact
 
 stripe   breaking  high   src/payments/customer.ts:42
   customer.source → removed in 2024-06-20
-openai   rename    med    src/ai/embeddings.ts:18
-  createEmbedding → embeddings.create
+stripe   breaking  high   src/shipments_client.py:9
+  status "queued" → "pending"
 
-2 call sites · compiler-verified repair ready
+2 call sites · verified repair ready
 $ npx repairo-cli repair --open-pr
-opened PR #184  fix(stripe): migrate customer.source`}</code>
+opened PR #184  fix(stripe): migrate consumer call sites`}</code>
             </pre>
             <div className="asset-caption">
               <span>PRODUCT / CLI</span>
@@ -376,7 +380,7 @@ opened PR #184  fix(stripe): migrate customer.source`}</code>
           <p className="eyebrow">A CONCRETE WORKFLOW IMPROVEMENT</p>
           <h2>Stop finding vendor breakage only after it reaches CI.</h2>
           <p>
-            Repairo turns a brittle integration update into a traceable path: detect the API diff, locate the affected code, generate a repair, then verify what the compiler can prove.
+            Repairo turns a brittle integration update into a traceable path: detect the API diff, locate the affected TypeScript or Python, generate a repair, then verify before the PR opens.
           </p>
           <div className="proof-stat">
             <span className="stat-number">01</span>

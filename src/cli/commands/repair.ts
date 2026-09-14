@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import {
   applyAstTransforms,
+  applyPythonTransforms,
   collectTypeDiagnostics,
   createGitHubPR,
   diffOpenApi,
@@ -113,10 +114,10 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
     for (const entry of entries) {
       const fullP = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!["node_modules", ".next", ".git", "dist", ".repairo"].includes(entry.name)) {
+        if (!["node_modules", ".next", ".git", "dist", ".repairo", "__pycache__", ".venv", "venv"].includes(entry.name)) {
           res.push(...collectFiles(fullP));
         }
-      } else if (/\.(ts|tsx|js|jsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
+      } else if (/\.(ts|tsx|js|jsx|py)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
         res.push({
           path: path.relative(process.cwd(), fullP).replace(/\\/g, "/"),
           content: fs.readFileSync(fullP, "utf-8"),
@@ -148,7 +149,9 @@ export async function handleRepairCommand(options: RepairOptions = {}): Promise<
   const modifiedFiles: Array<{ file: ConsumerFile; updatedContent: string; diffText: string; agentFixes: number }> = [];
 
   for (const f of files) {
-    const transformResult = applyAstTransforms(f.content, changes, f.path, [], agentResolutions);
+    const transformResult = /\.py$/i.test(f.path)
+      ? applyPythonTransforms(f.content, changes, f.path, [])
+      : applyAstTransforms(f.content, changes, f.path, [], agentResolutions);
     if (transformResult.content !== f.content) {
       modifiedFiles.push({
         file: f,

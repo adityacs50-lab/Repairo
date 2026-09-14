@@ -10,6 +10,15 @@ export const metadata = pageMetadata({
 
 const entries = [
   {
+    date: "2026-09-14",
+    title: "First-class Python consumer repair",
+    items: [
+      "GitHub App and CLI scan .py consumers (skip venv / __pycache__)",
+      "Deterministic Python repairs: URL literals, 1:1 enums, required dict keys/kwargs, explicit field renames",
+      "camelCase and snake_case field names; Python syntax gate before auto-fix PRs",
+    ],
+  },
+  {
     date: "2026-07-26",
     title: "Vendor poll cron + multi-language patches + agent marketplace",
     items: [

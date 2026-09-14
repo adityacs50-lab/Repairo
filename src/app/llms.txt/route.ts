@@ -18,11 +18,11 @@ export function GET() {
 
 ## What Repairo does
 
-Repairo is an automated API maintenance tool for TypeScript/JavaScript codebases. It:
+Repairo is an automated API maintenance tool for TypeScript, JavaScript, and Python codebases. It:
 
 1. Ingests OpenAPI 3.0/3.1 specifications from third-party vendors and diffs them structurally, classifying each change as breaking, non-breaking, or additive.
-2. Maps every breaking change to the concrete call sites in your repository using ts-morph and the TypeScript compiler API.
-3. Generates deterministic AST repairs (for example renaming a removed request parameter) and validates them with \`tsc\` — a patch that does not compile is blocked, never committed.
+2. Maps every breaking change to concrete call sites — ts-morph for TypeScript/JavaScript, a comment-aware tokenizer for Python.
+3. Generates deterministic repairs (for example renaming a removed request parameter). TypeScript patches must typecheck; Python patches must still parse. A patch that fails is blocked, never committed.
 4. Delivers the result as a reviewable unified diff or an automatically opened GitHub pull request.
 
 ## How to use it
@@ -71,10 +71,10 @@ ${BLOG_POSTS.map((p) => `- ${p.title} (${p.datePublished}): ${absoluteUrl(`/blog
 ## Frequently asked
 
 - What is Repairo? An automated tool that detects breaking changes in third-party APIs and generates compiler-validated AST repairs as GitHub pull requests — "Dependabot for third-party APIs".
-- Which languages are supported? TypeScript and JavaScript today; other languages are on the roadmap.
+- Which languages are supported? TypeScript, JavaScript, and Python for deterministic repairs; Go has URL-only fallback. Other languages are on the roadmap.
 - Does Repairo store my code? Code is processed in memory for the duration of a run and is not persisted; only the resulting patch or PR is written to GitHub.
 - How is this different from Dependabot or Renovate? Those bump dependency versions. Repairo changes your application code to match a vendor's new API contract, and proves the change compiles before proposing it.
-- How is this different from Copilot, Cursor, or Devin? Those generate code probabilistically. Repairo applies deterministic AST transforms derived from the OpenAPI diff and rejects any patch that fails TypeScript compilation.
+- How is this different from Copilot, Cursor, or Devin? Those generate code probabilistically. Repairo applies deterministic transforms derived from the OpenAPI diff and rejects any patch that fails TypeScript compilation or Python syntax validation.
 `;
 
   return new Response(body, {

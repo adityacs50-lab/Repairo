@@ -13,7 +13,7 @@ export const metadata = pageMetadata({
 const cases = [
   {
     title: "Payment gateways & fintech APIs",
-    body: "When a processor bumps /v1 → /v2 or renames settlement enums, Repairo diffs the published OpenAPI, finds TypeScript checkout clients, and opens a PR with URL and enum updates — before card traffic fails.",
+    body: "When a processor bumps /v1 → /v2 or renames settlement enums, Repairo diffs the published OpenAPI, finds TypeScript and Python checkout clients, and opens a PR with URL and enum updates — before card traffic fails.",
   },
   {
     title: "Breaking changes in microservices",
@@ -50,9 +50,9 @@ export default function UseCasesPage() {
 
       <Section title="Requirements">
         <p>
-          You need an OpenAPI document in git and TypeScript consumers Repairo
-          can read. Python-only or undocumented HTTP APIs are out of scope today
-          — see{" "}
+          You need an OpenAPI document in git and TypeScript or Python consumers
+          Repairo can read. Other languages and undocumented HTTP APIs are out of
+          scope today — see{" "}
           <Link href="/docs" className="text-fg underline">
             Docs
           </Link>

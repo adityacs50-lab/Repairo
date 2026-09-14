@@ -1,4 +1,6 @@
 import { applyAstTransforms, type AgentEnumResolution } from "./ast-transformer";
+import { PY_LIKE } from "./python-syntax";
+import { applyPythonTransforms } from "./python-transformer";
 import type {
   ApiChange,
   ConsumerFile,
@@ -136,6 +138,12 @@ export function generateFixes(
     if (TS_LIKE.test(file.path)) {
       const fileImpacts = impacts.filter((i) => i.file === file.path);
       const result = applyAstTransforms(file.content, changes, file.path, fileImpacts, agentResolutions);
+      const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
+      fixes.push(...fileFixes);
+      updatedFiles.push({ path: file.path, content: result.content });
+    } else if (PY_LIKE.test(file.path)) {
+      const fileImpacts = impacts.filter((i) => i.file === file.path);
+      const result = applyPythonTransforms(file.content, changes, file.path, fileImpacts);
       const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
       fixes.push(...fileFixes);
       updatedFiles.push({ path: file.path, content: result.content });

@@ -5,7 +5,7 @@ import { ContentPage, Section } from "@/components/ContentPage";
 export const metadata = pageMetadata({
   title: "About",
   description:
-    "Repairo is building self-maintaining APIs: automated detection of breaking third-party API changes and compiler-validated AST repairs for TypeScript codebases. Meet the team.",
+    "Repairo is building self-maintaining APIs: automated detection of breaking third-party API changes and verified repairs for TypeScript and Python codebases. Meet the team.",
   path: "/about",
 });
 
@@ -37,7 +37,7 @@ export default function AboutPage() {
       <Section title="What we’re building">
         <p>
           Repairo is a neutral third-party service — Dependabot for APIs. Track
-          OpenAPI before → after, scan TypeScript consumers for affected usages,
+          OpenAPI before → after, scan TypeScript and Python consumers for affected usages,
           and open a PR with the fix. Providers shouldn’t just announce changes;
           with Repairo, those changes get applied as reviewable pull requests.
         </p>

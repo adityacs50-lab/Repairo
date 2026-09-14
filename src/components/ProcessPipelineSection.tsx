@@ -26,7 +26,7 @@ const STEPS = [
     number: "04",
     tag: "TEST & BENCHMARK",
     title: "Run side-by-side verification",
-    desc: "Validates against existing unit tests, builds TypeScript without error, and checks runtime behavior.",
+    desc: "Validates against existing unit tests, TypeScript typecheck, and Python syntax before a PR opens.",
   },
   {
     number: "05",

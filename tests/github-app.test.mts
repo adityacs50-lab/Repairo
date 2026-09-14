@@ -514,6 +514,27 @@ async function main() {
     "The breaking-changes comment is updated to link the fix PR",
   );
 
+  const shipmentsPyPath = "fixtures/consumers/logistics-service/src/shipments_client.py";
+  const orderPyPath = "fixtures/consumers/logistics-service/src/order_flow.py";
+  const pyClient = new FakeGitHubClientWithFix();
+  pyClient.files = [{ filename: "openapi.yaml", status: "modified" }];
+  pyClient.contents.set("base-sha:openapi.yaml", shippingBefore);
+  pyClient.contents.set("head-sha:openapi.yaml", shippingAfter);
+  pyClient.repoTree.set("head-sha", {
+    paths: ["openapi.yaml", shipmentsPyPath, orderPyPath, "venv/lib/client.py"],
+    truncated: false,
+  });
+  pyClient.contents.set(`head-sha:${shipmentsPyPath}`, readFixture("consumers", "logistics-service", "src", "shipments_client.py"));
+  pyClient.contents.set(`head-sha:${orderPyPath}`, readFixture("consumers", "logistics-service", "src", "order_flow.py"));
+
+  const pyOutcome = await handlePullRequest(makeFixPayload(23), { db: db2, getClient: async () => pyClient });
+  assert(pyOutcome.fix?.status === "opened", "Python consumers produce an auto-fix PR");
+  assert(pyOutcome.fix?.pr?.filesChanged === 2, "Both Python consumer files are included in the fix PR");
+  assert(
+    !pyClient.calls.some((c) => c.includes("venv/")),
+    "venv is excluded from the consumer-code scan",
+  );
+
   // 9c: a PR from a fork can't receive a pushed branch — auto-fix must back off cleanly.
   const forkClient = new FakeGitHubClientWithFix();
   forkClient.files = [{ filename: "openapi.yaml", status: "modified" }];

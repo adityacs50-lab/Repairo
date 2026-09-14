@@ -54,7 +54,7 @@ export const VENDOR_CATALOG: VendorCatalogEntry[] = [
     id: "stripe",
     name: "Stripe",
     description:
-      "Payments API. Watch public OpenAPI; repair TypeScript consumers when the contract or version moves.",
+      "Payments API. Watch public OpenAPI; repair TypeScript and Python consumers when the contract or version moves.",
     openapiUrl:
       "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml",
     previousOpenapiUrl:
@@ -66,7 +66,7 @@ export const VENDOR_CATALOG: VendorCatalogEntry[] = [
     id: "supabase",
     name: "Supabase",
     description:
-      "Track the Supabase Management API contract and repair TypeScript consumers when endpoints or fields change.",
+      "Track the Supabase Management API contract and repair TypeScript and Python consumers when endpoints or fields change.",
     openapiUrl: "https://api.supabase.com/api/v1-json",
     homepage: "https://supabase.com/docs",
     tags: ["database", "auth"],
