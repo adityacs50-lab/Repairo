@@ -290,6 +290,12 @@ console.log("\nTest 9b: CLI repair command scopes transforms to impacted files o
   try {
     fs.mkdirSync(path.join(cliRepairDir, "src"));
     fs.mkdirSync(path.join(cliRepairDir, ".repairo", "snapshots"), { recursive: true });
+    // Give this scratch workspace its own package.json so findProjectRoot (in validation.ts)
+    // stops right here instead of walking up into whatever real project or home-directory
+    // tree happens to contain the OS's temp dir — a real bug this test surfaced on Windows,
+    // where that walk found an unrelated package.json and ended up recursively scanning the
+    // user's entire home directory, crashing on a permission-restricted system folder.
+    fs.writeFileSync(path.join(cliRepairDir, "package.json"), JSON.stringify({ name: "cli-repair-test-fixture" }));
     fs.copyFileSync(
       path.resolve("./fixtures/consumers/logistics-service/src/shipments_client.py"),
       path.join(cliRepairDir, "src", "shipments_client.py"),

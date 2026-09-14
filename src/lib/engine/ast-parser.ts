@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { Node, Project, SyntaxKind, CallExpression } from "ts-morph";
 import type { ApiChange, ConsumerFile, ImpactMatch } from "./types";
-import { CONSUMER_IGNORE_DIRS } from "./consumer-files";
+import { CONSUMER_IGNORE_DIRS, safeReaddirSync } from "./consumer-files";
 
 export interface VendorUsage {
   vendor: string;
@@ -121,7 +121,7 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
 
   function collectFiles(dir: string): string[] {
     const results: string[] = [];
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const entries = safeReaddirSync(dir);
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {

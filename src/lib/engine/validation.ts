@@ -4,7 +4,7 @@ import path from "path";
 import { Project, ts } from "ts-morph";
 import { PY_LIKE, validatePythonSyntax } from "./python-syntax";
 import { GO_LIKE, validateGoSyntax } from "./go-syntax";
-import { CONSUMER_IGNORE_DIRS } from "./consumer-files";
+import { CONSUMER_IGNORE_DIRS, safeReaddirSync } from "./consumer-files";
 
 /** TS and every plain-JS variant ts-morph can typecheck with `allowJs` on. Kept separate
  * from CONSUMER_FILE_RE (which also matches .py/.go) since this set feeds a TS Project. */
@@ -60,7 +60,7 @@ function findProjectRoot(dir: string): string {
 
 function collectTsFiles(dir: string): string[] {
   const res: string[] = [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const entries = safeReaddirSync(dir);
   for (const entry of entries) {
     const p = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -264,7 +264,7 @@ export function validateCodebase(
   function collectPyFiles(dir: string): string[] {
     const out: string[] = [];
     if (!fs.existsSync(dir)) return out;
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    for (const entry of safeReaddirSync(dir)) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (CONSUMER_IGNORE_DIRS.has(entry.name)) continue;
@@ -310,7 +310,7 @@ export function validateCodebase(
   function collectGoFiles(dir: string): string[] {
     const out: string[] = [];
     if (!fs.existsSync(dir)) return out;
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    for (const entry of safeReaddirSync(dir)) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (CONSUMER_IGNORE_DIRS.has(entry.name)) continue;
