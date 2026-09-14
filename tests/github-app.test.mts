@@ -535,6 +535,27 @@ async function main() {
     "venv is excluded from the consumer-code scan",
   );
 
+  const shipmentsGoPath = "fixtures/consumers/logistics-service/src/shipments_client.go";
+  const orderGoPath = "fixtures/consumers/logistics-service/src/order_flow.go";
+  const goClient = new FakeGitHubClientWithFix();
+  goClient.files = [{ filename: "openapi.yaml", status: "modified" }];
+  goClient.contents.set("base-sha:openapi.yaml", shippingBefore);
+  goClient.contents.set("head-sha:openapi.yaml", shippingAfter);
+  goClient.repoTree.set("head-sha", {
+    paths: ["openapi.yaml", shipmentsGoPath, orderGoPath, "vendor/example.com/lib/client.go"],
+    truncated: false,
+  });
+  goClient.contents.set(`head-sha:${shipmentsGoPath}`, readFixture("consumers", "logistics-service", "src", "shipments_client.go"));
+  goClient.contents.set(`head-sha:${orderGoPath}`, readFixture("consumers", "logistics-service", "src", "order_flow.go"));
+
+  const goOutcome = await handlePullRequest(makeFixPayload(24), { db: db2, getClient: async () => goClient });
+  assert(goOutcome.fix?.status === "opened", "Go consumers produce an auto-fix PR");
+  assert(goOutcome.fix?.pr?.filesChanged === 2, "Both Go consumer files are included in the fix PR");
+  assert(
+    !goClient.calls.some((c) => c.includes("vendor/")),
+    "vendor is excluded from the consumer-code scan",
+  );
+
   // 9c: a PR from a fork can't receive a pushed branch — auto-fix must back off cleanly.
   const forkClient = new FakeGitHubClientWithFix();
   forkClient.files = [{ filename: "openapi.yaml", status: "modified" }];

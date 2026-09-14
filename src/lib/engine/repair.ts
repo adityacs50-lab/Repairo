@@ -1,6 +1,8 @@
 import { applyAstTransforms, type AgentEnumResolution } from "./ast-transformer";
 import { PY_LIKE } from "./python-syntax";
 import { applyPythonTransforms } from "./python-transformer";
+import { GO_LIKE } from "./go-syntax";
+import { applyGoTransforms } from "./go-transformer";
 import type {
   ApiChange,
   ConsumerFile,
@@ -63,8 +65,9 @@ function makePatch(before: string, after: string, path: string): string {
   return hunks.join("\n");
 }
 
-/** Narrow, honestly-labeled fallback for non-JS/TS consumer files (no AST available for
- * Python/Go/etc): a deterministic constant reassignment for base-URL changes only. */
+/** Narrow, honestly-labeled fallback for consumer files in languages with no dedicated
+ * engine (Python and Go are both handled by their own tokenizer-based transformers before
+ * this is ever reached): a deterministic constant reassignment for base-URL changes only. */
 function applyNonJsFallback(
   content: string,
   changes: ApiChange[],
@@ -72,8 +75,6 @@ function applyNonJsFallback(
 ): { content: string; fixes: SuggestedFix[] } {
   let next = content;
   const fixes: SuggestedFix[] = [];
-  const isPy = /\.py$/i.test(filePath);
-  const isGo = /\.go$/i.test(filePath);
 
   for (const change of changes) {
     if (change.kind !== "server-url-changed" || !change.before || !change.after) continue;
@@ -91,11 +92,7 @@ function applyNonJsFallback(
       });
     }
 
-    const constNames = isPy
-      ? ["BASE_URL", "API_BASE", "API_URL"]
-      : isGo
-        ? ["BaseURL", "APIBase", "apiBase"]
-        : [];
+    const constNames = ["BASE_URL", "API_BASE", "API_URL"];
     for (const name of constNames) {
       const re = new RegExp(`(${name}\\s*=\\s*["'])([^"']+)(["'])`);
       if (re.test(next)) {
@@ -144,6 +141,12 @@ export function generateFixes(
     } else if (PY_LIKE.test(file.path)) {
       const fileImpacts = impacts.filter((i) => i.file === file.path);
       const result = applyPythonTransforms(file.content, changes, file.path, fileImpacts, agentResolutions);
+      const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
+      fixes.push(...fileFixes);
+      updatedFiles.push({ path: file.path, content: result.content });
+    } else if (GO_LIKE.test(file.path)) {
+      const fileImpacts = impacts.filter((i) => i.file === file.path);
+      const result = applyGoTransforms(file.content, changes, file.path, fileImpacts, agentResolutions);
       const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
       fixes.push(...fileFixes);
       updatedFiles.push({ path: file.path, content: result.content });

@@ -135,6 +135,32 @@ shipment = submit_shipment(request)
   assert(kwResult.content.includes("recipient_email="), "snake_case kwargs gain recipient_email");
   assert(kwResult.fixes.some((f) => f.safe && f.description.includes("keyword")), "kwarg insert is safe");
 
+  console.log("\nTest 4b: critical — inserting into a container that already has a trailing comma must not produce a double comma");
+  assert(
+    dictResult.content.includes('"carrier": "ups",\n"recipientEmail"') || dictResult.content.includes('"carrier": "ups",\n    "recipientEmail"'),
+    "no extra leading comma is added after an existing trailing comma",
+  );
+  assert(!/,\s*,/.test(dictResult.content), "dict insertion never produces two commas with nothing between them");
+  assert(validatePythonSyntax(dictResult.content).ok, "dict insertion result passes the real syntax gate (not just brace balance)");
+
+  const noTrailingCommaSource = `request = {
+    "originZip": origin,
+    "destZip": dest,
+    "weightKg": 1.5,
+    "carrier": "ups"
+}
+shipment = submit_shipment(request)
+`;
+  const noTrailingResult = applyPythonTransforms(noTrailingCommaSource, required, "order2.py");
+  assert(noTrailingResult.content.includes('"ups",\n"recipientEmail"') || noTrailingResult.content.includes('"ups",\n    "recipientEmail"') || /"ups"\s*,\s*"recipientEmail"/.test(noTrailingResult.content), "a leading comma IS still added when there was no pre-existing trailing comma");
+  assert(!/,\s*,/.test(noTrailingResult.content), "no-trailing-comma case never produces a double comma either");
+  assert(validatePythonSyntax(noTrailingResult.content).ok, "no-trailing-comma insertion result passes the real syntax gate");
+
+  const kwTrailingSource = 'create_shipment(origin_zip="1", dest_zip="2", weight_kg=1, carrier="ups",)\n';
+  const kwTrailingResult = applyPythonTransforms(kwTrailingSource, required, "sdk2.py");
+  assert(!/,\s*,/.test(kwTrailingResult.content), "kwarg insertion into a call with a trailing comma never produces a double comma");
+  assert(validatePythonSyntax(kwTrailingResult.content).ok, "kwarg-with-trailing-comma insertion result passes the real syntax gate");
+
   console.log("\nTest 5: ambiguous enum is not auto-applied");
   const ambiguous = [
     {

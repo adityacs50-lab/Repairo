@@ -1,5 +1,5 @@
 import { defaultValueFor } from "./schema-match";
-import { fieldVariants, normalizeFieldName, toCamelCase, toSnakeCase } from "./field-casing";
+import { checkBalanceAndCommas } from "./bracket-check";
 
 export { fieldVariants, normalizeFieldName, toCamelCase, toSnakeCase } from "./field-casing";
 
@@ -64,7 +64,7 @@ function isIdentPart(ch: string): boolean {
 }
 
 function readString(source: string, i: number): { token: PyToken; next: number } | { error: string } {
-  let start = i;
+  const start = i;
   let prefix = "";
   const two = source.slice(i, i + 2).toLowerCase();
   const one = source[i];
@@ -195,24 +195,7 @@ export function tokenizePython(source: string): TokenizeResult {
 export function validatePythonSyntax(source: string): { ok: boolean; error?: string } {
   const { tokens, error } = tokenizePython(source);
   if (error) return { ok: false, error };
-
-  const stack: string[] = [];
-  const pairs: Record<string, string> = { ")": "(", "]": "[", "}": "{" };
-  for (const token of tokens) {
-    if (token.kind !== "punct") continue;
-    if (token.text === "(" || token.text === "[" || token.text === "{") {
-      stack.push(token.text);
-    } else if (token.text === ")" || token.text === "]" || token.text === "}") {
-      const expected = pairs[token.text];
-      if (stack.pop() !== expected) {
-        return { ok: false, error: `unbalanced ${token.text} at ${token.start}` };
-      }
-    }
-  }
-  if (stack.length > 0) {
-    return { ok: false, error: `unclosed ${stack[stack.length - 1]}` };
-  }
-  return { ok: true };
+  return checkBalanceAndCommas(tokens);
 }
 
 export function skipTrivia(tokens: PyToken[], index: number, dir: 1 | -1 = 1): number {

@@ -321,6 +321,19 @@ function dictLooksEmpty(tokens: PyToken[], dict: DictLiteral): boolean {
   return true;
 }
 
+/**
+ * True when the token immediately before `closeIndex` (skipping trivia) is already a ",".
+ * A trailing comma before a container's closing bracket is common, idiomatic Python style —
+ * inserting another leading comma in front of a new key would produce two commas in a row
+ * with nothing between them, which is a syntax error, not merely unconventional style. This
+ * must be checked before building any insertion snippet.
+ */
+function hasTrailingComma(tokens: PyToken[], closeIndex: number): boolean {
+  const before = skipTrivia(tokens, closeIndex - 1, -1);
+  const tok = tokens[before];
+  return tok?.kind === "punct" && tok.text === ",";
+}
+
 function callHasNonKwargs(tokens: PyToken[], call: CallSite): boolean {
   for (let i = call.openIndex + 1; i < call.closeIndex; i++) {
     const token = tokens[i];
@@ -469,7 +482,10 @@ export function applyPythonTransforms(
           const quoteChar = sample?.kind === "string" && sample.text.includes("'") && !sample.text.includes('"') ? "'" : '"';
           const keyText = quoteKey(insertName, quoted || dict.keys.length === 0, quoteChar);
           const empty = dictLooksEmpty(tokens, dict);
-          const snippet = empty ? `${keyText}: ${pyValue}` : `, ${keyText}: ${pyValue}`;
+          const snippet =
+            empty || hasTrailingComma(tokens, dict.closeIndex)
+              ? `${keyText}: ${pyValue}`
+              : `, ${keyText}: ${pyValue}`;
           const close = tokens[dict.closeIndex];
           if (close) edits.push(insertBeforeClose(content, close, snippet));
           fixes.push({
@@ -491,7 +507,10 @@ export function applyPythonTransforms(
           if (!structurallyMatches(candidate, related)) continue;
           const insertName = pickInsertName(call.kwargs.map((k) => k.name), change.field);
           const close = tokens[call.closeIndex];
-          if (close) edits.push(insertBeforeClose(content, close, `, ${insertName}=${pyValue}`));
+          const kwSnippet = hasTrailingComma(tokens, call.closeIndex)
+            ? `${insertName}=${pyValue}`
+            : `, ${insertName}=${pyValue}`;
+          if (close) edits.push(insertBeforeClose(content, close, kwSnippet));
           fixes.push({
             changeId: change.id,
             file: filePath,

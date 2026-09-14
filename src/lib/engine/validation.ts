@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { Project, ts } from "ts-morph";
 import { PY_LIKE, validatePythonSyntax } from "./python-syntax";
+import { GO_LIKE, validateGoSyntax } from "./go-syntax";
 
 export interface TypeDiagnostic {
   file: string;
@@ -164,6 +165,30 @@ export function validateCodebase(
     }
   }
 
+  function collectGoFiles(dir: string): string[] {
+    const out: string[] = [];
+    if (!fs.existsSync(dir)) return out;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (["node_modules", ".next", ".git", "dist", ".repairo", "vendor"].includes(entry.name)) {
+          continue;
+        }
+        out.push(...collectGoFiles(full));
+      } else if (GO_LIKE.test(entry.name)) {
+        out.push(full);
+      }
+    }
+    return out;
+  }
+  for (const goFile of collectGoFiles(targetDir)) {
+    const syntax = validateGoSyntax(fs.readFileSync(goFile, "utf-8"));
+    if (!syntax.ok) {
+      typecheckPassed = false;
+      errors.push(`${goFile}: ${syntax.error ?? "invalid Go syntax"}`);
+    }
+  }
+
   // 2. Run tests if package.json has a test script and runTests is enabled
   if (options.runTests) {
     const pkgPath = path.join(rootDir, "package.json");
@@ -224,6 +249,15 @@ export function validateInMemory(
     }
   }
 
+  const goErrors: string[] = [];
+  for (const file of files) {
+    if (!GO_LIKE.test(file.path)) continue;
+    const syntax = validateGoSyntax(file.content);
+    if (!syntax.ok) {
+      goErrors.push(`${file.path}: ${syntax.error ?? "invalid Go syntax"}`);
+    }
+  }
+
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: 2, skipLibCheck: true, strict: false, noEmit: true },
@@ -240,7 +274,7 @@ export function validateInMemory(
     }
   }
 
-  const errors: string[] = [...pyErrors];
+  const errors: string[] = [...pyErrors, ...goErrors];
   if (hasTs) {
     try {
       const diagnostics = project.getPreEmitDiagnostics();

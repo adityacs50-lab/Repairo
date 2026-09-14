@@ -26,7 +26,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx tests/run-tests.ts && npx tsx tests/github-app.test.mts && npx tsx tests/python-repair.test.ts && npx tsx tests/web-app.test.ts && npx tsx tests/otto.test.ts",
+    "test": "npx tsx tests/run-tests.ts && npx tsx tests/github-app.test.mts && npx tsx tests/python-repair.test.ts && npx tsx tests/go-repair.test.ts && npx tsx tests/web-app.test.ts && npx tsx tests/otto.test.ts",
     "repairo": "npx tsx src/cli/index.ts",
     "demo:engine": "npx tsx src/lib/engine/run-demo.ts",
     "test:spec-diff": "npx tsx tests/spec-diff.test.ts",

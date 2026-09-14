@@ -2,6 +2,8 @@ import { Node, Project, SyntaxKind } from "ts-morph";
 import type { ApiChange, ConsumerFile, ImpactMatch } from "./types";
 import { PY_LIKE } from "./python-syntax";
 import { findPythonImpacts } from "./python-transformer";
+import { GO_LIKE } from "./go-syntax";
+import { findGoImpacts } from "./go-transformer";
 import {
   anchoredFunctionsForPath,
   containsPathSegmentsInOrder,
@@ -127,6 +129,11 @@ export function findImpactedCode(changes: ApiChange[], files: ConsumerFile[]): I
   for (const file of files) {
     if (PY_LIKE.test(file.path)) {
       impacts.push(...findPythonImpacts(changes, file.path, file.content));
+      continue;
+    }
+
+    if (GO_LIKE.test(file.path)) {
+      impacts.push(...findGoImpacts(changes, file.path, file.content));
       continue;
     }
 

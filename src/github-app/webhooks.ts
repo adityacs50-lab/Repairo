@@ -20,7 +20,7 @@ import type { GitHubClient } from "./octokit";
 // ---------------------------------------------------------------------------
 
 /** Code file extensions the AST-repair engine can actually patch. */
-const CODE_LIKE = /\.(ts|tsx|js|jsx|mts|cts|mjs|cjs|py)$/i;
+const CODE_LIKE = /\.(ts|tsx|js|jsx|mts|cts|mjs|cjs|py|go)$/i;
 /** Directories never worth scanning for hand-written consumer code. */
 const EXCLUDED_DIR = /(^|\/)(node_modules|dist|build|out|\.next|\.git|vendor|coverage|__pycache__|\.venv|venv|site-packages)(\/|$)/i;
 /** Hard cap on how many files get fetched and AST-scanned per PR, to bound API calls and time. */
