@@ -143,7 +143,7 @@ export function generateFixes(
       updatedFiles.push({ path: file.path, content: result.content });
     } else if (PY_LIKE.test(file.path)) {
       const fileImpacts = impacts.filter((i) => i.file === file.path);
-      const result = applyPythonTransforms(file.content, changes, file.path, fileImpacts);
+      const result = applyPythonTransforms(file.content, changes, file.path, fileImpacts, agentResolutions);
       const fileFixes = result.fixes.map((fix) => ({ ...fix, file: file.path }));
       fixes.push(...fileFixes);
       updatedFiles.push({ path: file.path, content: result.content });

@@ -161,6 +161,28 @@ function main() {
   assert(ambResult.content.includes('"failed"'), "ambiguous enum literal is left in place");
   assert(ambResult.fixes.some((f) => !f.safe), "ambiguous enum is flagged unsafe");
 
+  console.log("\nTest 5b: agent-proposed resolution rewrites an otherwise-ambiguous enum");
+  const agentResolutions = new Map([
+    ["rm1", { target: "canceled", confidence: 0.87, reasoning: "Vendor changelog: failed was split into canceled/declined; this call site checks a user-initiated abort." }],
+  ]);
+  const agentResult = applyPythonTransforms(ambSource, ambiguous, "pay.py", [], agentResolutions);
+  assert(agentResult.content.includes('"canceled"'), "agent-resolved enum is rewritten to the proposed target");
+  assert(!agentResult.content.includes('"failed"'), "old enum literal is gone after agent resolution");
+  const agentFix = agentResult.fixes.find((f) => f.changeId === "rm1");
+  assert(agentFix?.safe === true, "agent-resolved fix is still marked safe");
+  assert(agentFix?.origin === "agent-proposed", "fix is labeled agent-proposed, not deterministic");
+  assert(agentFix?.agentConfidence === 0.87, "fix carries the model's reported confidence");
+  assert(
+    Boolean(agentFix?.safetyNotes.some((n) => n.includes("AI-proposed pairing"))),
+    "safety notes flag this as an AI proposal requiring review",
+  );
+
+  const badTargetResolutions = new Map([
+    ["rm1", { target: "not-a-real-candidate", confidence: 0.9, reasoning: "hallucinated" }],
+  ]);
+  const badTargetResult = applyPythonTransforms(ambSource, ambiguous, "pay.py", [], badTargetResolutions);
+  assert(badTargetResult.content.includes('"failed"'), "a proposal outside the group's real candidates is rejected, not applied");
+
   console.log("\nTest 6: comments are not rewritten for enums");
   const commentEnum = applyPythonTransforms(
     '# status == "queued"\nrecord = {"status": "queued"}\n',

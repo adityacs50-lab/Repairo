@@ -1,4 +1,4 @@
-import { groupEnumChanges } from "./ast-transformer";
+import { groupEnumChanges, type AgentEnumResolution } from "./ast-transformer";
 import { structurallyMatches } from "./schema-match";
 import type { ApiChange, ImpactMatch, SuggestedFix } from "./types";
 import {
@@ -246,6 +246,7 @@ export function applyPythonTransforms(
   changes: ApiChange[],
   filePath: string = "temp.py",
   _impacts: ImpactMatch[] = [],
+  agentResolutions: Map<string, AgentEnumResolution> = new Map(),
 ): PythonTransformResult {
   const lexed = tokenizePython(content);
   if (lexed.error) {
@@ -258,7 +259,14 @@ export function applyPythonTransforms(
   const calls = parseCalls(tokens);
   const { key: enumGroupKey, removedByGroup, addedByGroup } = groupEnumChanges(changes);
 
-  const replaceStringValue = (token: PyToken, nextValue: string, changeId: string, description: string, notes: string[]) => {
+  const replaceStringValue = (
+    token: PyToken,
+    nextValue: string,
+    changeId: string,
+    description: string,
+    notes: string[],
+    agent?: AgentEnumResolution,
+  ) => {
     const q = token.text.includes("'''") || token.text.startsWith("'") || token.text.includes("f'")
       ? token.text.match(/'''|"""|'|"/)?.[0] ?? '"'
       : '"';
@@ -276,7 +284,10 @@ export function applyPythonTransforms(
       before: token.value ?? token.text,
       after: nextValue,
       safe: true,
-      safetyNotes: notes,
+      safetyNotes: agent
+        ? [...notes, `AI-proposed pairing (confidence ${agent.confidence.toFixed(2)}) — spec diff alone was ambiguous; verify against the vendor changelog before merging`]
+        : notes,
+      ...(agent ? { origin: "agent-proposed" as const, agentConfidence: agent.confidence, agentReasoning: agent.reasoning } : {}),
     });
   };
 
@@ -398,22 +409,32 @@ export function applyPythonTransforms(
       const unambiguousTarget =
         change.after ??
         (removedGroup.length === 1 && addedGroup.length === 1 ? addedGroup[0].after : undefined);
+      // Only consult an agent proposal when the spec diff itself couldn't resolve the case,
+      // and only trust it if the proposed target is actually one of this group's real
+      // candidates — mirrors the same defense-in-depth check in ast-transformer.ts.
+      const agentProposal = !unambiguousTarget ? agentResolutions.get(change.id) : undefined;
+      const isAgentResolution =
+        Boolean(agentProposal) && addedGroup.some((c) => c.after === agentProposal!.target);
+      const resolvedTarget = unambiguousTarget ?? (isAgentResolution ? agentProposal!.target : undefined);
 
       const referenced = tokens.some(
         (token, index) => token.kind === "string" && token.value === oldVal && enumFieldContext(tokens, index, change.field),
       );
 
-      if (unambiguousTarget && referenced) {
+      if (resolvedTarget && referenced) {
         for (let i = 0; i < tokens.length; i++) {
           const token = tokens[i];
           if (token?.kind !== "string" || token.value !== oldVal) continue;
           if (!enumFieldContext(tokens, i, change.field)) continue;
           replaceStringValue(
             token,
-            unambiguousTarget,
+            resolvedTarget,
             change.id,
-            `Rename enum value "${oldVal}" → "${unambiguousTarget}"`,
-            ["Python string literal enum update", "Unambiguous 1:1 pairing with the added value"],
+            `Rename enum value "${oldVal}" → "${resolvedTarget}"`,
+            isAgentResolution
+              ? ["Python string literal enum update"]
+              : ["Python string literal enum update", "Unambiguous 1:1 pairing with the added value"],
+            isAgentResolution ? agentProposal : undefined,
           );
         }
       } else if (addedGroup.length > 0 && referenced) {
