@@ -25,8 +25,11 @@ export const SITE_KEYWORDS = [
   "API maintenance",
 ];
 
+/** Public source repo (org), not a personal fork. */
+export const GITHUB_REPO_URL = "https://github.com/adityacs50-lab/Repairo";
+
 export const SOCIAL = {
-  github: "https://github.com/sanjaynandanj/Repairo",
+  github: GITHUB_REPO_URL,
   npm: "https://www.npmjs.com/package/repairo-cli",
 };
 

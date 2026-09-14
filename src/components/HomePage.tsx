@@ -6,16 +6,12 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FORMSUBMIT_ENDPOINT } from "@/lib/contact";
+import { SOCIAL } from "@/lib/seo";
 import {
   DESIGN_PARTNER,
   ENGINE_METRICS,
   VENDOR_MARKS,
 } from "@/lib/social-proof";
-
-const SOCIAL = {
-  github: "https://github.com/sanjaynandanj/Repairo",
-  npm: "https://www.npmjs.com/package/repairo-cli",
-} as const;
 
 const GITHUB_APP_INSTALL_URL = `https://github.com/apps/${
   process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai"
