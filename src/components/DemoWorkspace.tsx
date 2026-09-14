@@ -296,34 +296,32 @@ export function DemoWorkspace({
     result.pullRequest.files.find((f) => f.patch);
 
   return (
-    <div className="relative space-y-6">
-      <PixelCluster className="right-0 -top-2 hidden sm:grid" />
+    <div className="demo-workspace-root">
+      <PixelCluster className="right-0 -top-2 hidden lg:grid" aria-hidden />
 
       {showGitHubCta && (
         <DemoGitHubCta oauthConfigured={oauthConfigured} />
       )}
 
       <HeroEnter>
-        <div className="flex flex-col gap-4 border border-line bg-bg-panel p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
-              Interactive demo
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
+        <header className="demo-workspace-header">
+          <div className="demo-workspace-header__copy">
+            <p className="demo-workspace-header__eyebrow">Interactive demo</p>
+            <h2 className="demo-workspace-header__title">
               See the repair before you connect GitHub
             </h2>
-            <p className="mt-1 text-sm text-muted">
+            <p className="demo-workspace-header__lede">
               OpenAPI diff → impacted call sites → compiler-checked patches. Version{" "}
               {result.fromVersion} → {result.toVersion}.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="demo-fixture-picker" role="group" aria-label="Demo scenario">
               {DEMO_SCENARIOS.map((s) => (
                 <button
                   key={s.id}
                   type="button"
                   onClick={() => setScenarioId(s.id)}
                   disabled={phase === "running"}
-                  className={`border px-3 py-1.5 text-left text-xs transition ${
+                  className={`border px-3 py-2 text-left text-xs transition min-w-0 max-w-full ${
                     scenarioId === s.id
                       ? "border-accent/50 bg-accent/10 text-accent-bright"
                       : "border-line bg-bg text-muted hover:border-line-strong hover:text-fg"
@@ -337,11 +335,11 @@ export function DemoWorkspace({
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="demo-workspace-header__actions">
             <motion.button
               type="button"
               onClick={resetFixtures}
-              className="inline-flex items-center justify-center rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 shadow-sm transition-all hover:bg-neutral-50 hover:border-neutral-400 hover:text-neutral-900"
+              className="btn-ghost !py-2.5 !text-sm w-full sm:w-auto"
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -351,14 +349,14 @@ export function DemoWorkspace({
               type="button"
               onClick={runRepair}
               disabled={phase === "running" || pending}
-              className="inline-flex items-center justify-center rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow transition-all hover:bg-neutral-800 disabled:opacity-50"
+              className="btn-primary !py-2.5 !text-sm w-full sm:w-auto"
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
             >
               {phase === "running" ? "Running Repairo…" : "Run Repairo"}
             </motion.button>
           </div>
-        </div>
+        </header>
       </HeroEnter>
 
       {error && (
@@ -455,7 +453,7 @@ export function DemoWorkspace({
       </AnimatePresence>
 
       <HeroEnter delay={0.1}>
-        <div className="border border-line bg-bg-panel">
+        <div className="demo-workspace-shell">
           <div className="workspace-tabs" role="tablist" aria-label="Demo views">
             {DEMO_TABS.map(({ id, label }) => (
               <button
@@ -480,37 +478,33 @@ export function DemoWorkspace({
                 transition={{ duration: 0.25 }}
               >
                 {tab === "inputs" && (
-                  <div className="space-y-6">
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <label className="block space-y-2">
-                        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-dim">
-                          Before OpenAPI
-                        </span>
+                  <div className="space-y-6 min-w-0">
+                    <div className="demo-editor-grid">
+                      <label className="demo-editor-field">
+                        <span className="demo-editor-label">Before OpenAPI</span>
                         <textarea
                           value={beforeSpec}
                           onChange={(e) => setBeforeSpec(e.target.value)}
                           spellCheck={false}
-                          className="h-56 w-full resize-y border border-line bg-bg p-3 font-mono text-xs leading-relaxed text-fg outline-none focus:border-accent"
+                          className="demo-code-editor"
                         />
                       </label>
-                      <label className="block space-y-2">
-                        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-dim">
+                      <label className="demo-editor-field">
+                        <span className="demo-editor-label demo-editor-label--after">
                           After OpenAPI
                         </span>
                         <textarea
                           value={afterSpec}
                           onChange={(e) => setAfterSpec(e.target.value)}
                           spellCheck={false}
-                          className="h-56 w-full resize-y border border-line bg-bg p-3 font-mono text-xs leading-relaxed text-fg outline-none focus:border-accent"
+                          className="demo-code-editor demo-code-editor--after"
                         />
                       </label>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="demo-consumer-section space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-dim">
-                          Consumer files
-                        </p>
+                        <p className="demo-editor-label">Consumer files</p>
                         <button
                           type="button"
                           onClick={addConsumerFile}
@@ -519,13 +513,13 @@ export function DemoWorkspace({
                           Add file
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="demo-consumer-files">
                         {consumerFiles.map((file, index) => (
                           <button
                             key={`${file.path}-${index}`}
                             type="button"
                             onClick={() => selectConsumer(index)}
-                            className={`border px-3 py-1.5 font-mono text-xs ${
+                            className={`border px-3 py-1.5 font-mono text-xs shrink-0 ${
                               index === consumerIndex
                                 ? "border-accent bg-accent/10 text-accent-bright"
                                 : "border-line text-muted hover:text-fg"
@@ -535,25 +529,21 @@ export function DemoWorkspace({
                           </button>
                         ))}
                       </div>
-                      <label className="block space-y-2">
-                        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-dim">
-                          Path
-                        </span>
+                      <label className="demo-editor-field">
+                        <span className="demo-editor-label">Path</span>
                         <input
                           value={consumerPath}
                           onChange={(e) => setConsumerPath(e.target.value)}
-                          className="w-full border border-line bg-bg px-3 py-2 font-mono text-xs text-fg outline-none focus:border-accent"
+                          className="demo-code-editor !min-h-0 !h-auto py-2"
                         />
                       </label>
-                      <label className="block space-y-2">
-                        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-dim">
-                          Source
-                        </span>
+                      <label className="demo-editor-field">
+                        <span className="demo-editor-label">Source</span>
                         <textarea
                           value={consumerContent}
                           onChange={(e) => setConsumerContent(e.target.value)}
                           spellCheck={false}
-                          className="h-64 w-full resize-y border border-line bg-bg p-3 font-mono text-xs leading-relaxed text-fg outline-none focus:border-accent"
+                          className="demo-code-editor min-h-[16rem]"
                         />
                       </label>
                       {activeConsumer && (

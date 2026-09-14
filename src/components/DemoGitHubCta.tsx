@@ -19,19 +19,14 @@ type Props = {
 export function DemoGitHubCta({ oauthConfigured = true, compact = false }: Props) {
   return (
     <section
-      className={`border border-line bg-bg-panel ${compact ? "p-4" : "p-5 sm:p-6"}`}
+      className={`demo-github-cta${compact ? " !p-4" : ""}`}
       aria-labelledby="github-try-heading"
     >
-      <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
-        Use your own GitHub repo
-      </p>
-      <h2
-        id="github-try-heading"
-        className={`mt-2 font-semibold text-fg ${compact ? "text-lg" : "text-xl sm:text-2xl"}`}
-      >
+      <p className="demo-github-cta__eyebrow">Use your own GitHub repo</p>
+      <h2 id="github-try-heading" className="demo-github-cta__title">
         No terminal. No fixture required.
       </h2>
-      <p className="mt-2 max-w-2xl text-sm text-muted leading-relaxed">
+      <p className="demo-github-cta__lede">
         Workspace sign-in is optional. The fastest way to try Repairo on{" "}
         <strong className="font-medium text-fg">your</strong> code is to install our{" "}
         <strong className="font-medium text-fg">GitHub App</strong> — when a pull request
@@ -39,56 +34,54 @@ export function DemoGitHubCta({ oauthConfigured = true, compact = false }: Props
         compile-verified fix PR. No OAuth dashboard login required.
       </p>
 
-      <ol className="mt-5 grid gap-3 sm:grid-cols-3">
-        <li className="border border-line bg-bg p-4">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-dim">
-            Step 1
-          </span>
-          <p className="mt-1 text-sm font-medium text-fg">Run the demo here</p>
-          <p className="mt-1 text-xs text-muted">
+      <ol className="demo-setup-grid">
+        <li className="demo-setup-card">
+          <span className="demo-setup-card__step">Step 1</span>
+          <p className="demo-setup-card__title">Run the demo here</p>
+          <p className="demo-setup-card__body">
             See diff → impact → patch on sample specs (below).
           </p>
         </li>
-        <li className="border border-accent/30 bg-accent/5 p-4">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-accent-bright">
-            Step 2 · recommended
-          </span>
-          <p className="mt-1 text-sm font-medium text-fg">Install the GitHub App</p>
-          <p className="mt-1 text-xs text-muted">
+        <li className="demo-setup-card demo-setup-card--featured">
+          <span className="demo-setup-card__step">Step 2 · recommended</span>
+          <p className="demo-setup-card__title">Install the GitHub App</p>
+          <p className="demo-setup-card__body">
             Pick repos → open a PR that touches{" "}
             <code className="text-fg">openapi.yaml</code> (or similar).
           </p>
-          <a
-            href={GITHUB_APP_INSTALL_URL}
-            className="btn-primary mt-3 inline-flex !py-2 !text-sm"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Install on GitHub
-          </a>
+          <div className="demo-setup-card__actions">
+            <a
+              href={GITHUB_APP_INSTALL_URL}
+              className="btn-primary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Install on GitHub
+            </a>
+          </div>
         </li>
-        <li className="border border-line bg-bg p-4">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-dim">
-            Step 3 · optional
-          </span>
-          <p className="mt-1 text-sm font-medium text-fg">Workspace Quick Repair</p>
-          <p className="mt-1 text-xs text-muted">
+        <li className="demo-setup-card">
+          <span className="demo-setup-card__step">Step 3 · optional</span>
+          <p className="demo-setup-card__title">Workspace Quick Repair</p>
+          <p className="demo-setup-card__body">
             One-click repair PR from the browser when OAuth is enabled on our server.
           </p>
-          {oauthConfigured ? (
-            <a href="/api/auth/github" className="btn-ghost mt-3 inline-flex !py-2 !text-sm">
-              Continue with GitHub
-            </a>
-          ) : (
-            <p className="mt-3 text-xs text-warn">
-              Workspace sign-in is not configured on this deployment yet — use the GitHub App
-              (step 2) or the{" "}
-              <Link href="/docs#github-app" className="text-link underline">
-                self-hosted app
-              </Link>{" "}
-              docs.
-            </p>
-          )}
+          <div className="demo-setup-card__actions">
+            {oauthConfigured ? (
+              <a href="/api/auth/github" className="btn-ghost">
+                Continue with GitHub
+              </a>
+            ) : (
+              <p className="text-xs text-warn">
+                Workspace sign-in is not configured on this deployment yet — use the GitHub App
+                (step 2) or the{" "}
+                <Link href="/docs#github-app" className="text-link underline">
+                  self-hosted app
+                </Link>{" "}
+                docs.
+              </p>
+            )}
+          </div>
         </li>
       </ol>
     </section>

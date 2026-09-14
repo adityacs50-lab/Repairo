@@ -25,9 +25,7 @@ export default function DemoPage() {
             repository, install our GitHub App — it works without workspace OAuth.
           </p>
         </div>
-        <div className="demo-workspace-stack">
-          <DemoWorkspace showGitHubCta oauthConfigured={githubConfigured()} />
-        </div>
+        <DemoWorkspace showGitHubCta oauthConfigured={githubConfigured()} />
       </main>
       <SiteFooter />
     </div>
