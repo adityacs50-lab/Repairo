@@ -583,6 +583,57 @@ assert(
 assert(shippingResult.typecheck.passed, "Repaired Shipping API consumer code compiles cleanly");
 assert(shippingResult.pullRequest.autoMergeEligible, "Unambiguous cross-domain repair is auto-merge eligible");
 
+// Test 21b: red-team — enum renaming must never fall back to a blind whole-file text scan.
+// Found via real-tsc verification: when resolveEnumScope can't structurally match or path-
+// anchor a schema (e.g. its enum field is its only property, or the call site doesn't embed
+// the REST path literally), the old code fell back to scanning the ENTIRE file for any type
+// literal sharing the same string value — renaming a completely unrelated union
+// (`TaskState`) just because it happened to also contain "queued". tsc caught the fallout: a
+// leftover comparison against the now-renamed-away value stopped type-checking.
+console.log("\nTest 21b: red-team — enum rename never touches an unrelated type sharing the same literal value");
+const unscopedFallbackCode = `
+function isQueued(record: { status: string }) {
+  return record.status === "queued";
+}
+
+type TaskState = "queued" | "running" | "done";
+function isTaskQueued(t: TaskState) {
+  return t === "queued";
+}
+`;
+const unscopedFallbackChanges: ApiChange[] = [
+  { id: "chg_030", kind: "enum-value-removed", severity: "breaking", path: "/shipments", operation: "post", field: "status", before: "queued", after: "pending", summary: 'Enum value "queued" renamed to "pending"' },
+];
+const unscopedFallbackResult = applyAstTransforms(unscopedFallbackCode, unscopedFallbackChanges, "src/mixed.ts");
+assert(unscopedFallbackResult.content.includes('type TaskState = "queued" | "running" | "done";'), "unrelated TaskState union is left byte-for-byte untouched");
+assert(unscopedFallbackResult.content.includes('return t === "queued";'), "the unrelated comparison against TaskState is untouched too");
+assert(unscopedFallbackResult.content.includes('record.status === "pending"'), "the actual targeted comparison is still correctly renamed");
+
+// Test 21c: red-team — comparisonAccess matching must require an exact field name, never a
+// substring. Found alongside the above: `side.getText().includes(change.field)` matched
+// `job.previousstatus` for field "status" purely because "previousstatus" contains "status"
+// as a substring, silently rewriting an unrelated field's value with no compiler error to
+// catch it (the field is plain `string`, so any literal type-checks).
+console.log("\nTest 21c: red-team — comparison matching requires an exact field name, not a substring");
+const substringFieldCode = `
+function checkJob(job: { previousstatus: string }) {
+  if (job.previousstatus === "queued") {
+    return "unrelated job field that merely contains 'status' as a substring";
+  }
+  return "done";
+}
+`;
+const substringFieldResult = applyAstTransforms(substringFieldCode, unscopedFallbackChanges, "src/job.ts");
+assert(substringFieldResult.content === substringFieldCode, "a field name that merely CONTAINS the changed field as a substring is never matched");
+
+const elementAccessCode = `
+function isQueued(record: { [key: string]: string }) {
+  return record["status"] === "queued";
+}
+`;
+const elementAccessResult = applyAstTransforms(elementAccessCode, unscopedFallbackChanges, "src/elem.ts");
+assert(elementAccessResult.content.includes('record["status"] === "pending"'), "an exact element-access key match (record[\"status\"]) still correctly renames");
+
 // Test 22: Ambiguous-enum baseline regression test — 2 removed / 2 added values for the
 // same field, with no agent resolution supplied at all. Locks in today's exact behavior:
 // both removed values are flagged for manual review, and the source is left untouched.

@@ -198,6 +198,28 @@ export function applyAstTransforms(
       }
     }
 
+    // Neither naming-based structural matching nor path-text anchoring found anything —
+    // common for a schema whose enum field is its only relevant property (structural
+    // matching requires 2+ shared field names on purpose, see schema-match.ts) or whose
+    // call site doesn't literally embed the REST path anywhere. Rather than falling back to
+    // an unscoped whole-file text scan (which would rename an unrelated type merely for
+    // sharing the same string value — the exact bug this replaced), ask the real TypeScript
+    // type checker what type actually flows through a runtime usage of this field
+    // (`x.status === "..."` — `x`'s resolved type IS the schema, unambiguously, no guessing).
+    if (unions.length === 0) {
+      for (const bin of sourceFile.getDescendantsOfKind(SyntaxKind.BinaryExpression)) {
+        for (const side of [bin.getLeft(), bin.getRight()]) {
+          if (!Node.isPropertyAccessExpression(side) || side.getName() !== change.field) continue;
+          const decls = side.getExpression().getType().getSymbol()?.getDeclarations() ?? [];
+          for (const decl of decls) {
+            if (!Node.isInterfaceDeclaration(decl) && !Node.isTypeAliasDeclaration(decl)) continue;
+            const union = resolveFieldUnion(decl, change.field, sourceFile);
+            if (union && !unions.includes(union)) unions.push(union);
+          }
+        }
+      }
+    }
+
     return { unions, rejectedByAnchoring };
   }
 
@@ -384,13 +406,15 @@ export function applyAstTransforms(
       if (resolvedTarget) {
         const newVal = resolvedTarget;
         const { unions: resolvedUnions, rejectedByAnchoring } = resolveEnumScope(change);
-        // Type-position literals are scoped to the resolved schema's own union(s) when we
-        // could find them — never renamed by matching text alone across the whole file.
-        // Falls back to the old file-wide scan only when we found no schema evidence at all.
-        const typeLiterals =
-          resolvedUnions.length > 0
-            ? resolvedUnions.flatMap((u) => u.getDescendantsOfKind(SyntaxKind.LiteralType))
-            : sourceFile.getDescendantsOfKind(SyntaxKind.LiteralType);
+        // Type-position literals are scoped to the resolved schema's own union(s) — never
+        // renamed by matching text alone across the whole file. When resolveEnumScope found
+        // no union at all, that means no evidence connects this API field to any TS type
+        // declaration in the file, so no type declaration is touched; a literal type node
+        // elsewhere that merely happens to share the same string value (e.g. an unrelated
+        // `type TaskState = "queued" | ...`) is not a scoping signal and must never be
+        // mutated just because the text matches. Runtime usages (property assignments,
+        // comparisons) are still handled separately below and are scoped by field name.
+        const typeLiterals = resolvedUnions.flatMap((u) => u.getDescendantsOfKind(SyntaxKind.LiteralType));
         for (const literalType of typeLiterals) {
           const literal = literalType.getLiteral();
           if (!Node.isStringLiteral(literal) || literal.getLiteralText() !== oldVal) continue;
@@ -424,13 +448,24 @@ export function applyAstTransforms(
           if (literal.getLiteralText() !== oldVal) continue;
           const parent = literal.getParent();
           const inMatchingProperty = parent && Node.isPropertyAssignment(parent) && parent.getName() === change.field;
+          // Recognizes `x.status === "..."` (property access) and `x["status"] === "..."`
+          // (element access with a string-literal key exactly matching the field name).
+          // Previously this fell back to a bare `side.getText().includes(change.field)`
+          // substring check to catch the element-access case — but "text contains the field
+          // name somewhere" also matches a completely unrelated receiver like
+          // `job.previousstatus`, silently rewriting code that has nothing to do with this
+          // API. Every accepted form here requires an exact field-name match, never a
+          // substring one.
           const comparisonAccess =
             parent && Node.isBinaryExpression(parent)
-              ? [parent.getLeft(), parent.getRight()].find(
-                  (side) =>
-                    (Node.isPropertyAccessExpression(side) && side.getName() === change.field) ||
-                    (change.field ? side.getText().includes(change.field) : false),
-                )
+              ? [parent.getLeft(), parent.getRight()].find((side) => {
+                  if (Node.isPropertyAccessExpression(side) && side.getName() === change.field) return true;
+                  if (Node.isElementAccessExpression(side)) {
+                    const arg = side.getArgumentExpression();
+                    if (arg && Node.isStringLiteral(arg) && arg.getLiteralText() === change.field) return true;
+                  }
+                  return false;
+                })
               : undefined;
           if (!inMatchingProperty && !comparisonAccess) continue;
           // The receiver's declared type was explicitly identified (via anchoring) as
