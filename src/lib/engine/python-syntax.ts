@@ -1,4 +1,7 @@
 import { defaultValueFor } from "./schema-match";
+import { fieldVariants, normalizeFieldName, toCamelCase, toSnakeCase } from "./field-casing";
+
+export { fieldVariants, normalizeFieldName, toCamelCase, toSnakeCase } from "./field-casing";
 
 export const PY_LIKE = /\.py$/i;
 
@@ -32,25 +35,6 @@ export interface PyToken {
   end: number;
   /** Unquoted string contents when kind === "string". */
   value?: string;
-}
-
-export function toSnakeCase(name: string): string {
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .replace(/-/g, "_")
-    .toLowerCase();
-}
-
-export function toCamelCase(name: string): string {
-  return name.replace(/_([a-zA-Z])/g, (_, c: string) => c.toUpperCase());
-}
-
-export function fieldVariants(name: string): string[] {
-  return [...new Set([name, toSnakeCase(name), toCamelCase(name)].filter(Boolean))];
-}
-
-export function normalizeFieldName(name: string): string {
-  return toSnakeCase(name);
 }
 
 export function pythonDefaultFor(

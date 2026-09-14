@@ -221,6 +221,11 @@ function enumFieldContext(
     const left = skipTrivia(tokens, prev - 1, -1);
     const leftTok = tokens[left];
     if (leftTok?.kind === "identifier" && variants.has(normalizeFieldName(leftTok.text))) {
+      // `record.status == "queued"` — an attribute access is anchored to its receiver
+      // object exactly like a subscript access is, no tracing needed. Only a truly bare
+      // name (nothing but the identifier itself) needs its origin traced.
+      const dot = skipTrivia(tokens, left - 1, -1);
+      if (tokens[dot]?.kind === "punct" && tokens[dot]?.text === ".") return true;
       return bareIdentifierTracesToField(tokens, left, variants);
     }
     if (leftTok?.kind === "punct" && leftTok.text === "]") {
@@ -237,6 +242,8 @@ function enumFieldContext(
     const right = skipTrivia(tokens, next + 1);
     const rightTok = tokens[right];
     if (rightTok?.kind === "identifier" && variants.has(normalizeFieldName(rightTok.text))) {
+      const dot = skipTrivia(tokens, right - 1, -1);
+      if (tokens[dot]?.kind === "punct" && tokens[dot]?.text === ".") return true;
       return bareIdentifierTracesToField(tokens, right, variants);
     }
   }

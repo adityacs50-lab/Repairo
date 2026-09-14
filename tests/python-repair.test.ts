@@ -238,6 +238,15 @@ def check(shipment):
   const realKwargResult = applyPythonTransforms(realKwargSource, enumChanges, "real_kwarg.py");
   assert(realKwargResult.content.includes('status="pending"'), "an actual call kwarg is still correctly rewritten");
 
+  console.log("\nTest 6d: red-team — attribute access is still recognized after the bare-identifier tightening");
+  const attrSource = `
+def is_queued(record):
+    return record.status == "queued"
+`;
+  const attrResult = applyPythonTransforms(attrSource, enumChanges, "attr.py");
+  assert(attrResult.content.includes('record.status == "pending"'), "dot-attribute comparison is rewritten without needing traceable assignment (anchored by the receiver, like a subscript)");
+  assert(attrResult.fixes.some((f) => f.safe), "attribute-anchored enum rewrite is marked safe");
+
   console.log("\nTest 7: shipping v2 Python consumers + validateInMemory");
   const changes = shippingChanges();
   const files = [
