@@ -5,6 +5,7 @@ import { HeroEnter, PixelCluster } from "@/components/Motion";
 import { QuickRepair } from "@/components/QuickRepair";
 import { VendorAgents } from "@/components/VendorAgents";
 import { DemoWorkspace } from "@/components/DemoWorkspace";
+import { DemoGitHubCta } from "@/components/DemoGitHubCta";
 import { MigrationResults } from "@/components/MigrationResults";
 
 type AuthUser = {
@@ -401,32 +402,13 @@ export function AppWorkspace() {
             {error || message}
           </div>
         )}
-        {configured && (
-          <div className="flex flex-col gap-3 border border-line bg-bg-panel p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
-                Scan your own repo
-              </p>
-              <p className="mt-1 text-sm text-muted">
-                Sign in with GitHub to run Repairo against your real
-                repository and open pull requests. The playground below uses
-                fixture data.
-              </p>
-            </div>
-            <a
-              href="/api/auth/github"
-              className="btn-primary !py-2.5 !text-sm whitespace-nowrap"
-            >
-              Continue with GitHub
-            </a>
-          </div>
-        )}
         {!configured && configError && (
           <div className="border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
             {configError}
           </div>
         )}
-        <DemoWorkspace />
+        <DemoGitHubCta oauthConfigured={configured === true} />
+        <DemoWorkspace oauthConfigured={configured === true} />
       </div>
     );
   }

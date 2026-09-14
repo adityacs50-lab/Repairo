@@ -6,9 +6,9 @@ import { DemoWorkspace } from "@/components/DemoWorkspace";
 export const metadata = pageMetadata({
   title: "Interactive demo",
   description:
-    "Try Repairo in the browser: diff a breaking OpenAPI change, see the impacted TypeScript call sites, and preview the compiler-validated AST repair diff.",
+    "Try Repairo in the browser: diff a breaking OpenAPI change, see impacted call sites in TypeScript, Python, and Go, and preview compiler-validated repair diffs — then install the GitHub App on your repo.",
   path: "/demo",
-  keywords: ["demo", "playground"],
+  keywords: ["demo", "playground", "github app"],
 });
 
 export default function DemoPage() {
@@ -20,10 +20,11 @@ export default function DemoPage() {
           <p className="eyebrow">INTERACTIVE DEMO</p>
           <h1>See a breaking change become a repair.</h1>
           <p>
-            Diff a fixture OpenAPI change, inspect impacted TypeScript call sites, and preview the compiler-validated AST patch.
+            No install and no sign-in required for the playground. When you are ready for your own
+            repository, install our GitHub App — it works without workspace OAuth.
           </p>
         </div>
-        <DemoWorkspace />
+        <DemoWorkspace showGitHubCta oauthConfigured />
       </main>
       <SiteFooter />
     </div>

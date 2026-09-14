@@ -9,6 +9,7 @@ interface SiteHeaderProps {
 }
 
 const NAV = [
+  { href: "/demo", label: "Demo", key: "demo" },
   { href: "/docs", label: "Docs", key: "docs" },
   { href: "/pricing", label: "Pricing", key: "pricing" },
   { href: "/security", label: "Security", key: "security" },
@@ -41,8 +42,8 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
         </nav>
 
         <div className="header-actions">
-          <Link className="button button-dark button-small" href="/#demo">
-            Book a demo <span aria-hidden="true" className="arrow-mark">↗</span>
+          <Link className="button button-dark button-small" href="/demo">
+            Try demo <span aria-hidden="true" className="arrow-mark">↗</span>
           </Link>
           <button
             type="button"
@@ -68,8 +69,8 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
               {item.label}
             </Link>
           ))}
-          <Link href="/#demo" onClick={() => setMobileMenuOpen(false)}>
-            Book a demo
+          <Link href="/demo" onClick={() => setMobileMenuOpen(false)}>
+            Try demo
           </Link>
         </div>
       ) : null}

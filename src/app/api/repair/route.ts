@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
-import { getDemoRepairResult, getFixtureSources } from "@/lib/demo";
+import { DEMO_SCENARIOS } from "@/lib/demo-scenarios";
+import {
+  getDemoRepairResult,
+  getFixtureSources,
+  parseScenarioId,
+} from "@/lib/demo";
 import { runRepair } from "@/lib/engine";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const result = await getDemoRepairResult();
-    const fixtures = getFixtureSources();
-    return NextResponse.json({ result, fixtures });
+    const scenario = parseScenarioId(new URL(request.url).searchParams.get("scenario"));
+    const result = await getDemoRepairResult(scenario);
+    const fixtures = getFixtureSources(scenario);
+    return NextResponse.json({ result, fixtures, scenario, scenarios: DEMO_SCENARIOS });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load demo repair";
@@ -22,9 +28,11 @@ export async function POST(request: Request) {
       beforeSpec?: string;
       afterSpec?: string;
       consumerFiles?: Array<{ path: string; content: string }>;
+      scenario?: string;
     };
 
-    const fixtures = getFixtureSources();
+    const scenario = parseScenarioId(body.scenario);
+    const fixtures = getFixtureSources(scenario);
     const beforeSpec = body.beforeSpec ?? fixtures.beforeSpec;
     const afterSpec = body.afterSpec ?? fixtures.afterSpec;
     const consumerFiles = body.consumerFiles ?? fixtures.consumerFiles;

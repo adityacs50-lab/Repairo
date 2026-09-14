@@ -6,6 +6,9 @@ import type { RepairRunResult } from "@/lib/engine/types";
 import { HeroEnter, PixelCluster } from "@/components/Motion";
 
 import { MigrationResults } from "@/components/MigrationResults";
+import { DemoGitHubCta } from "@/components/DemoGitHubCta";
+import type { DemoScenarioId } from "@/lib/demo-scenarios";
+import { DEMO_SCENARIOS } from "@/lib/demo-scenarios";
 
 type FixtureSources = {
   beforeSpec: string;
@@ -64,7 +67,16 @@ function buildBundle(result: RepairRunResult) {
   return { patches, body };
 }
 
-export function DemoWorkspace() {
+type DemoWorkspaceProps = {
+  showGitHubCta?: boolean;
+  oauthConfigured?: boolean;
+};
+
+export function DemoWorkspace({
+  showGitHubCta = false,
+  oauthConfigured = true,
+}: DemoWorkspaceProps = {}) {
+  const [scenarioId, setScenarioId] = useState<DemoScenarioId>("payments-ts");
   const [fixtures, setFixtures] = useState<FixtureSources | null>(null);
   const [beforeSpec, setBeforeSpec] = useState("");
   const [afterSpec, setAfterSpec] = useState("");
@@ -86,10 +98,11 @@ export function DemoWorkspace() {
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    fetch("/api/repair")
+    setLoadError(null);
+    fetch(`/api/repair?scenario=${scenarioId}`)
       .then(async (res) => {
         if (!res.ok) throw new Error("Failed to load demo fixtures");
-        return res.json() as Promise<DemoPayload>;
+        return res.json() as Promise<DemoPayload & { scenario?: DemoScenarioId }>;
       })
       .then((data) => {
         setFixtures(data.fixtures);
@@ -103,9 +116,14 @@ export function DemoWorkspace() {
           setConsumerIndex(0);
         }
         setResult(data.result);
+        setPhase("idle");
+        setStep(0);
+        setApiReady(false);
+        setTab("inputs");
+        setError(null);
       })
       .catch((err: Error) => setLoadError(err.message));
-  }, []);
+  }, [scenarioId]);
 
   useEffect(() => {
     if (phase !== "running") return;
@@ -273,19 +291,43 @@ export function DemoWorkspace() {
     <div className="relative space-y-6">
       <PixelCluster className="right-0 -top-2 hidden sm:grid" />
 
+      {showGitHubCta && (
+        <DemoGitHubCta oauthConfigured={oauthConfigured} />
+      )}
+
       <HeroEnter>
         <div className="flex flex-col gap-4 border border-line bg-bg-panel p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
-              Working prototype
+              Interactive demo
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
-              Paste specs · run Repairo · download PR
+              See the repair before you connect GitHub
             </h1>
             <p className="mt-1 text-sm text-muted">
-              Live OpenAPI diff → impact → safe patches. Defaults load the
-              Payments {result.fromVersion} → {result.toVersion} scenario.
+              OpenAPI diff → impacted call sites → compiler-checked patches. Version{" "}
+              {result.fromVersion} → {result.toVersion}.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {DEMO_SCENARIOS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setScenarioId(s.id)}
+                  disabled={phase === "running"}
+                  className={`border px-3 py-1.5 text-left text-xs transition ${
+                    scenarioId === s.id
+                      ? "border-accent/50 bg-accent/10 text-accent-bright"
+                      : "border-line bg-bg text-muted hover:border-line-strong hover:text-fg"
+                  }`}
+                >
+                  <span className="font-medium">{s.label}</span>
+                  <span className="mt-0.5 block font-mono text-[10px] opacity-80">
+                    {s.languages}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <motion.button
@@ -704,10 +746,20 @@ export function DemoWorkspace() {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
+                          <a
+                            href={`https://github.com/apps/${
+                              process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai"
+                            }/installations/new`}
+                            className="btn-primary !py-2 !text-sm"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Try this on your repo (GitHub App)
+                          </a>
                           <button
                             type="button"
                             onClick={downloadPr}
-                            className="btn-primary !py-2 !text-sm"
+                            className="btn-ghost !py-2 !text-sm"
                           >
                             Download PR markdown
                           </button>
