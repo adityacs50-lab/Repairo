@@ -156,7 +156,62 @@ function parseCalls(tokens: PyToken[]): CallSite[] {
   return calls;
 }
 
-function enumFieldContext(tokens: PyToken[], stringIndex: number, field: string | undefined): boolean {
+/**
+ * A bare local-variable comparison (`status == "queued"`) is the weakest possible evidence
+ * that a string literal represents the API's enum field — plenty of unrelated code binds a
+ * local named "status" to something that has nothing to do with this API. Before trusting a
+ * bare identifier, trace it back to its most recent assignment in the same statement and
+ * require the RHS to actually pull the value off a container keyed/attributed by this field
+ * (`x["status"]`, `x.status`, ...) — the same kind of evidence a subscript/attribute
+ * comparison already carries on its own. An identifier assigned from a literal, a call
+ * result, or anything else is left unmatched rather than guessed.
+ */
+function bareIdentifierTracesToField(tokens: PyToken[], identIndex: number, variants: Set<string>): boolean {
+  const name = tokens[identIndex]?.text;
+  if (!name) return false;
+  const WINDOW = 400;
+  for (let i = identIndex - 1; i >= 0 && i >= identIndex - WINDOW; i--) {
+    const token = tokens[i];
+    if (!token) continue;
+    if (token.kind === "identifier" && token.text === name) {
+      const eq = skipTrivia(tokens, i + 1);
+      if (tokens[eq]?.kind !== "punct" || tokens[eq]?.text !== "=") continue;
+      // Found the nearest preceding assignment to this name — scan its RHS (until the
+      // next newline, i.e. the same logical statement) for a subscript or attribute access
+      // keyed by this field.
+      for (let j = eq + 1; j < tokens.length && tokens[j]?.kind !== "newline"; j++) {
+        const rhs = tokens[j];
+        if (!rhs) continue;
+        if (rhs.kind === "string" && variants.has(normalizeFieldName(rhs.value ?? ""))) {
+          const before = skipTrivia(tokens, j - 1, -1);
+          if (tokens[before]?.kind === "punct" && tokens[before]?.text === "[") return true;
+        }
+        if (rhs.kind === "identifier" && variants.has(normalizeFieldName(rhs.text))) {
+          const before = skipTrivia(tokens, j - 1, -1);
+          if (tokens[before]?.kind === "punct" && tokens[before]?.text === ".") return true;
+        }
+      }
+      return false;
+    }
+  }
+  return false;
+}
+
+function isWithinAnyDict(dicts: DictLiteral[], index: number): boolean {
+  return dicts.some((d) => index > d.openIndex && index < d.closeIndex);
+}
+
+function kwargNameIndexSet(calls: CallSite[]): Set<number> {
+  return new Set(calls.flatMap((c) => c.kwargs.map((k) => k.nameIndex)));
+}
+
+function enumFieldContext(
+  tokens: PyToken[],
+  stringIndex: number,
+  field: string | undefined,
+  dicts: DictLiteral[],
+  kwargNameIndices: Set<number>,
+): boolean {
   if (!field) return true;
   const variants = new Set(fieldVariants(field).map(normalizeFieldName));
 
@@ -165,7 +220,9 @@ function enumFieldContext(tokens: PyToken[], stringIndex: number, field: string 
   if (prevTok?.kind === "punct" && (prevTok.text === "==" || prevTok.text === "!=")) {
     const left = skipTrivia(tokens, prev - 1, -1);
     const leftTok = tokens[left];
-    if (leftTok?.kind === "identifier" && variants.has(normalizeFieldName(leftTok.text))) return true;
+    if (leftTok?.kind === "identifier" && variants.has(normalizeFieldName(leftTok.text))) {
+      return bareIdentifierTracesToField(tokens, left, variants);
+    }
     if (leftTok?.kind === "punct" && leftTok.text === "]") {
       const open = skipTrivia(tokens, left - 1, -1);
       const key = tokens[open];
@@ -179,22 +236,28 @@ function enumFieldContext(tokens: PyToken[], stringIndex: number, field: string 
   if (nextTok?.kind === "punct" && (nextTok.text === "==" || nextTok.text === "!=")) {
     const right = skipTrivia(tokens, next + 1);
     const rightTok = tokens[right];
-    if (rightTok?.kind === "identifier" && variants.has(normalizeFieldName(rightTok.text))) return true;
+    if (rightTok?.kind === "identifier" && variants.has(normalizeFieldName(rightTok.text))) {
+      return bareIdentifierTracesToField(tokens, right, variants);
+    }
   }
 
-  // dict value: "status": "queued"
-  if (prevTok?.kind === "punct" && prevTok.text === ":") {
+  // dict value: "status": "queued" — only within an actual dict literal, never a type
+  // annotation, slice, or lambda parameter that happens to look the same at the token level.
+  if (prevTok?.kind === "punct" && prevTok.text === ":" && isWithinAnyDict(dicts, stringIndex)) {
     const key = skipTrivia(tokens, prev - 1, -1);
     const keyTok = tokens[key];
     const keyName = keyTok?.kind === "string" ? keyTok.value ?? "" : keyTok?.kind === "identifier" ? keyTok.text : "";
     if (variants.has(normalizeFieldName(keyName))) return true;
   }
 
-  // kwarg: status="queued"
+  // kwarg: status="queued" — only a name the call parser actually recognized as a keyword
+  // argument, never a plain top-level assignment that happens to match "IDENT = STRING".
   if (prevTok?.kind === "punct" && prevTok.text === "=") {
     const key = skipTrivia(tokens, prev - 1, -1);
     const keyTok = tokens[key];
-    if (keyTok?.kind === "identifier" && variants.has(normalizeFieldName(keyTok.text))) return true;
+    if (keyTok?.kind === "identifier" && kwargNameIndices.has(key) && variants.has(normalizeFieldName(keyTok.text))) {
+      return true;
+    }
   }
 
   // attribute: record.status == already handled; also .status on the left of nothing
@@ -209,6 +272,38 @@ function quoteKey(name: string, quoted: boolean, sampleQuote: string): string {
 
 function insertBeforeClose(source: string, closeToken: PyToken, snippet: string): Edit {
   return { start: closeToken.start, end: closeToken.start, text: snippet };
+}
+
+/**
+ * A dict's field names matching the API schema's shape is necessary but not sufficient
+ * evidence it's actually that API's request payload — plenty of unrelated records (an
+ * inventory row, a config block) can coincidentally share several field names. Require the
+ * dict to actually be used as call data somewhere: either passed inline as a call argument
+ * (`create_shipment({...})`) or assigned to a variable that is later passed to some call
+ * (`request = {...}; submit_shipment(request)`). A dict that's just constructed and never
+ * flows anywhere is left alone rather than guessed at.
+ */
+function dictFlowsToCall(tokens: PyToken[], dict: DictLiteral): boolean {
+  const beforeOpen = skipTrivia(tokens, dict.openIndex - 1, -1);
+  const beforeOpenTok = tokens[beforeOpen];
+  if (beforeOpenTok?.kind === "punct" && (beforeOpenTok.text === "(" || beforeOpenTok.text === ",")) {
+    return true;
+  }
+
+  const eq = beforeOpen;
+  if (tokens[eq]?.kind !== "punct" || tokens[eq]?.text !== "=") return false;
+  const varIndex = skipTrivia(tokens, eq - 1, -1);
+  const varTok = tokens[varIndex];
+  if (varTok?.kind !== "identifier") return false;
+
+  for (let i = dict.closeIndex + 1; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token?.kind !== "identifier" || token.text !== varTok.text) continue;
+    const before = skipTrivia(tokens, i - 1, -1);
+    const beforeTok = tokens[before];
+    if (beforeTok?.kind === "punct" && (beforeTok.text === "(" || beforeTok.text === ",")) return true;
+  }
+  return false;
 }
 
 function dictLooksEmpty(tokens: PyToken[], dict: DictLiteral): boolean {
@@ -257,6 +352,7 @@ export function applyPythonTransforms(
   const fixes: SuggestedFix[] = [];
   const dicts = parseDicts(tokens);
   const calls = parseCalls(tokens);
+  const kwargNameIndices = kwargNameIndexSet(calls);
   const { key: enumGroupKey, removedByGroup, addedByGroup } = groupEnumChanges(changes);
 
   const replaceStringValue = (
@@ -359,6 +455,7 @@ export function applyPythonTransforms(
           const candidate = new Set(dict.keys.map((k) => normalizeFieldName(k.name)));
           if (setHasField(dict.keys.map((k) => k.name), change.field)) continue;
           if (!structurallyMatches(candidate, related)) continue;
+          if (!dictFlowsToCall(tokens, dict)) continue;
           const insertName = pickInsertName(dict.keys.map((k) => k.name), change.field);
           const quoted = dict.keys.some((k) => k.quoted);
           const sample = tokens[dict.keys[0]?.tokenIndex ?? -1];
@@ -418,14 +515,14 @@ export function applyPythonTransforms(
       const resolvedTarget = unambiguousTarget ?? (isAgentResolution ? agentProposal!.target : undefined);
 
       const referenced = tokens.some(
-        (token, index) => token.kind === "string" && token.value === oldVal && enumFieldContext(tokens, index, change.field),
+        (token, index) => token.kind === "string" && token.value === oldVal && enumFieldContext(tokens, index, change.field, dicts, kwargNameIndices),
       );
 
       if (resolvedTarget && referenced) {
         for (let i = 0; i < tokens.length; i++) {
           const token = tokens[i];
           if (token?.kind !== "string" || token.value !== oldVal) continue;
-          if (!enumFieldContext(tokens, i, change.field)) continue;
+          if (!enumFieldContext(tokens, i, change.field, dicts, kwargNameIndices)) continue;
           replaceStringValue(
             token,
             resolvedTarget,
@@ -489,6 +586,7 @@ export function findPythonImpacts(changes: ApiChange[], filePath: string, conten
 
   const dicts = parseDicts(tokens);
   const calls = parseCalls(tokens);
+  const kwargNameIndices = kwargNameIndexSet(calls);
 
   for (const change of changes) {
     if (change.kind === "server-url-changed" && change.before) {
@@ -514,7 +612,7 @@ export function findPythonImpacts(changes: ApiChange[], filePath: string, conten
       if (!value) continue;
       tokens.forEach((token, index) => {
         if (token.kind !== "string" || token.value !== value) return;
-        if (!enumFieldContext(tokens, index, change.field)) return;
+        if (!enumFieldContext(tokens, index, change.field, dicts, kwargNameIndices)) return;
         const pos = posOf(token.start);
         impacts.push({
           file: filePath,
@@ -538,6 +636,7 @@ export function findPythonImpacts(changes: ApiChange[], filePath: string, conten
         if (setHasField(dict.keys.map((k) => k.name), change.field)) continue;
         const candidate = new Set(dict.keys.map((k) => normalizeFieldName(k.name)));
         if (!structurallyMatches(candidate, related)) continue;
+        if (!dictFlowsToCall(tokens, dict)) continue;
         const open = tokens[dict.openIndex];
         const pos = posOf(open?.start ?? 0);
         impacts.push({

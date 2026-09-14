@@ -113,10 +113,22 @@ function main() {
     "weightKg": 1.5,
     "carrier": "ups",
 }
+shipment = submit_shipment(request)
 `;
   const dictResult = applyPythonTransforms(dictSource, required, "order.py");
   assert(dictResult.content.includes("recipientEmail"), "camelCase dict gains recipientEmail");
   assert(dictResult.fixes.some((f) => f.safe), "dict insert is safe");
+
+  const unanchoredDictSource = `inventory_record = {
+    "originZip": "10001",
+    "destZip": "90001",
+    "weightKg": 12.5,
+    "carrier": "ups",
+}
+`;
+  const unanchoredResult = applyPythonTransforms(unanchoredDictSource, required, "inventory.py");
+  assert(!unanchoredResult.content.includes("recipientEmail"), "a dict never passed to any call is left alone, even with matching field names");
+  assert(unanchoredResult.fixes.length === 0, "no fix is fabricated for an unanchored dict");
 
   const kwSource = 'create_shipment(origin_zip="1", dest_zip="2", weight_kg=1, carrier="ups")\n';
   const kwResult = applyPythonTransforms(kwSource, required, "sdk.py");
@@ -191,6 +203,40 @@ function main() {
   );
   assert(commentEnum.content.includes('# status == "queued"'), "enum in a comment is unchanged");
   assert(commentEnum.content.includes('"pending"'), "real dict value is rewritten");
+
+  console.log("\nTest 6b: red-team — bare local variables unrelated to the API are never touched");
+  const unrelatedStatusSource = `
+def worker_status():
+    status = "queued"  # internal job-queue state, unrelated to any API
+    if status == "queued":
+        process_job()
+    return status
+`;
+  const unrelatedStatusResult = applyPythonTransforms(unrelatedStatusSource, enumChanges, "worker.py");
+  assert(unrelatedStatusResult.fixes.length === 0, "no fix fires for a same-named local variable with no traceable API origin");
+  assert(unrelatedStatusResult.content === unrelatedStatusSource, "file is byte-for-byte unchanged");
+
+  const tracedStatusSource = `
+def check(shipment):
+    status = shipment["status"]
+    if status == "queued":
+        return True
+    return False
+`;
+  const tracedStatusResult = applyPythonTransforms(tracedStatusSource, enumChanges, "check.py");
+  assert(tracedStatusResult.content.includes('shipment["status"]'), "the traced assignment itself is untouched (only the value, not the access, changes)");
+  assert(tracedStatusResult.content.includes('== "pending"'), "a bare variable IS rewritten once traced back to a matching subscript access");
+  assert(!tracedStatusResult.content.includes('"queued"'), "old value fully replaced once the variable's origin is proven, including the assignment's own comparison");
+
+  console.log("\nTest 6c: red-team — a plain top-level assignment is never mistaken for a call kwarg");
+  const plainAssignSource = 'status = "queued"\nprint(status)\n';
+  const plainAssignResult = applyPythonTransforms(plainAssignSource, enumChanges, "plain.py");
+  assert(plainAssignResult.fixes.length === 0, "bare module-level assignment is not treated as a keyword argument");
+  assert(plainAssignResult.content === plainAssignSource, "file is byte-for-byte unchanged");
+
+  const realKwargSource = 'create_shipment(status="queued")\n';
+  const realKwargResult = applyPythonTransforms(realKwargSource, enumChanges, "real_kwarg.py");
+  assert(realKwargResult.content.includes('status="pending"'), "an actual call kwarg is still correctly rewritten");
 
   console.log("\nTest 7: shipping v2 Python consumers + validateInMemory");
   const changes = shippingChanges();
