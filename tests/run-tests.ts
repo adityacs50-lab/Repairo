@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { spawnSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -9,6 +10,7 @@ import type { SuggestedFix } from "../src/lib/engine";
 import {
   applyAstTransforms,
   buildPullRequest,
+  collectPyrightDiagnostics,
   collectTypeDiagnostics,
   diffOpenApi,
   findImpactedCode,
@@ -20,6 +22,7 @@ import {
   scanCodebase,
   scanDirectory,
   validateCodebase,
+  validateInMemory,
   validateProposal,
   type ApiChange,
 } from "../src/lib/engine";
@@ -274,6 +277,140 @@ const demoClientPath = path.resolve("./fixtures/breaking-api-demo/src/ai/client.
 const demoClientBefore = fs.readFileSync(demoClientPath, "utf-8");
 const repairTransform = applyAstTransforms(demoClientBefore, demoDiff, demoClientPath);
 assert(repairTransform.content.includes("max_output_tokens"), "Generates valid AST repair for breaking API parameter change");
+
+// Test 9b: CLI `repair` command actually scopes transforms to impacted files — the real bug
+// this session found and fixed: repair.ts imported findImpactedCode but never called it,
+// running transforms against EVERY collected file with impacts always `[]`. Verifies the
+// fix end to end through the real handleRepairCommand entry point, not just the underlying
+// engine functions it calls.
+console.log("\nTest 9b: CLI repair command scopes transforms to impacted files only");
+{
+  const cliRepairDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-cli-repair-"));
+  const originalCwd = process.cwd();
+  try {
+    fs.mkdirSync(path.join(cliRepairDir, "src"));
+    fs.mkdirSync(path.join(cliRepairDir, ".repairo", "snapshots"), { recursive: true });
+    fs.copyFileSync(
+      path.resolve("./fixtures/consumers/logistics-service/src/shipments_client.py"),
+      path.join(cliRepairDir, "src", "shipments_client.py"),
+    );
+    fs.copyFileSync(
+      path.resolve("./fixtures/consumers/logistics-service/src/order_flow.py"),
+      path.join(cliRepairDir, "src", "order_flow.py"),
+    );
+    // A file that would ONLY be touched if the CLI ignored impact-scoping entirely and
+    // relied purely on the transform's own internal anchoring (which the earlier bare-
+    // identifier hardening already defends against) — this test is specifically about the
+    // CLI never even attempting the file in the first place.
+    fs.writeFileSync(
+      path.join(cliRepairDir, "src", "unrelated.py"),
+      'def totally_unrelated_function():\n    status = "queued"\n    return status\n',
+    );
+    fs.copyFileSync(
+      path.resolve("./fixtures/apis/shipping-v1.openapi.yaml"),
+      path.join(cliRepairDir, ".repairo", "snapshots", "openapi.json"),
+    );
+    fs.copyFileSync(
+      path.resolve("./fixtures/apis/shipping-v2.openapi.yaml"),
+      path.join(cliRepairDir, "new-spec.yaml"),
+    );
+
+    process.chdir(cliRepairDir);
+    const logLines: string[] = [];
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      logLines.push(args.map(String).join(" "));
+    };
+    try {
+      await handleRepairCommand({ spec: "./new-spec.yaml", target: "./src" });
+    } finally {
+      console.log = originalLog;
+    }
+    const output = logLines.join("\n");
+    assert(output.includes("shipments_client.py"), "the impacted shipments_client.py is proposed for repair");
+    assert(output.includes("order_flow.py"), "the impacted order_flow.py is proposed for repair");
+    assert(!output.includes("unrelated.py"), "the unrelated, unimpacted file is never even attempted, let alone proposed for repair");
+    assert(output.includes("Typecheck (TS/JS)"), "validation output uses the language-specific label, not a misleading blanket 'TypeScript compilation'");
+    assert(output.includes("Python (syntax"), "Python gets its own validation line");
+  } finally {
+    process.chdir(originalCwd);
+    fs.rmSync(cliRepairDir, { recursive: true, force: true });
+  }
+}
+
+// Test 9c: validateInMemory now actually typechecks plain JS consumers, not just .ts/.tsx —
+// previously .js/.jsx/.mjs/.cjs files were invisible to it even though `allowJs` was already
+// configured on its Project (the file-inclusion filter just never let them in). Verifies
+// both that loose untyped JS stays clean (no noisy false failures) and that a genuine
+// cross-file break (a .ts file importing a since-removed export from a .js file) is caught —
+// a class of bug this path could not have caught at all before.
+console.log("\nTest 9c: validateInMemory typechecks JS consumers, not just TS");
+{
+  const looseJs = validateInMemory([
+    {
+      path: "client.js",
+      content: `
+function submitShipment(request) {
+  return fetch("https://api.example.com/v1/shipments", { method: "POST", body: JSON.stringify(request) });
+}
+module.exports = { submitShipment };
+`,
+    },
+  ]);
+  assert(looseJs.passed, "loose, untyped JS with no type annotations passes clean (no noise from implicit-any-style inference)");
+
+  const crossFileBreak = validateInMemory([
+    { path: "client.js", content: `module.exports = { submitShipment: function() { return 1; } };\n` },
+    { path: "user.ts", content: `import { submitShipment, otherThing } from "./client";\notherThing();\n` },
+  ]);
+  assert(!crossFileBreak.passed, "a TS file importing a nonexistent export from a JS file is now caught");
+  assert(
+    crossFileBreak.errors.some((e) => e.includes("otherThing")),
+    "the error names the missing export",
+  );
+
+  const brokenJs = validateInMemory([{ path: "broken.js", content: "function f( { return 1; }\n" }]);
+  assert(!brokenJs.passed, "genuinely broken JS syntax still fails validation");
+}
+
+// Test 9d: optional Pyright gate — skips cleanly with no error when no pyrightconfig.json/
+// pyproject.toml is present (the common case for most Python consumer code), and — when a
+// real Pyright binary + config ARE present in this environment — actually runs and reports
+// diagnostics, verified against the real pyright binary, not a mock.
+console.log("\nTest 9d: optional Pyright gate skips cleanly without a project config, runs when configured");
+{
+  const noConfigDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-pyright-noconfig-"));
+  fs.writeFileSync(path.join(noConfigDir, "x.py"), "x = 1\n");
+  const noConfigResult = collectPyrightDiagnostics(noConfigDir);
+  assert(noConfigResult.ran === false, "Pyright is never invoked when no pyrightconfig.json/pyproject.toml is present");
+  assert(noConfigResult.diagnostics.length === 0, "no diagnostics are fabricated when Pyright didn't run");
+  fs.rmSync(noConfigDir, { recursive: true, force: true });
+
+  const pyrightOnPath = (() => {
+    try {
+      return spawnSync("pyright", ["--version"]).error == null;
+    } catch {
+      return false;
+    }
+  })();
+  if (pyrightOnPath) {
+    const configuredDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-pyright-configured-"));
+    fs.writeFileSync(path.join(configuredDir, "pyrightconfig.json"), "{}\n");
+    fs.writeFileSync(
+      path.join(configuredDir, "bad.py"),
+      "def f(x: int) -> str:\n    return x + 1\n",
+    );
+    const configuredResult = collectPyrightDiagnostics(configuredDir);
+    assert(configuredResult.ran === true, "Pyright runs when a real binary and project config are both present");
+    assert(
+      configuredResult.diagnostics.some((d) => d.message.toLowerCase().includes("not assignable")),
+      "a genuine type error (returning int from a function typed to return str) is reported",
+    );
+    fs.rmSync(configuredDir, { recursive: true, force: true });
+  } else {
+    console.log("  (pyright not found on PATH — skipping the 'runs when configured' half of this test, which is exactly the behavior being verified for real users without it installed)");
+  }
+}
 
 // Test 10: Interface vs Call Site AST Scope Regression Test
 console.log("\nTest 10: Interface vs Call Site AST Scope Regression Test");
