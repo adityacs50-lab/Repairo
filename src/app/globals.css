@@ -171,7 +171,7 @@ code {
 .site-shell {
   background: var(--repairo-paper);
   color: var(--repairo-ink);
-  overflow: hidden;
+  overflow-x: clip;
   min-height: 100vh;
 }
 
@@ -373,25 +373,25 @@ h1, h2, h3, p {
 
 h1, h2, h3 {
   font-family: var(--font-sans);
-  letter-spacing: -0.055em;
   font-weight: 400;
 }
 
-h1 {
+/* Marketing display type — scoped so /demo and /app Tailwind headings are not blown up */
+.hero-section h1 {
+  letter-spacing: -0.055em;
   max-width: 620px;
   font-size: clamp(3.8rem, 6.4vw, 6.4rem);
   line-height: 0.98;
 }
 
-h2 {
+.section-intro h2,
+.proof-copy h2,
+.human-copy h2,
+.demo-intro h2 {
+  letter-spacing: -0.055em;
   max-width: 680px;
   font-size: clamp(2.5rem, 4.5vw, 4.65rem);
   line-height: 1.05;
-}
-
-h3 {
-  font-size: clamp(1.55rem, 2.5vw, 2.4rem);
-  line-height: 1.08;
 }
 
 .hero-lede,
@@ -1724,6 +1724,13 @@ h3 {
   color: var(--repairo-muted);
   font-size: 16px;
   line-height: 1.55;
+}
+
+.demo-workspace-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
 }
 
 .btn-primary {

@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run db:migrate && npm run build",
   "installCommand": "npm ci",
   "crons": [
     {

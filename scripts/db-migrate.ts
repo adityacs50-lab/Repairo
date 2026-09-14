@@ -37,12 +37,11 @@ async function main() {
     process.env.DATABASE_URL?.trim() ||
     process.env.POSTGRES_URL?.trim();
   if (!url) {
-    console.error(
-      "No Postgres connection string found in the environment or in .env / .env.local.\n" +
-        "Set DATABASE_URL (or DATABASE_URL_UNPOOLED) to the connection string from " +
-        "your Neon project, or from Vercel → Storage → your database.",
+    console.log(
+      "Skipping migrations: no DATABASE_URL / POSTGRES_URL in the environment " +
+        "(fine for local `next build` without a database).",
     );
-    process.exit(1);
+    return;
   }
 
   const host = url.match(/@([^/?]+)/)?.[1] ?? "unknown host";

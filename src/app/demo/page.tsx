@@ -2,6 +2,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { pageMetadata } from "@/lib/seo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DemoWorkspace } from "@/components/DemoWorkspace";
+import { githubConfigured } from "@/lib/auth/config";
 
 export const metadata = pageMetadata({
   title: "Interactive demo",
@@ -24,7 +25,9 @@ export default function DemoPage() {
             repository, install our GitHub App — it works without workspace OAuth.
           </p>
         </div>
-        <DemoWorkspace showGitHubCta oauthConfigured />
+        <div className="demo-workspace-stack">
+          <DemoWorkspace showGitHubCta oauthConfigured={githubConfigured()} />
+        </div>
       </main>
       <SiteFooter />
     </div>

@@ -143,9 +143,13 @@ export async function GET(request: NextRequest) {
     });
     return response;
   } catch (err) {
-    return fail(
-      "oauth_failed",
-      err instanceof Error ? err.message : "Unexpected sign-in error",
-    );
+    const raw = err instanceof Error ? err.message : "Unexpected sign-in error";
+    const friendly =
+      /relation ["']?users["']? does not exist|relation ["']?workspaces["']? does not exist/i.test(
+        raw,
+      ) || /Failed query:/i.test(raw)
+        ? "Database schema is missing. Redeploy after setting DATABASE_URL on Vercel (migrations run at build), or run npm run db:migrate against your Neon database."
+        : raw;
+    return fail("oauth_failed", friendly);
   }
 }

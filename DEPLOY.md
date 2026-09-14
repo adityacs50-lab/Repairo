@@ -14,9 +14,11 @@ Do **not** set `BACKEND_URL` on Vercel unless you are deliberately proxying some
 
 1. Create a **Neon** database (or Vercel → Storage → Postgres) and copy the connection string.
 2. Import the repo on **Vercel** → add environment variables below.
-3. Run migrations once (local or CI): `npm run db:migrate` with `DATABASE_URL` set.
+3. Add `DATABASE_URL` (and prefer `DATABASE_URL_UNPOOLED` for Neon migrations) on Vercel **before** the first production deploy — `vercel.json` runs `npm run db:migrate` before `next build`.
 4. Create a **GitHub OAuth App** with callback on your Vercel domain.
 5. Deploy → smoke test `/api/health`, `/demo`, `/app` → **Continue with GitHub**.
+
+If OAuth fails with “Failed query” or “relation users does not exist”, the schema was never applied — redeploy with `DATABASE_URL` set, or run `npm run db:migrate` locally against the same Neon URL.
 
 ---
 
