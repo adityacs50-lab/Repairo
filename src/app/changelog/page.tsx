@@ -11,6 +11,18 @@ export const metadata = pageMetadata({
 const entries = [
   {
     date: "2026-09-14",
+    title: "Go joins TypeScript/JavaScript/Python as a fully-repaired language",
+    items: [
+      "Deterministic Go repairs: URL/base-path literals, 1:1 enum renames (map-index and struct dot-access), required-field insertion into map[string]interface{}/any literals, struct-tag JSON key renames",
+      "Struct composite literals needing a brand-new field are flagged for manual review, never guessed — adding a field means editing the struct's type declaration, which is out of scope for an automated patch",
+      "Go syntax gate (balanced brackets + no empty elements between commas) before any auto-fix PR",
+      "CLI repair now scopes transforms to impacted files only (previously ran every transform against every file); Python repairs on the CLI now support --agent-resolve, matching TypeScript",
+      "validateInMemory (the hosted GitHub-PR path) now actually typechecks plain .js/.jsx/.mjs/.cjs consumers, not just .ts/.tsx",
+      "Optional Pyright gate for Python: runs only when a pyrightconfig.json/pyproject.toml and a real pyright binary are both present, baseline-aware like the existing TypeScript check",
+    ],
+  },
+  {
+    date: "2026-09-14",
     title: "First-class Python consumer repair",
     items: [
       "GitHub App and CLI scan .py consumers (skip venv / __pycache__)",

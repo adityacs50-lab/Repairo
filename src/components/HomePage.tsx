@@ -189,7 +189,7 @@ export function HomePage() {
                     className="hero-trust"
                     aria-hidden={copy > 0 ? true : undefined}
                   >
-                    Languages: TypeScript · JavaScript · Python
+                    Languages: TypeScript · JavaScript · Python · Go
                     <span className="hero-trust-sep" aria-hidden="true">
                       /
                     </span>

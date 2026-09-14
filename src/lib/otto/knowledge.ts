@@ -220,7 +220,7 @@ There is also a fixture playground / interactive demo at ${LINKS.demo} that runs
 ${REAL_VENDORS.map((v) => `- ${v.name}: ${v.description} (${SITE_URL}/agents/${v.id})`).join("\n")}
 Plus custom OpenAPI 3.x / 2.0 schemas of your own, and a Petstore sandbox used for demos.
 
-Language support: TypeScript, JavaScript, and Python for deterministic repairs (URL, 1:1 enum remaps, required fields, explicit field renames). Go still has URL-only fallback. Other languages are on the roadmap — say so plainly rather than implying support.`,
+Language support: TypeScript, JavaScript, Python, and Go all get the same deterministic repair set — URL/base-path updates, 1:1 enum remaps, required-field insertion, and explicit field/struct-tag renames — each validated before a PR is ever proposed (real tsc for TS/JS, syntax gate + optional Pyright for Python, syntax gate for Go). Ambiguous cases (multiple plausible enum replacements) are always flagged for manual review, never guessed, unless --agent-resolve is explicitly enabled. Other languages are on the roadmap — say so plainly rather than implying support.`,
   },
   {
     id: "pricing",

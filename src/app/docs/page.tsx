@@ -84,7 +84,7 @@ export default function DocsPage() {
     >
       <Section title="Overview & Architecture" id="overview">
         <p>
-          Instead of manually tracking down API changes, Repairo provides a seamless pipeline from an upstream OpenAPI spec directly into TypeScript, JavaScript, and Python consumers.
+          Instead of manually tracking down API changes, Repairo provides a seamless pipeline from an upstream OpenAPI spec directly into TypeScript, JavaScript, Python, and Go consumers.
         </p>
       </Section>
 
@@ -141,18 +141,21 @@ repairo repair --apply`} />
       <Section title="Impact Mapping" id="impact-mapping">
         <p>
           For each classified change, Repairo traces call sites in TypeScript/JavaScript
-          (ts-morph) and Python (tokenizer that skips comments). Output is a
-          blast-radius summary: which files and symbols are likely affected.
+          (ts-morph), Python, and Go (both tokenizer-based, skipping comments and string
+          literals). Output is a blast-radius summary: which files and symbols are likely
+          affected.
         </p>
       </Section>
 
       <Section title="Deterministic AST Transforms" id="ast-transforms">
         <p>
-          Patches are rule-based, not free-form LLM rewrites. TypeScript/JavaScript use ts-morph AST
-          transforms; Python uses a tokenizer that skips comments and string literals. Supported safe
-          transforms include URL path bumps, required field additions where a default is unambiguous,
-          enum rename updates in string literals, and parameter property renames. Go consumers only
-          receive URL-constant updates today.
+          Patches are rule-based, not free-form LLM rewrites. TypeScript/JavaScript use ts-morph
+          AST transforms; Python and Go use tokenizer-based engines that skip comments and string
+          literals. All three support the same safe transform set: URL/base-path bumps, required
+          field additions where a default is unambiguous, enum rename updates in string literals,
+          and field/struct-tag renames. Ambiguous cases (more than one plausible enum
+          replacement) are flagged for manual review rather than guessed, in every language,
+          unless <code className="docs-inline-code">--agent-resolve</code> is explicitly enabled.
         </p>
       </Section>
 
@@ -205,7 +208,7 @@ repairo repair --apply`} />
             "Google Gemini",
             "GitHub REST",
             "Custom OpenAPI 3.x / 2.0 schemas",
-            "Languages: TypeScript, JavaScript, Python (Go is URL-only)",
+            "Languages: TypeScript, JavaScript, Python, and Go — same deterministic repair set for all four",
             "Upcoming: Clerk, private / team-pinned specs",
           ]}
         />

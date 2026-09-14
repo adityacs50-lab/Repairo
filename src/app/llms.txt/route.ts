@@ -71,10 +71,10 @@ ${BLOG_POSTS.map((p) => `- ${p.title} (${p.datePublished}): ${absoluteUrl(`/blog
 ## Frequently asked
 
 - What is Repairo? An automated tool that detects breaking changes in third-party APIs and generates compiler-validated AST repairs as GitHub pull requests — "Dependabot for third-party APIs".
-- Which languages are supported? TypeScript, JavaScript, and Python for deterministic repairs; Go has URL-only fallback. Other languages are on the roadmap.
+- Which languages are supported? TypeScript, JavaScript, Python, and Go all get the same deterministic repair set. Other languages are on the roadmap.
 - Does Repairo store my code? Code is processed in memory for the duration of a run and is not persisted; only the resulting patch or PR is written to GitHub.
 - How is this different from Dependabot or Renovate? Those bump dependency versions. Repairo changes your application code to match a vendor's new API contract, and proves the change compiles before proposing it.
-- How is this different from Copilot, Cursor, or Devin? Those generate code probabilistically. Repairo applies deterministic transforms derived from the OpenAPI diff and rejects any patch that fails TypeScript compilation or Python syntax validation.
+- How is this different from Copilot, Cursor, or Devin? Those generate code probabilistically. Repairo applies deterministic transforms derived from the OpenAPI diff and rejects any patch that fails TypeScript/JavaScript compilation, Python syntax validation (or Pyright when configured), or Go syntax validation.
 `;
 
   return new Response(body, {
