@@ -14,13 +14,15 @@ type Repo = {
 type Props = {
   repos: Repo[];
   onDone?: (prUrl: string | null) => void;
+  /** When true, omit outer card chrome (used inside app workspace panel). */
+  embedded?: boolean;
 };
 
 /**
  * One-shot: pick a real GitHub repo → repair → open PR.
  * No webhook required — best first experience for LinkedIn / cold users.
  */
-export function QuickRepair({ repos, onDone }: Props) {
+export function QuickRepair({ repos, onDone, embedded = false }: Props) {
   const [repoFullName, setRepoFullName] = useState(repos[0]?.fullName ?? "");
   const [beforePath, setBeforePath] = useState("openapi.yaml");
   const [afterPath, setAfterPath] = useState("openapi.yaml");
@@ -185,15 +187,19 @@ export function QuickRepair({ repos, onDone }: Props) {
   }
 
   return (
-    <div className="space-y-5 border border-line bg-bg-panel p-5 sm:p-6">
-      <div>
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
+    <div
+      className={
+        embedded
+          ? "repo-repair-panel space-y-5"
+          : "repo-repair-panel space-y-5 border border-line bg-bg-panel p-5 sm:p-6"
+      }
+    >
+      <div className="repo-repair-intro">
+        <p className="font-mono text-xs uppercase tracking-[0.12em] text-accent-bright">
           Try on your GitHub
         </p>
-        <h2 className="mt-2 text-xl font-semibold">
-          Repair a real repo in one run
-        </h2>
-        <p className="mt-2 text-sm text-muted">
+        <h2>Repair a real repo in one run</h2>
+        <p className="mt-2 text-sm text-muted leading-relaxed">
           Scan the repo for OpenAPI + client files, or enter paths manually —
           then open a PR on GitHub.
         </p>
@@ -206,11 +212,9 @@ export function QuickRepair({ repos, onDone }: Props) {
       )}
 
       {phase === "form" && (
-        <form onSubmit={run} className="space-y-3">
-          <label className="block space-y-1 text-sm">
-            <span className="font-mono text-[11px] uppercase text-muted-dim">
-              Repository
-            </span>
+        <form onSubmit={run} className="repo-form">
+          <label className="repo-form-field">
+            <span className="repo-form-label">Repository</span>
             <select
               value={repoFullName}
               onChange={(e) => {
@@ -222,7 +226,7 @@ export function QuickRepair({ repos, onDone }: Props) {
                   setBaseBranch(repo.defaultBranch);
                 }
               }}
-              className="w-full border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-accent"
+              className="repo-form-select"
             >
               {repos.map((repo) => (
                 <option key={repo.id} value={repo.fullName}>
@@ -236,79 +240,67 @@ export function QuickRepair({ repos, onDone }: Props) {
             type="button"
             onClick={scanRepo}
             disabled={scanning}
-            className="btn-ghost !py-2 !text-sm disabled:opacity-50"
+            className="btn-ghost !py-2 !text-sm w-full sm:w-auto disabled:opacity-50"
           >
             {scanning ? "Scanning repo…" : "Scan repo for OpenAPI + clients"}
           </button>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block space-y-1 text-sm">
-              <span className="font-mono text-[11px] uppercase text-muted-dim">
-                Before OpenAPI path
-              </span>
+          <div className="repo-form-grid">
+            <label className="repo-form-field">
+              <span className="repo-form-label">Before OpenAPI path</span>
               <input
                 value={beforePath}
                 onChange={(e) => setBeforePath(e.target.value)}
                 required
-                className="w-full border border-line bg-bg px-3 py-2 font-mono text-xs outline-none focus:border-accent"
+                className="repo-form-input"
               />
             </label>
-            <label className="block space-y-1 text-sm">
-              <span className="font-mono text-[11px] uppercase text-muted-dim">
-                Before ref (branch/tag/sha)
-              </span>
+            <label className="repo-form-field">
+              <span className="repo-form-label">Before ref (branch/tag/sha)</span>
               <input
                 value={beforeRef}
                 onChange={(e) => setBeforeRef(e.target.value)}
                 placeholder="v1.0.0 or main"
-                className="w-full border border-line bg-bg px-3 py-2 font-mono text-xs outline-none focus:border-accent"
+                className="repo-form-input"
               />
             </label>
-            <label className="block space-y-1 text-sm">
-              <span className="font-mono text-[11px] uppercase text-muted-dim">
-                After OpenAPI path
-              </span>
+            <label className="repo-form-field">
+              <span className="repo-form-label">After OpenAPI path</span>
               <input
                 value={afterPath}
                 onChange={(e) => setAfterPath(e.target.value)}
                 required
-                className="w-full border border-line bg-bg px-3 py-2 font-mono text-xs outline-none focus:border-accent"
+                className="repo-form-input"
               />
             </label>
-            <label className="block space-y-1 text-sm">
-              <span className="font-mono text-[11px] uppercase text-muted-dim">
-                After ref
-              </span>
+            <label className="repo-form-field">
+              <span className="repo-form-label">After ref</span>
               <input
                 value={afterRef}
                 onChange={(e) => setAfterRef(e.target.value)}
                 placeholder="main"
-                className="w-full border border-line bg-bg px-3 py-2 font-mono text-xs outline-none focus:border-accent"
+                className="repo-form-input"
               />
             </label>
           </div>
 
-          <label className="block space-y-1 text-sm">
-            <span className="font-mono text-[11px] uppercase text-muted-dim">
-              Consumer TypeScript / Python paths
-            </span>
+          <label className="repo-form-field">
+            <span className="repo-form-label">Consumer TypeScript / Python paths</span>
             <textarea
               value={consumerPaths}
               onChange={(e) => setConsumerPaths(e.target.value)}
-              rows={2}
+              rows={3}
               required
-              className="w-full border border-line bg-bg p-3 font-mono text-xs outline-none focus:border-accent"
+              className="repo-form-textarea"
             />
           </label>
 
-          <label className="block space-y-1 text-sm">
-            <span className="font-mono text-[11px] uppercase text-muted-dim">
-              PR base branch
-            </span>
+          <label className="repo-form-field">
+            <span className="repo-form-label">PR base branch</span>
             <input
               value={baseBranch}
               onChange={(e) => setBaseBranch(e.target.value)}
-              className="w-full border border-line bg-bg px-3 py-2 font-mono text-xs outline-none focus:border-accent"
+              className="repo-form-input"
             />
           </label>
 

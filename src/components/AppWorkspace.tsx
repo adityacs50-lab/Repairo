@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { HeroEnter, PixelCluster } from "@/components/Motion";
 import { QuickRepair } from "@/components/QuickRepair";
 import { VendorAgents } from "@/components/VendorAgents";
 import { DemoWorkspace } from "@/components/DemoWorkspace";
@@ -390,7 +389,7 @@ export function AppWorkspace() {
 
   if (!configured || !user) {
     return (
-      <div className="space-y-6">
+      <div className="app-workspace-root">
         {(error || message) && (
           <div
             className={`border px-4 py-3 text-sm ${
@@ -413,33 +412,34 @@ export function AppWorkspace() {
     );
   }
 
-  return (
-    <div className="relative space-y-6">
-      <PixelCluster className="right-0 -top-2 hidden sm:grid" />
+  const planLabel = (workspace?.plan ?? "free").toUpperCase();
 
-      <HeroEnter>
-        <div className="flex flex-col gap-4 border border-line bg-bg-panel p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={user.avatarUrl}
-              alt=""
-              className="h-10 w-10 border border-line"
-            />
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent-bright">
-                {workspace?.name ?? "Workspace"} · {workspace?.plan ?? "free"}
-              </p>
-              <h1 className="text-xl font-semibold sm:text-2xl">
-                {user.name || user.login}
-              </h1>
-            </div>
+  return (
+    <div className="app-workspace-root">
+      <header className="workspace-user-header">
+        <div className="workspace-user-header__identity">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={user.avatarUrl}
+            alt=""
+            className="workspace-user-header__avatar"
+          />
+          <div className="workspace-user-header__meta">
+            <h1 className="workspace-user-header__name">
+              {user.name || user.login}
+            </h1>
+            <p className="workspace-user-header__workspace">
+              {workspace?.name ?? "Workspace"}
+              <span className="workspace-user-header__plan">{planLabel}</span>
+            </p>
           </div>
+        </div>
+        <div className="workspace-user-header__actions">
           <button type="button" onClick={logout} className="btn-ghost !py-2.5 !text-sm">
             Sign out
           </button>
         </div>
-      </HeroEnter>
+      </header>
 
       {(error || message) && (
         <div
@@ -453,7 +453,7 @@ export function AppWorkspace() {
         </div>
       )}
 
-      <div className="border border-line border-b-0">
+      <div className="app-workspace-shell">
         <div className="workspace-tabs" role="tablist" aria-label="Workspace">
           {(
             [
@@ -476,32 +476,33 @@ export function AppWorkspace() {
             </button>
           ))}
         </div>
-      </div>
 
-      {tab === "try" && (
-        <QuickRepair
-          repos={repos}
-          onDone={() => {
-            setMessage("Pull request opened on your GitHub repo.");
-            void refreshAll();
-            setTab("runs");
-          }}
-        />
-      )}
+        <div className="workspace-panel">
+          {tab === "try" && (
+            <QuickRepair
+              embedded
+              repos={repos}
+              onDone={() => {
+                setMessage("Pull request opened on your GitHub repo.");
+                void refreshAll();
+                setTab("runs");
+              }}
+            />
+          )}
 
-      {tab === "agents" && (
-        <VendorAgents
-          repos={repos}
-          initialVendorId={agentVendor}
-          onInstalled={() => {
-            void refreshAll();
-            setTab("integrations");
-            setMessage("Vendor agent installed. Click Run now to open a PR.");
-          }}
-        />
-      )}
+          {tab === "agents" && (
+            <VendorAgents
+              repos={repos}
+              initialVendorId={agentVendor}
+              onInstalled={() => {
+                void refreshAll();
+                setTab("integrations");
+                setMessage("Vendor agent installed. Click Run now to open a PR.");
+              }}
+            />
+          )}
 
-      {tab === "overview" && (
+          {tab === "overview" && (
         <div className="space-y-4">
           {usage?.paymentIssue && (
             <div className="border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
@@ -1006,6 +1007,8 @@ export function AppWorkspace() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

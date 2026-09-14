@@ -12,9 +12,9 @@ export const metadata = pageMetadata({
 
 export default function AppPage() {
   return (
-    <div className="unkey-canvas min-h-screen">
+    <div className="site-shell">
       <SiteHeader active="app" />
-      <main className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8">
+      <main className="product-main">
         <AppWorkspace />
       </main>
       <SiteFooter />
