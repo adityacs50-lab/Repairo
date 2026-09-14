@@ -2,6 +2,7 @@ import {
   applyPythonTransforms,
   diffOpenApi,
   findImpactedCode,
+  findPythonImpacts,
   generateFixes,
   parseOpenApi,
   tokenizePython,
@@ -272,6 +273,31 @@ def is_queued(record):
   const attrResult = applyPythonTransforms(attrSource, enumChanges, "attr.py");
   assert(attrResult.content.includes('record.status == "pending"'), "dot-attribute comparison is rewritten without needing traceable assignment (anchored by the receiver, like a subscript)");
   assert(attrResult.fixes.some((f) => f.safe), "attribute-anchored enum rewrite is marked safe");
+
+  console.log("\nTest 6e: endpoint-removed is flagged for manual review, never auto-repaired");
+  const endpointRemovedChanges = [
+    { id: "ep_rm", kind: "endpoint-removed" as const, severity: "breaking" as const, path: "/v1/shipments/{id}/cancel", operation: "post", summary: "endpoint removed" },
+  ];
+  const endpointSource = `
+def cancel_shipment(shipment_id):
+    return requests.post(f"https://api.acme-shipping.com/v1/shipments/{shipment_id}/cancel")
+
+def unrelated():
+    return "no match here"
+`;
+  const endpointImpacts = findPythonImpacts(endpointRemovedChanges, "client.py", endpointSource);
+  assert(endpointImpacts.length === 1, "exactly one impact found for the call site referencing the removed endpoint");
+  assert(endpointImpacts[0]?.confidence === "high", "removed-endpoint impact is high confidence");
+  assert(endpointImpacts[0]?.reason.includes("POST /v1/shipments/{id}/cancel"), "impact reason names the removed operation and path");
+  const endpointTransform = applyPythonTransforms(endpointSource, endpointRemovedChanges, "client.py");
+  assert(endpointTransform.fixes.length === 0, "no auto-fix is ever attempted for a removed endpoint — there is no safe default replacement");
+  assert(endpointTransform.content === endpointSource, "file is byte-for-byte unchanged");
+
+  const shortPathChanges = [
+    { id: "ep_rm2", kind: "endpoint-removed" as const, severity: "breaking" as const, path: "/x", operation: "get", summary: "x" },
+  ];
+  const shortPathImpacts = findPythonImpacts(shortPathChanges, "client.py", 'requests.get("/x")\n');
+  assert(shortPathImpacts.length === 0, "a too-short literal path prefix is never used as a match signal (avoids matching on noise)");
 
   console.log("\nTest 7: shipping v2 Python consumers + validateInMemory");
   const changes = shippingChanges();

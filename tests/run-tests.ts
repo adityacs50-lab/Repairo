@@ -228,6 +228,39 @@ assert(
 );
 fs.rmSync(vendorScanDir, { recursive: true, force: true });
 
+// Test 7c: Python vendor scan — requests/httpx/aiohttp are generic HTTP clients (like TS's
+// bare fetch/axios), not vendor SDKs by themselves; a real SDK import (stripe) still counts.
+console.log("\nTest 7c: Python vendor scan distinguishes generic HTTP clients from real SDKs");
+const pyVendorScanDir = fs.mkdtempSync(path.join(os.tmpdir(), "repairo-py-vendor-"));
+fs.writeFileSync(
+  path.join(pyVendorScanDir, "client.py"),
+  `
+import requests
+import stripe
+
+def charge():
+    stripe.Charge.create(amount=100)
+    return requests.post("https://api.acme.com/v1/shipments", json={})
+
+def other():
+    return requests.get("https://api.acme.com/v1/shipments/123")
+`,
+);
+const pyVendorScan = scanDirectory(pyVendorScanDir);
+assert(
+  !Object.keys(pyVendorScan.vendorsDetected).includes("Requests (Python)"),
+  "requests is never reported as a discovered vendor by itself — same restraint as fetch/axios",
+);
+assert(
+  Object.keys(pyVendorScan.vendorsDetected).includes("Stripe"),
+  "a real SDK import (stripe) is still correctly detected as a vendor",
+);
+assert(
+  pyVendorScan.callSiteDetails.filter((c) => c.vendor === "Requests (Python)").length === 2,
+  "both requests.post and requests.get call sites are individually tracked, not just the import line",
+);
+fs.rmSync(pyVendorScanDir, { recursive: true, force: true });
+
 // Test 8: CLI diff test
 console.log("\nTest 8: CLI diff test");
 const demoOldSpec = fs.readFileSync(path.resolve("./fixtures/breaking-api-demo/specs/old-openapi.json"), "utf-8");

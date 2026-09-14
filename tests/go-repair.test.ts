@@ -1,6 +1,7 @@
 import {
   applyGoTransforms,
   diffOpenApi,
+  findGoImpacts,
   findImpactedCode,
   generateFixes,
   parseOpenApi,
@@ -189,6 +190,22 @@ func IsQueuedStruct(s Shipment) bool {
   assert(tagResult.content.includes('xml:"Other"'), "unrelated xml tag on another field untouched");
   assert(tagResult.content.includes('json:"other"'), "unrelated json tag on another field untouched");
   assert(tagResult.content.includes("Status string"), "struct field identifier is never renamed (only the tag's JSON key)");
+
+  console.log("\nTest 6b: endpoint-removed is flagged for manual review, never auto-repaired");
+  const endpointRemovedChanges = [
+    { id: "ep_rm", kind: "endpoint-removed" as const, severity: "breaking" as const, path: "/v1/shipments/{id}/cancel", operation: "post", summary: "endpoint removed" },
+  ];
+  const endpointSource = `func CancelShipment(id string) {
+	http.Post("https://api.acme-shipping.com/v1/shipments/"+id+"/cancel", "application/json", nil)
+}
+`;
+  const endpointImpacts = findGoImpacts(endpointRemovedChanges, "client.go", endpointSource);
+  assert(endpointImpacts.length === 1, "exactly one impact found for the call site referencing the removed endpoint");
+  assert(endpointImpacts[0]?.confidence === "high", "removed-endpoint impact is high confidence");
+  assert(endpointImpacts[0]?.reason.includes("POST /v1/shipments/{id}/cancel"), "impact reason names the removed operation and path");
+  const endpointTransform = applyGoTransforms(endpointSource, endpointRemovedChanges, "client.go");
+  assert(endpointTransform.fixes.length === 0, "no auto-fix is ever attempted for a removed endpoint — there is no safe default replacement");
+  assert(endpointTransform.content === endpointSource, "file is byte-for-byte unchanged");
 
   console.log("\nTest 7: ambiguous enum is not auto-applied, but agent-resolve can unblock it");
   const ambiguous = [

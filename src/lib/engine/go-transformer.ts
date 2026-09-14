@@ -616,6 +616,31 @@ export function findGoImpacts(changes: ApiChange[], filePath: string, content: s
       }
     }
 
+    // A removed endpoint is flagged, never auto-repaired — same restraint as the TS/Python
+    // engines. There's no safe deterministic replacement for "this call no longer exists";
+    // a human has to decide what the code should do instead. Raw strings need no special
+    // handling: their tokenized `value` is the literal path text either way.
+    if (change.kind === "endpoint-removed" && change.path) {
+      const literalPrefix = change.path.split("{")[0].replace(/\/+$/, "");
+      if (literalPrefix.length >= 5) {
+        for (const token of tokens) {
+          if (token.kind === "string" && token.value?.includes(literalPrefix)) {
+            const pos = posOf(token.start);
+            impacts.push({
+              file: filePath,
+              line: pos.line,
+              column: pos.column,
+              snippet: pos.snippet,
+              symbol: literalPrefix,
+              changeId: change.id,
+              confidence: "high",
+              reason: `Calls removed endpoint ${change.operation ? change.operation.toUpperCase() + " " : ""}${change.path}`,
+            });
+          }
+        }
+      }
+    }
+
     if ((change.kind === "enum-value-removed" || change.kind === "enum-value-added") && (change.before || change.after)) {
       const value = change.kind === "enum-value-removed" ? change.before : change.after;
       if (!value) continue;

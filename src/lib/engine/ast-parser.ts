@@ -262,23 +262,54 @@ export function scanDirectory(targetDir: string, vendorFilter?: string[]): Detai
     }
   }
 
+  // requests/httpx/aiohttp are generic HTTP clients, not third-party vendor SDKs — same
+  // distinction TS draws for bare `fetch`/`axios` calls (labeled "Fetch API"/"Axios", but
+  // never added to vendorsDetected, since the client name alone doesn't say which API is
+  // actually being called; only the request's own literal URL would, and we don't resolve
+  // that here). Recorded as call sites for filesScanned/totalCallSites visibility only.
+  const PY_HTTP_CLIENT_LABEL: Record<string, string> = {
+    requests: "Requests (Python)",
+    httpx: "HTTPX",
+    aiohttp: "aiohttp",
+  };
+  const pyHttpCallRe = /\b(requests|httpx|aiohttp)\.(get|post|put|patch|delete|head|options|request)\s*\(/g;
+
   for (const file of pyPaths) {
     const relPath = path.relative(absPath, file).replace(/\\/g, "/");
     const content = fs.readFileSync(file, "utf-8");
+    const lineOf = (offset: number) => content.slice(0, offset).split("\n").length;
+
     const importRe = /(?:^|\n)\s*(?:from|import)\s+([A-Za-z0-9_]+)/g;
     let match: RegExpExecArray | null;
     while ((match = importRe.exec(content)) !== null) {
-      const vendorName = vendorNameForPackage(match[1]);
+      const importedName = match[1];
+      if (importedName in PY_HTTP_CLIENT_LABEL) continue; // not a vendor by itself
+      const vendorName = vendorNameForPackage(importedName);
       if (!vendorName) continue;
       if (!vendorsDetected[vendorName]) vendorsDetected[vendorName] = new Set();
       vendorsDetected[vendorName].add(relPath);
       totalCallSites += 1;
       callSiteDetails.push({
         file: relPath,
-        line: content.slice(0, match.index).split("\n").length,
+        line: lineOf(match.index),
         column: 1,
         vendor: vendorName,
         snippet: match[0].trim().slice(0, 80),
+      });
+    }
+
+    let httpMatch: RegExpExecArray | null;
+    pyHttpCallRe.lastIndex = 0;
+    while ((httpMatch = pyHttpCallRe.exec(content)) !== null) {
+      totalCallSites += 1;
+      const lineStart = content.lastIndexOf("\n", httpMatch.index) + 1;
+      const lineEnd = content.indexOf("\n", httpMatch.index);
+      callSiteDetails.push({
+        file: relPath,
+        line: lineOf(httpMatch.index),
+        column: httpMatch.index - lineStart + 1,
+        vendor: PY_HTTP_CLIENT_LABEL[httpMatch[1]],
+        snippet: content.slice(lineStart, lineEnd === -1 ? undefined : lineEnd).trim().slice(0, 80),
       });
     }
   }

@@ -633,6 +633,32 @@ export function findPythonImpacts(changes: ApiChange[], filePath: string, conten
       }
     }
 
+    // A removed endpoint is flagged, never auto-repaired — same restraint as the TS engine
+    // (see impact.ts). There's no safe deterministic replacement for "this call no longer
+    // exists"; a human has to decide what the code should do instead. f-strings need no
+    // special handling here: their tokenized `value` still contains the literal path text
+    // around any `{expr}` placeholder, which is enough to match a literal path prefix.
+    if (change.kind === "endpoint-removed" && change.path) {
+      const literalPrefix = change.path.split("{")[0].replace(/\/+$/, "");
+      if (literalPrefix.length >= 5) {
+        for (const token of tokens) {
+          if (token.kind === "string" && token.value?.includes(literalPrefix)) {
+            const pos = posOf(token.start);
+            impacts.push({
+              file: filePath,
+              line: pos.line,
+              column: pos.column,
+              snippet: pos.snippet,
+              symbol: literalPrefix,
+              changeId: change.id,
+              confidence: "high",
+              reason: `Calls removed endpoint ${change.operation ? change.operation.toUpperCase() + " " : ""}${change.path}`,
+            });
+          }
+        }
+      }
+    }
+
     if ((change.kind === "enum-value-removed" || change.kind === "enum-value-added") && (change.before || change.after)) {
       const value = change.kind === "enum-value-removed" ? change.before : change.after;
       if (!value) continue;
