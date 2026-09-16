@@ -35,25 +35,25 @@ The hard parts are **scope** (do not rename unrelated identifiers), **soundness*
 ```
   [before OpenAPI] ──┐
   [after OpenAPI]  ──┼──► parseOpenApi ──► diffOpenApi ──► ApiChange[]
-  [consumer files] ──┘                              │
-       │                                            ▼
-       └──────────────────────────────► findImpactedCode ──► ImpactMatch[]
-                                                    │
-                    optional agentResolve ──► resolveAmbiguousEnums
-                                                    │
-                                                    ▼
-                              generateFixes ◄── consumer files + impacts
-                                                    │
-                    validateInMemory / validateCodebase
-                                                    │
-                                                    ▼
-                              buildPullRequest (safetyScore, auto-merge flags)
-                                                    │
-                                                    ▼
-                              RepairRunResult + SBOM
+                     │
+  [consumer files] ──┼──► findImpactedCode ──────────────► ImpactMatch[]
+                     │
+                     │     optional agentResolve
+                     │              ▼
+                     │     resolveAmbiguousEnums
+                     │              │
+                     └──────────────┼──► generateFixes
+                                    ▼
+                         buildPullRequest (safetyScore, auto-merge flags)
+                                    ▼
+                         validateInMemory (runRepair) or validateCodebase (CLI repair)
+                                    ▼
+                         RepairRunResult + SBOM
 ```
 
-**Single orchestrator:** `runRepair()` in `src/lib/engine/index.ts` — used by CLI, hosted API, and GitHub repair flows.
+See docs/architecture.md in the repo for CLI vs hosted validation notes.
+
+**Single orchestrator:** `runRepair()` in `src/lib/engine/index.ts` — hosted API, demo, GitHub App. CLI `repairo repair` shares generateFixes/impact; validates on disk before apply/PR.
 
 **Deployment (hosted):** Next.js on Vercel, Neon Postgres (workspaces, integrations, run history), encrypted GitHub tokens, GitHub App webhooks for spec-touching PRs.
 

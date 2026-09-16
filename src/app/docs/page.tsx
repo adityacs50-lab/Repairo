@@ -86,6 +86,29 @@ export default function DocsPage() {
         <p>
           Repairo diffs upstream OpenAPI specs, maps breaking changes into TypeScript, JavaScript, Python, and Go consumers, and opens a PR with patches your team can review.
         </p>
+        <p>
+          The repair engine is orchestrated by <code className="docs-inline-code">runRepair()</code> in{" "}
+          <code className="docs-inline-code">src/lib/engine/index.ts</code> (hosted demo, API, and GitHub App).
+          Local <code className="docs-inline-code">repairo repair</code> uses the same diff → impact →{" "}
+          <code className="docs-inline-code">generateFixes</code> stages, then runs disk{" "}
+          <code className="docs-inline-code">validateCodebase</code> before apply or PR creation.
+        </p>
+        <CodeSnippet
+          code={`before/after OpenAPI → parseOpenApi → diffOpenApi → ApiChange[]
+consumer files       → findImpactedCode → ImpactMatch[]
+optional agentResolve → resolveAmbiguousEnums
+                      → generateFixes
+                      → buildPullRequest (safetyScore)
+                      → validateInMemory (hosted) / validateCodebase (CLI)
+                      → RepairRunResult + SBOM`}
+        />
+        <p>
+          Full diagram and validation notes:{" "}
+          <a href="https://github.com/adityacs50-lab/Repairo/blob/main/docs/architecture.md" className="text-fg underline">
+            docs/architecture.md
+          </a>{" "}
+          (same graph as the VC technical brief).
+        </p>
       </Section>
 
       <Section title="Quickstart Guide" id="quickstart">
@@ -114,7 +137,7 @@ export default function DocsPage() {
           You can run Repairo 100% offline against any local repository without requiring a cloud backend or third-party AI keys.
         </p>
         <CodeSnippet code={`# 1. Scan any codebase for API dependencies
-npx @repairo/cli scan ./src --vendors stripe,openai,supabase
+npx repairo-cli scan ./src --vendors stripe,openai,supabase
 
 # 2. Initialize local .repairo configuration workspace
 repairo init --repo owner/your-app

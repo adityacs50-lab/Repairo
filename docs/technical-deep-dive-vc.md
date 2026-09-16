@@ -53,13 +53,14 @@ flowchart TB
   R --> GF[generateFixes]
   IM --> GF
   C --> GF
-  GF --> V[validateInMemory / validateCodebase]
   GF --> PR[buildPullRequest + safetyScore]
-  V --> PR
-  PR --> OUT[RepairRunResult + SBOM]
+  PR --> V[validateInMemory or validateCodebase]
+  V --> OUT[RepairRunResult + SBOM]
 ```
 
-**Single orchestrator:** `runRepair()` in `src/lib/engine/index.ts` — used by CLI, hosted API, and GitHub repair flows.
+Canonical reference (kept in sync with the repo): [docs/architecture.md](./architecture.md).
+
+**Single orchestrator:** `runRepair()` in `src/lib/engine/index.ts` — used by hosted API, demo, and GitHub repair flows. The CLI `repairo repair` command calls the same `generateFixes` + impact stages, then runs **disk** `validateCodebase` before `--apply` / `--create-pr`.
 
 **Deployment (hosted):** Next.js on Vercel, Neon Postgres (workspaces, integrations, run history), encrypted GitHub tokens, GitHub App webhooks for spec-touching PRs. See `DEPLOY.md`.
 

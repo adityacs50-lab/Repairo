@@ -145,24 +145,24 @@ Scoped to the real call site via AST — unrelated objects with the same propert
 
 ## How it works
 
+Same pipeline as our [technical deep dive](./docs/technical-deep-dive-vc.md) (`runRepair()` in `src/lib/engine/index.ts`):
+
 ```
-OpenAPI (before → after)
-        │
-        ▼
-  Structural diff
-        │
-        ▼
-  Impact map (AST / tokens)
-        │
-        ▼
-  Deterministic patch (+ optional agent proposal for ambiguous enums)
-        │
-        ▼
-  Compile / syntax validation
-        │
-        ▼
-  GitHub PR (human review)
+  before/after OpenAPI ──► parseOpenApi ──► diffOpenApi ──► ApiChange[]
+  consumer files       ──► findImpactedCode ─────────────► ImpactMatch[]
+                                    │
+              optional agentResolve ► resolveAmbiguousEnums
+                                    ▼
+                            generateFixes
+                                    ▼
+                    buildPullRequest (safety score, merge flags)
+                                    ▼
+              validateInMemory (hosted) / validateCodebase (CLI repair)
+                                    ▼
+                    RepairRunResult + PR for human review
 ```
+
+Details: [docs/architecture.md](./docs/architecture.md) (CLI vs hosted validation order).
 
 ---
 

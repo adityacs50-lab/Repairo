@@ -133,7 +133,7 @@ Use **bottom-up** for seed credibility; top-down only as context.
 2. **Problem:** External API drift → grep, incidents, 36% spend more time troubleshooting APIs than shipping (Lunar).
 3. **Insight:** Dependabot updates packages; **call sites** still break. Spec diff tools stop at YAML—they don’t patch `src/`.
 4. **Product:** Live demo: OpenAPI diff → impact → patch → `tsc` → PR (heyrepairo.in/demo).
-5. **How it works:** Diagram from README (diff → impact → AST → validate → PR).
+5. **How it works:** [docs/architecture.md](./architecture.md) — same `runRepair()` graph as README and VC brief.
 6. **Why now:** YC Self-Maintaining APIs RFS; agents normalized repo access; Optic gap.
 7. **Business model:** Free CLI (Apache-2.0) + Pro $29/mo (50 integrations, 500 runs) + enterprise VPC/SSO later.
 8. **Traction:** **Honest** public numbers + design-partner pipeline (fill table §1.4).
