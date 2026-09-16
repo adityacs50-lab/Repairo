@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 /** Public diagnostics for OAuth setup (no secrets). */
 export async function GET(request: NextRequest) {
   const config = getGitHubOAuthConfig();
-  const db = dbProbe();
+  const db = await dbProbe();
 
   // Set by src/proxy.ts when the request arrives via the Vercel -> Railway
   // proxy. This is the origin the user actually browsed, which is what the
