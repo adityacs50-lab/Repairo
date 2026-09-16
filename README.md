@@ -38,10 +38,10 @@
 
 ## See it (30 seconds)
 
-**CLI on this repo’s fixtures** (recorded output — run the same commands locally to verify):
+**CLI on this repo’s fixtures** (animated terminal capture — same commands you can run locally):
 
 <p align="center">
-  <img src="./docs/assets/terminal-scan.svg" alt="repairo-cli scan on fixtures/consumers" width="880">
+  <img src="./docs/assets/demo-scan.gif" alt="npx repairo-cli scan ./fixtures/consumers --vendors stripe" width="880">
 </p>
 
 ```bash
@@ -49,7 +49,7 @@ npx repairo-cli scan ./fixtures/consumers --vendors stripe
 ```
 
 <p align="center">
-  <img src="./docs/assets/terminal-diff.svg" alt="repairo-cli diff on breaking-api-demo fixture" width="880">
+  <img src="./docs/assets/demo-diff.gif" alt="npx repairo-cli diff on breaking-api-demo fixture" width="880">
 </p>
 
 **Full pipeline in the browser** (no install): [heyrepairo.in/demo](https://www.heyrepairo.in/demo) — OpenAPI diff → impact → patch → validation on bundled scenarios.
