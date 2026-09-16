@@ -9,7 +9,7 @@ import {
   validateInMemory,
   validatePythonSyntax,
 } from "../src/lib/engine";
-import { readFixture } from "../src/lib/fixtures";
+import { readFixture } from "../src/lib/read-fixture";
 
 let passedTests = 0;
 let totalTests = 0;

@@ -1,12 +1,8 @@
 import "server-only";
-import { readFileSync } from "fs";
-import { join } from "path";
 import type { DemoScenarioId } from "@/lib/demo-scenarios";
+import { readFixture } from "@/lib/read-fixture";
 
-/** Load fixture text with a statically scoped fixtures/ root for bundlers. */
-export function readFixture(...parts: string[]): string {
-  return readFileSync(join(process.cwd(), "fixtures", ...parts), "utf8");
-}
+export { readFixture };
 
 export function loadScenarioFixtures(id: DemoScenarioId = "payments-ts") {
   if (id === "logistics-multi") {

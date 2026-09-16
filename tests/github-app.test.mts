@@ -27,7 +27,7 @@ import {
   type PullRequestPayload,
 } from "../src/github-app/webhooks";
 import { runOasdiff } from "../src/oasdiff/oasdiff";
-import { readFixture } from "../src/lib/fixtures";
+import { readFixture } from "../src/lib/read-fixture";
 
 logger.level = "silent";
 

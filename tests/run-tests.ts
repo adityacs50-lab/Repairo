@@ -94,7 +94,9 @@ assert(diffChanges.some((c) => c.kind === "field-added" && c.field === "total_am
 
 const nestedBefore = parseOpenApi(`
 openapi: 3.0.0
-info: { title: API, version: 1.0.0 }
+info:
+  title: API
+  version: "1.0.0"
 paths:
   /v1/charge:
     post:
@@ -107,11 +109,14 @@ paths:
                 card:
                   type: object
                   properties:
-                    brand: { type: string }
+                    brand:
+                      type: string
 `);
 const nestedAfter = parseOpenApi(`
 openapi: 3.0.0
-info: { title: API, version: 1.0.0 }
+info:
+  title: API
+  version: "1.0.0"
 paths:
   /v1/charge:
     post:
@@ -124,7 +129,8 @@ paths:
                 card:
                   type: object
                   properties:
-                    brand: { type: integer }
+                    brand:
+                      type: integer
 `);
 const nestedDiff = diffOpenApi(nestedBefore, nestedAfter);
 assert(
