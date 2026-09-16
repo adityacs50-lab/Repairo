@@ -1,27 +1,26 @@
 @import "tailwindcss";
 
 /*
- * Dark dev-tools palette (Linear / Vercel / GitHub-dark inspired).
- * Legacy token names kept: paper = canvas, white = elevated surface, ink = foreground.
+ * Warm workshop dark — charcoal + paper ink, amber repair accent (not purple SaaS).
+ * Legacy names: paper = canvas, white = surface, ink = foreground.
  */
 :root {
   color-scheme: dark;
 
-  --repairo-paper: #09090b;
-  --repairo-white: #141419;
-  --repairo-ink: #fafafa;
-  --repairo-slate: #d4d4d8;
-  --repairo-muted: #a1a1aa;
-  --repairo-rule: #27272a;
-  --repairo-purple: #8b7cff;
-  --repairo-teal: #34d399;
-  --repairo-amber: #fbbf24;
+  --repairo-paper: #100f0d;
+  --repairo-white: #1a1916;
+  --repairo-ink: #eeede6;
+  --repairo-slate: #cfc9bc;
+  --repairo-muted: #9a9488;
+  --repairo-rule: #2e2b26;
+  --repairo-accent: #e8a317;
+  --repairo-purple: #e8a317;
+  --repairo-teal: #3dd6b5;
+  --repairo-amber: #e8a317;
 
-  --repairo-media-frame: #0c0c10;
-  --repairo-contrast: #fafafa;
-  --repairo-contrast-fg: #09090b;
-  --repairo-glow-purple: color-mix(in srgb, var(--repairo-purple) 22%, transparent);
-  --repairo-glow-teal: color-mix(in srgb, var(--repairo-teal) 12%, transparent);
+  --repairo-media-frame: #0a0908;
+  --repairo-contrast: #f5f2ea;
+  --repairo-contrast-fg: #141210;
 
   --page-max-width: 1440px;
   --page-padding: 16px;
@@ -84,17 +83,17 @@ body {
 
 /* Tailwind v4 color utilities for workspace/demo components */
 @theme {
-  --color-bg: #141419;
-  --color-bg-panel: #18181f;
-  --color-fg: #fafafa;
-  --color-accent: #8b7cff;
-  --color-accent-bright: #a78bfa;
-  --color-line: #27272a;
-  --color-line-strong: #3f3f46;
-  --color-warn: #fbbf24;
-  --color-safe: #34d399;
-  --color-muted: #a1a1aa;
-  --color-muted-dim: #71717a;
+  --color-bg: #1a1916;
+  --color-bg-panel: #1f1e1a;
+  --color-fg: #eeede6;
+  --color-accent: #e8a317;
+  --color-accent-bright: #f0b429;
+  --color-line: #2e2b26;
+  --color-line-strong: #403c36;
+  --color-warn: #e8a317;
+  --color-safe: #3dd6b5;
+  --color-muted: #9a9488;
+  --color-muted-dim: #7a756b;
 }
 
 /* Compatibility for pages still using the previous token class names */
@@ -882,9 +881,7 @@ code {
 /* Base Site Architecture Classes matching exact live stylesheet */
 .site-shell {
   background-color: var(--repairo-paper);
-  background-image:
-    radial-gradient(ellipse 90% 55% at 50% -15%, var(--repairo-glow-purple), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 100% 0%, var(--repairo-glow-teal), transparent 50%);
+  background-image: linear-gradient(180deg, #141310 0%, var(--repairo-paper) 32%);
   color: var(--repairo-ink);
   min-height: 100vh;
   width: 100%;
@@ -1058,9 +1055,9 @@ code {
 }
 
 .button-dark:hover {
-  background: var(--repairo-purple);
-  border-color: var(--repairo-purple);
-  color: #fff;
+  background: var(--repairo-accent);
+  border-color: var(--repairo-accent);
+  color: var(--repairo-contrast-fg);
 }
 
 .button-light {
@@ -1139,8 +1136,11 @@ code {
 }
 
 .eyebrow {
-  color: var(--repairo-purple);
+  color: var(--repairo-accent);
   margin: 0 0 24px;
+  text-transform: none;
+  letter-spacing: 0.06em;
+  font-size: 11px;
 }
 
 h1, h2, h3, p {
@@ -1154,20 +1154,22 @@ h1, h2, h3 {
 
 /* Marketing display type — scoped so /demo and /app Tailwind headings are not blown up */
 .hero-section h1 {
-  letter-spacing: -0.055em;
-  max-width: 620px;
-  font-size: clamp(3.8rem, 6.4vw, 6.4rem);
-  line-height: 0.98;
+  letter-spacing: -0.04em;
+  max-width: 16ch;
+  font-size: clamp(2.35rem, 5.2vw, 3.75rem);
+  line-height: 1.05;
+  font-weight: 500;
 }
 
 .section-intro h2,
 .proof-copy h2,
 .human-copy h2,
 .demo-intro h2 {
-  letter-spacing: -0.055em;
-  max-width: 680px;
-  font-size: clamp(2.5rem, 4.5vw, 4.65rem);
-  line-height: 1.05;
+  letter-spacing: -0.035em;
+  max-width: 22ch;
+  font-size: clamp(1.65rem, 3.8vw, 2.5rem);
+  line-height: 1.12;
+  font-weight: 500;
 }
 
 .hero-lede,
@@ -2611,8 +2613,9 @@ h1, h2, h3 {
 }
 
 .btn-primary:hover {
-  background: var(--repairo-purple);
-  border-color: var(--repairo-purple);
+  background: var(--repairo-accent);
+  border-color: var(--repairo-accent);
+  color: var(--repairo-contrast-fg);
 }
 
 .btn-ghost {

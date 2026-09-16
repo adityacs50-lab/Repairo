@@ -3,9 +3,9 @@
  */
 
 export const HOMEPAGE_PROBLEM = {
-  eyebrow: "Why we built it",
+  eyebrow: "The usual week",
   quote:
-    "A breaking API change shouldn't turn into a late-night grep through the repo. Repairo shows which files are affected and prepares a patch you can review before merge.",
+    "Vendor changelog drops on Friday. Monday CI is red. Someone spends the morning finding every `max_tokens` left in the repo. We built Repairo for that afternoon.",
 } as const;
 
 /** Engine facts — not production telemetry. */

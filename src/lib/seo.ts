@@ -9,7 +9,7 @@ export const SITE_NAME = "Repairo";
 export const SITE_TAGLINE = "Dependabot for third-party APIs";
 export const SITE_TITLE = `${SITE_NAME} — ${SITE_TAGLINE}`;
 export const SITE_DESCRIPTION =
-  "Repairo watches for breaking OpenAPI changes in the APIs you depend on, finds affected code in TypeScript, JavaScript, Python, and Go, and opens a reviewable pull request with compiler-checked patches.";
+  "When a vendor API breaks your build, Repairo diffs the OpenAPI spec, finds affected call sites, and opens a PR with patches that typecheck.";
 
 export const SITE_KEYWORDS = [
   "breaking API changes",

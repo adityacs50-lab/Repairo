@@ -7,7 +7,7 @@ import { githubConfigured } from "@/lib/auth/config";
 export const metadata = pageMetadata({
   title: "Interactive demo",
   description:
-    "Try Repairo in the browser: diff a breaking OpenAPI change, see impacted call sites in TypeScript, Python, and Go, and preview compiler-validated repair diffs — then install the GitHub App on your repo.",
+    "Run the repair loop on sample specs in the browser — diff, impact, patch — no login. Then point the CLI or GitHub App at your repo.",
   path: "/demo",
   keywords: ["demo", "playground", "github app"],
 });
@@ -19,11 +19,11 @@ export default function DemoPage() {
       <main className="demo-page-main">
         <div className="product-page-stack">
           <div className="demo-page-intro">
-            <p className="eyebrow">INTERACTIVE DEMO</p>
-            <h1>See a breaking OpenAPI change become a repair.</h1>
+            <p className="eyebrow">Demo</p>
+            <h1>Break an API on purpose. Watch the repair.</h1>
             <p>
-              Sample specs and client files — no sign-in. When you want this on your repository,
-              install the GitHub App or sign in for Quick Repair from the workspace.
+              Bundled fixtures only — nothing leaves this tab. Hook up your repo via the GitHub App
+              or CLI when you are ready.
             </p>
           </div>
           <DemoWorkspace showGitHubCta oauthConfigured={githubConfigured()} />

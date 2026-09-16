@@ -53,10 +53,10 @@ interface TabContent {
 
 const TAB_DATA: Record<TabId, TabContent> = {
   impact: {
-    eyebrow: "02 / impact",
-    title: "Find the code that needs changing.",
+    eyebrow: "Impact",
+    title: "Which files actually call this API?",
     description:
-      "Repairo traces the API change through your codebase and lists affected call sites, types, and related files — not a vague “blast radius” chart.",
+      "From the OpenAPI diff we list call sites and types that reference the changed field or route — file and line, not a heatmap.",
     statusText: "Needs review",
     statusType: "review",
     rows: [
@@ -67,10 +67,10 @@ const TAB_DATA: Record<TabId, TabContent> = {
     foot: ["confidence / 0.86", "provenance / vendor diff + compiler", "review / required"],
   },
   repair: {
-    eyebrow: "03 / repair",
-    title: "A patch you can review.",
+    eyebrow: "Repair",
+    title: "A diff, not a rewrite.",
     description:
-      "Deterministic transforms update symbols and call sites where we have rules. Ambiguous mappings stay out of the auto-merge path.",
+      "We apply small AST edits where the spec change is unambiguous. If we are not sure, we flag it — we do not silently guess.",
     statusText: "Generated",
     statusType: "review",
     rows: [
@@ -81,10 +81,10 @@ const TAB_DATA: Record<TabId, TabContent> = {
     foot: ["confidence / 0.94", "provenance / ts-morph + compiler AST", "review / optional"],
   },
   verify: {
-    eyebrow: "04 / verify",
-    title: "Run the checks your repo already trusts.",
+    eyebrow: "Verify",
+    title: "Does it still compile?",
     description:
-      "TypeScript repairs go through tsc when available. Python patches must parse. Tests run when you have them configured.",
+      "TypeScript goes through tsc when we can. Python has to parse. We run your test script if the repo defines one.",
     statusText: "Passed",
     statusType: "verified",
     rows: [
@@ -141,12 +141,11 @@ export function HomePage() {
       <section className="hero-section section-rule">
         <div className="hero-copy">
           <div>
-            <p className="eyebrow">OPENAPI DRIFT → REPAIR PR</p>
-            <h1>Your API changed. Your code shouldn&apos;t be the last to know.</h1>
+            <p className="eyebrow">OpenAPI diff → repair PR</p>
+            <h1>Dependabot updated the package. The build is still broken.</h1>
             <p className="hero-lede">
-              Repairo compares OpenAPI specs, finds breaking changes, traces impact into TypeScript,
-              JavaScript, Python, and Go clients, and opens a pull request with compiler-checked
-              patches for your team to review.
+              Repairo diffs the vendor spec, finds the call sites that still use the old shape, and
+              opens a PR with patches that typecheck. You merge when it looks right.
             </p>
             <div className="hero-actions">
               <Link className="button button-dark" href="/demo">
@@ -222,8 +221,8 @@ $ npx repairo-cli repair --open-pr
 opened PR #184  fix(stripe): migrate consumer call sites`}</code>
             </pre>
             <div className="asset-caption">
-              <span>PRODUCT / CLI</span>
-              <span>EVIDENCE BEFORE MERGE</span>
+              <span>cli · scan + repair</span>
+              <span>example output</span>
             </div>
           </motion.div>
         </div>
@@ -233,7 +232,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       <section className="social-section section-rule" id="proof">
         <div className="social-proof-stack">
           <div className="home-logo-strip" aria-label="Vendors Repairo watches">
-            <p className="mono-label">Built for the APIs your code depends on</p>
+            <p className="mono-label">Vendors we watch today</p>
             <div className="home-logo-strip-scroll">
               <ul className="logo-strip-list">
                 {VENDOR_MARKS.map((name) => (
@@ -253,10 +252,10 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
               </blockquote>
             </figure>
             <figure className="home-proof-card home-proof-card--trust social-quote-block">
-              <p className="eyebrow">Open source engine</p>
+              <p className="eyebrow">CLI + engine</p>
               <blockquote className="social-quote social-quote-sm">
-                Run the repair engine locally. Inspect the diff. Keep the merge under your
-                team&apos;s control — including every AI-assisted mapping.
+                The same repair path runs on your laptop: <code>npm i -g repairo-cli</code>, point it
+                at a repo, read the diff before anything hits GitHub.
               </blockquote>
               <figcaption className="social-attrib">
                 <a className="text-link" href={SOCIAL.npm} rel="noreferrer" target="_blank">
@@ -281,8 +280,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
             ))}
           </div>
           <p className="home-metrics-footnote">
-            Engine facts from the open catalog, change taxonomy, and test suite — not production
-            usage telemetry.
+            Numbers from our test suite and vendor catalog — not customer analytics.
           </p>
         </div>
       </section>
@@ -290,40 +288,39 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 4. WORKFLOW SECTION */}
       <section className="workflow-section section-rule" id="workflow">
         <div className="section-intro">
-          <p className="eyebrow">HOW IT WORKS</p>
-          <h2>From spec diff to reviewable PR.</h2>
+          <p className="eyebrow">How it works</p>
+          <h2>Four steps, same order every time.</h2>
           <p>
-            Four engineering steps we actually run — detect the contract change, find affected
-            code, prepare the fix, let your team merge.
+            Diff the spec, map the repo, generate the patch, open the PR. Nothing auto-merges.
           </p>
         </div>
         <div className="workflow-list">
           <div className="workflow-step">
             <div className="step-number">01</div>
             <div className="step-copy">
-              <p className="mono-label">01 / DIFF</p>
-              <p>Find the breaking change in the OpenAPI spec</p>
+              <p className="mono-label">Diff</p>
+              <p>What changed in the vendor OpenAPI?</p>
             </div>
           </div>
           <div className="workflow-step">
             <div className="step-number">02</div>
             <div className="step-copy">
-              <p className="mono-label">02 / IMPACT</p>
-              <p>Find affected call sites and types in your repo</p>
+              <p className="mono-label">Impact</p>
+              <p>Which files still use the old API?</p>
             </div>
           </div>
           <div className="workflow-step">
             <div className="step-number">03</div>
             <div className="step-copy">
-              <p className="mono-label">03 / REPAIR</p>
-              <p>Prepare the fix and run validation checks</p>
+              <p className="mono-label">Repair</p>
+              <p>Patch + typecheck (or syntax check)</p>
             </div>
           </div>
           <div className="workflow-step">
             <div className="step-number">04</div>
             <div className="step-copy">
-              <p className="mono-label">04 / PR</p>
-              <p>Open a GitHub PR — you decide when to merge</p>
+              <p className="mono-label">PR</p>
+              <p>You review and merge on GitHub</p>
             </div>
           </div>
         </div>
@@ -341,23 +338,20 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
               src="/assets/repairo-code-reality.png"
             />
             <div className="asset-caption">
-              <span>CODE REALITY</span>
-              <span>COMPILER / PASS</span>
+              <span>patch view</span>
+              <span>tsc clean</span>
             </div>
           </div>
         </div>
         <div className="proof-copy">
-          <p className="eyebrow">A CONCRETE WORKFLOW IMPROVEMENT</p>
-          <h2>Stop finding vendor breakage only after it reaches CI.</h2>
+          <p className="eyebrow">Why bother</p>
+          <h2>CI should not be the first place you learn the API moved.</h2>
           <p>
-            Repairo turns a brittle integration update into a traceable path: detect the API diff, locate the affected TypeScript or Python, generate a repair, then verify before the PR opens.
+            When Stripe or OpenAI ships a breaking field rename, someone on your team still greps the
+            repo. Repairo is the grep — plus a proposed fix and a compile check.
           </p>
-          <div className="proof-stat">
-            <span className="stat-number">01</span>
-            <span>change surface mapped before manual repair begins</span>
-          </div>
           <a className="text-link" href="#review">
-            See what stays in your hands <span aria-hidden="true" className="arrow-mark">↗</span>
+            See the repair UI <span aria-hidden="true" className="arrow-mark">↗</span>
           </a>
         </div>
       </section>
@@ -365,10 +359,11 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 5. PRODUCT / INTERACTIVE REVIEW SECTION */}
       <section className="product-section section-rule" id="review">
         <div className="section-intro">
-          <p className="eyebrow">EVIDENCE AT THE AMBIGUITY BOUNDARY</p>
-          <h2>AI where it helps. Judgment where it matters.</h2>
+          <p className="eyebrow">What you get in the PR</p>
+          <h2>Detected, patched, checked — labeled separately.</h2>
           <p>
-            Switch between the parts of the repair system. Each result separates what was detected, inferred, generated, and verified.
+            Flip through impact, the diff, and verify. Optional AI only suggests enum mappings when
+            the spec alone is ambiguous; it never writes files by itself.
           </p>
         </div>
         <div className="product-demo">
@@ -457,10 +452,11 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 6. HUMAN REVIEW SECTION */}
       <section className="human-section section-rule">
         <div className="human-copy">
-          <p className="eyebrow">HUMAN REVIEW / ALWAYS IN THE LOOP</p>
-          <h2>Make the next safe change, not just the next change.</h2>
+          <p className="eyebrow">You own the merge</p>
+          <h2>We open the PR. You decide.</h2>
           <p>
-            Repairo does not blindly fix arbitrary code. It keeps confidence, provenance, compiler results, limitations, and the exact review boundary visible to the engineer who owns the integration.
+            Repairo is not an agent that force-pushes to main. It shows what changed in the spec,
+            what it touched in your code, and whether tsc complained.
           </p>
           <div className="control-list">
             <span>Detected</span>
@@ -479,8 +475,8 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
               src="/assets/repairo-human-review.png"
             />
             <div className="asset-caption">
-              <span>FOCUS &amp; CONTROL</span>
-              <span>REVIEW / REQUIRED</span>
+              <span>review in github</span>
+              <span>you merge</span>
             </div>
           </div>
         </div>
@@ -489,11 +485,11 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 8. PROVIDER COVERAGE */}
       <section className="providers-section section-rule" id="providers">
         <div className="section-intro">
-          <p className="eyebrow">PROVIDER COVERAGE</p>
-          <h2>Available now. Clear about what&apos;s next.</h2>
+          <p className="eyebrow">Vendors</p>
+          <h2>Who we watch today.</h2>
           <p>
-            Live agents watch public OpenAPI (and Discovery) pins. Upcoming vendors ship when the
-            contract path is solid — we don&apos;t pretend coverage we don&apos;t have.
+            Public OpenAPI or Discovery pins for the list on the left. Everything else is on the
+            roadmap — we would rather say &quot;not yet&quot; than fake it.
           </p>
         </div>
         <div className="provider-matrix">
@@ -535,11 +531,11 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 9. SECURITY BOUNDARY */}
       <section className="security-section section-rule" id="security">
         <div className="section-intro">
-          <p className="eyebrow">TRUST BOUNDARY</p>
-          <h2>Your source stays under your control.</h2>
+          <p className="eyebrow">Security</p>
+          <h2>Your code is not our training set.</h2>
           <p>
-            Repairo is built for teams that will not send a repo to a model to “see what happens.”
-            Processing is job-scoped. Pull requests never auto-merge.
+            Files are read for a repair job, processed in memory, then dropped. PRs do not
+            auto-merge. Details on /security.
           </p>
         </div>
         <div className="security-list">
@@ -564,15 +560,15 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 10. PUBLIC EVIDENCE */}
       <section className="evidence-section section-rule" id="evidence">
         <div className="section-intro">
-          <p className="eyebrow">PUBLIC EVIDENCE</p>
+          <p className="eyebrow">Fixture you can replay</p>
           <h2>
-            Stripe <code className="evidence-inline">customer.source</code> → compile-checked
-            repair.
+            Stripe removes <code className="evidence-inline">customer.source</code> — we ship a PR
+            that still typechecks.
           </h2>
           <p>
-            A concrete walkthrough of the loop peers ask for: vendor contract move, call-site
-            impact, AST patch, then <code className="evidence-inline">tsc --noEmit</code> before
-            the PR.
+            Same story as the demo: spec diff, file list, patch, then{" "}
+            <code className="evidence-inline">tsc --noEmit</code>. Clone the repo and run{" "}
+            <code className="evidence-inline">npm test</code> if you want proof.
           </p>
         </div>
         <div className="evidence-metrics">
@@ -610,10 +606,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
           </li>
           <li>
             <p className="mono-label">03 / Repair</p>
-            <p>
-              Deterministic transform migrates the call path; confidence and provenance travel with
-              the diff.
-            </p>
+            <p>AST rewrite on the impacted lines — not a whole-file LLM paste.</p>
           </li>
           <li>
             <p className="mono-label">04 / Verify</p>
@@ -646,8 +639,8 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       <section className="pricing-faq-section section-rule" id="faq">
         <div className="section-intro pricing-faq-intro">
           <p className="eyebrow">FAQ</p>
-          <h2>Straight answers.</h2>
-          <p>What Repairo does, what it does not do, and how to try it.</p>
+          <h2>FAQ</h2>
+          <p>Short answers. No sales script.</p>
         </div>
         <div className="pricing-faq-list">
           {FAQ_LIST.map((item) => (
@@ -662,11 +655,10 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 11. DEMO BOOKING FORM SECTION */}
       <section className="demo-section" id="demo">
         <div className="demo-intro">
-          <p className="eyebrow">BOOK A DEMO</p>
-          <h2>Want to see it on your API?</h2>
+          <p className="eyebrow">Talk to us</p>
+          <h2>Walk through your API on a call.</h2>
           <p>
-            Tell us about your stack and a breaking change you&apos;ve dealt with. We&apos;ll walk
-            through detect → impact → patch on a call — no pitch deck required.
+            Tell us which vendor bit you and we will run the tool on a similar change live. No deck.
           </p>
         </div>
         <div className="demo-form-wrap">
@@ -712,11 +704,11 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 9. BETA WAITLIST (secondary capture) */}
       <section className="demo-section section-rule" id="waitlist">
         <div className="demo-intro">
-          <p className="eyebrow">TRY REPAIRO</p>
-          <h2>Request access</h2>
+          <p className="eyebrow">Hosted workspace</p>
+          <h2>Early access list</h2>
           <p>
-            We&apos;re opening the hosted workspace in stages. Start with the demo, or leave your
-            email and we&apos;ll reach out when you can connect your own repo.
+            Try /demo first. Leave an email if you want the GitHub-connected workspace when we open
+            the next batch.
           </p>
         </div>
         <div className="demo-form-wrap" style={{ maxWidth: "28rem" }}>
@@ -742,7 +734,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
             <span style={{ fontFamily: '"Pixelify Sans", monospace' }}>Repairo</span>
             <span className="wordmark-ai" style={{ fontFamily: '"Figtree", sans-serif' }}>AI</span>
           </Link>
-          <p className="footer-note">API change. Impact. Repair. Verified.</p>
+          <p className="footer-note">Spec diff · call sites · PR you merge</p>
         </div>
         <div className="footer-links">
           <div>
