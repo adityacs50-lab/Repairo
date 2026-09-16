@@ -19,10 +19,10 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  */
 
 const SUGGESTIONS = [
-  "What is Repairo?",
-  "How is it different from Dependabot?",
-  "Do you store our code?",
-  "What does it cost?",
+  "What does Repairo fix?",
+  "How is this different from Dependabot?",
+  "What happens to our code?",
+  "How do I get started?",
 ];
 
 /**
@@ -31,8 +31,8 @@ const SUGGESTIONS = [
  * reads as an introduction plus an invitation rather than one run-on line.
  */
 const GREETING = [
-  "### Hi — I'm Otto, the Repairo assistant.",
-  "Ask me about the AST repair engine, security, pricing, or how to get started.",
+  "### Need help with a repair?",
+  "Ask me about the API change, affected files, security, pricing, or how to run the CLI.",
 ].join("\n\n");
 
 const INK = "var(--repairo-ink)";
@@ -191,7 +191,9 @@ export default function RepairoChatAssistant() {
               onReset={messages.length > 1 ? handleReset : undefined}
               onClose={() => setIsOpen(false)}
               renderAssistant={renderAssistant}
-              placeholder="Ask about Repairo…"
+              placeholder="What are you trying to fix?"
+              title="Ask Otto"
+              subtitle="API changes & repairs"
             />
           </motion.div>
         )}

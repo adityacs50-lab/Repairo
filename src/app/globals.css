@@ -31,6 +31,17 @@
   }
 }
 
+/* Layout rhythm — one system for marketing + product surfaces */
+:root {
+  --section-padding-y: clamp(56px, 7vw, 88px);
+  --section-padding-y-tight: clamp(40px, 5vw, 64px);
+  --stack-gap: clamp(20px, 3vw, 28px);
+  --stack-gap-lg: clamp(28px, 4vw, 40px);
+  --control-height: 44px;
+  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--repairo-purple) 22%, transparent);
+  --otto-safe-bottom: max(88px, calc(24px + env(safe-area-inset-bottom, 0px)));
+}
+
 *,
 *::before,
 *::after {
@@ -47,6 +58,7 @@ body {
   width: 100%;
   min-width: 0;
   margin: 0;
+  overflow-x: clip;
 }
 
 /* Centered page column — padding is inside max-width, not subtracted from width */
@@ -404,7 +416,16 @@ body {
 
 .demo-workspace-shell .workspace-panel,
 .app-workspace-shell .workspace-panel {
-  padding-bottom: clamp(48px, 8vw, 96px);
+  padding: clamp(20px, 3vw, 28px);
+  padding-bottom: clamp(32px, 5vw, 48px);
+}
+
+.demo-workspace-shell .workspace-tabs,
+.app-workspace-shell .workspace-tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  max-width: 100%;
 }
 
 .app-workspace-root {
@@ -496,8 +517,53 @@ body {
 
 .repo-repair-panel {
   width: 100%;
-  max-width: 1100px;
+  max-width: min(68rem, 100%);
   margin-inline: auto;
+  min-width: 0;
+}
+
+.repo-repair-panel--embedded {
+  max-width: min(52rem, 100%);
+}
+
+/* Workspace forms — same language as .repo-form / .demo-form */
+.app-workspace-shell .workspace-panel input:not([type="checkbox"]),
+.app-workspace-shell .workspace-panel select,
+.app-workspace-shell .workspace-panel textarea,
+.workspace-panel .vendor-agents-panel input:not([type="checkbox"]),
+.workspace-panel .vendor-agents-panel select,
+.workspace-panel .vendor-agents-panel textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--repairo-rule);
+  background: var(--repairo-paper);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--repairo-ink);
+  outline: none;
+  border-radius: 0;
+}
+
+.app-workspace-shell .workspace-panel textarea,
+.workspace-panel .vendor-agents-panel textarea {
+  min-height: 72px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.app-workspace-shell .workspace-panel input:focus,
+.app-workspace-shell .workspace-panel select:focus,
+.app-workspace-shell .workspace-panel textarea:focus {
+  border-color: var(--repairo-purple);
+  box-shadow: var(--focus-ring);
+}
+
+.workspace-surface {
+  border: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+  padding: clamp(16px, 3vw, 20px);
   min-width: 0;
 }
 
@@ -557,6 +623,7 @@ body {
 .repo-form-select:focus,
 .repo-form-textarea:focus {
   border-color: var(--repairo-purple);
+  box-shadow: var(--focus-ring);
 }
 
 .repo-form-textarea {
@@ -602,8 +669,6 @@ body {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  /* Keep scrollbars clear of the fixed Otto launcher on wide viewports */
-  padding-right: clamp(0px, 4vw, 120px);
   padding-bottom: 8px;
 }
 
@@ -623,12 +688,6 @@ body {
   scrollbar-gutter: stable;
 }
 
-@media (max-width: 767px) {
-  .demo-sbom-json-block {
-    padding-right: 0;
-    padding-bottom: 72px;
-  }
-}
 
 .demo-editor-grid {
   display: grid;
@@ -710,9 +769,15 @@ body {
 
 .otto-launcher-root {
   position: fixed;
-  z-index: 40;
-  right: max(20px, env(safe-area-inset-right, 0px));
-  bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+.otto-launcher-root > * {
+  pointer-events: auto;
 }
 
 @media (max-width: 767px) {
@@ -779,6 +844,16 @@ code {
   color: var(--repairo-ink);
   min-height: 100vh;
   width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.product-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-gap-lg);
+  width: 100%;
+  min-width: 0;
 }
 
 .site-header {
@@ -905,7 +980,7 @@ code {
 
 .button {
   border: 1px solid var(--repairo-ink);
-  min-height: 46px;
+  min-height: var(--control-height);
   font-family: var(--font-mono);
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -922,8 +997,14 @@ code {
 }
 
 .button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(11, 18, 32, 0.14);
+  box-shadow: 0 2px 12px rgba(11, 18, 32, 0.1);
+}
+
+.button:focus-visible,
+.btn-primary:focus-visible,
+.btn-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .button-dark {
@@ -984,9 +1065,9 @@ code {
 .hero-section {
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: start;
-  gap: clamp(32px, 5vw, 72px);
+  gap: clamp(28px, 4vw, 56px);
   min-height: auto;
-  padding: clamp(96px, 11vw, 112px) var(--page-padding) clamp(40px, 5vw, 56px);
+  padding: clamp(72px, 8vw, 96px) var(--page-padding) var(--section-padding-y-tight);
   display: grid;
 }
 
@@ -1221,7 +1302,7 @@ h1, h2, h3 {
 }
 
 .workflow-section {
-  padding: 116px 0 126px;
+  padding: var(--section-padding-y) 0;
 }
 
 .section-intro {
@@ -1249,15 +1330,15 @@ h1, h2, h3 {
 .workflow-list {
   border-top: 1px solid var(--repairo-ink);
   border-bottom: 1px solid var(--repairo-ink);
-  grid-template-columns: repeat(5, 1fr);
-  margin-top: 88px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: clamp(40px, 6vw, 56px);
   display: grid;
 }
 
 .workflow-step {
   border-right: 1px solid var(--repairo-rule);
-  min-height: 230px;
-  padding: 24px 24px 26px 0;
+  min-height: 0;
+  padding: 20px 20px 22px 0;
   position: relative;
 }
 
@@ -1271,7 +1352,7 @@ h1, h2, h3 {
 
 .step-number {
   color: var(--repairo-purple);
-  margin-bottom: 72px;
+  margin-bottom: clamp(24px, 4vw, 36px);
 }
 
 .step-copy .mono-label {
@@ -1291,8 +1372,8 @@ h1, h2, h3 {
 .human-section {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   align-items: center;
-  gap: clamp(56px, 10vw, 160px);
-  padding: 128px 0;
+  gap: clamp(40px, 6vw, 80px);
+  padding: var(--section-padding-y) 0;
   display: grid;
 }
 
@@ -1331,19 +1412,22 @@ h1, h2, h3 {
 }
 
 .product-section {
-  padding: 128px 0;
+  padding: var(--section-padding-y) 0;
 }
 
 .product-demo {
   border: 1px solid var(--repairo-rule);
   background: var(--repairo-white);
-  margin-top: 70px;
+  margin-top: clamp(40px, 5vw, 56px);
 }
 
 .tabs {
   border-bottom: 1px solid var(--repairo-rule);
   gap: 0;
   display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .tab {
@@ -1355,11 +1439,13 @@ h1, h2, h3 {
   font-family: var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  flex: 1;
-  padding: 18px 20px 16px;
+  flex: 1 0 auto;
+  min-width: max(5.5rem, fit-content);
+  padding: 16px 18px;
   font-size: 11px;
   transition: background 0.18s, color 0.18s;
   text-align: center;
+  white-space: nowrap;
 }
 
 .tab:last-child {
@@ -1509,7 +1595,7 @@ h1, h2, h3 {
 }
 
 .security-section {
-  padding: 116px 0 120px;
+  padding: var(--section-padding-y) 0;
 }
 
 .security-list {
@@ -1752,7 +1838,7 @@ h1, h2, h3 {
 
 .providers-section,
 .evidence-section {
-  padding: 116px 0 120px;
+  padding: var(--section-padding-y) 0;
 }
 
 .provider-matrix {
@@ -1887,7 +1973,7 @@ h1, h2, h3 {
 }
 
 .pricing-faq-section {
-  padding: 72px 0 56px;
+  padding: var(--section-padding-y) 0;
 }
 
 .pricing-faq-intro {
@@ -1961,7 +2047,7 @@ h1, h2, h3 {
 }
 
 .pricing-hero {
-  padding: 88px 0 56px;
+  padding: var(--section-padding-y) 0 var(--section-padding-y-tight);
 }
 
 .pricing-hero .eyebrow {
@@ -2114,7 +2200,7 @@ h1, h2, h3 {
   width: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 72px var(--page-padding) 96px;
+  padding: var(--section-padding-y) var(--page-padding) calc(var(--otto-safe-bottom) + 32px);
   min-width: 0;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -2411,7 +2497,7 @@ h1, h2, h3 {
   width: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: clamp(40px, 6vw, 56px) var(--page-padding) clamp(96px, 12vw, 120px);
+  padding: clamp(32px, 5vw, 48px) var(--page-padding) calc(var(--otto-safe-bottom) + 48px);
   min-width: 0;
 }
 
@@ -2420,8 +2506,8 @@ h1, h2, h3 {
 }
 
 .demo-page-intro {
-  max-width: 640px;
-  margin-bottom: 40px;
+  max-width: 42rem;
+  margin-bottom: 0;
 }
 
 .demo-page-intro h1 {
@@ -2448,7 +2534,7 @@ h1, h2, h3 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 0 18px;
   border: 1px solid var(--repairo-ink);
   background: var(--repairo-ink);
@@ -2458,6 +2544,13 @@ h1, h2, h3 {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.btn-primary:hover {
+  background: var(--repairo-purple);
+  border-color: var(--repairo-purple);
 }
 
 .btn-ghost {
@@ -2465,7 +2558,7 @@ h1, h2, h3 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 0 18px;
   border: 1px solid var(--repairo-rule);
   background: var(--repairo-white);
@@ -2475,6 +2568,13 @@ h1, h2, h3 {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.btn-ghost:hover {
+  border-color: var(--repairo-ink);
+  background: var(--repairo-paper);
 }
 
 .bg-bg { background-color: var(--repairo-white); }
@@ -2483,8 +2583,8 @@ h1, h2, h3 {
 
 .demo-section {
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: clamp(56px, 10vw, 160px);
-  padding: 132px 0 148px;
+  gap: clamp(32px, 5vw, 72px);
+  padding: var(--section-padding-y) 0;
   display: grid;
 }
 
@@ -2575,8 +2675,12 @@ h1, h2, h3 {
 .site-footer {
   justify-content: space-between;
   gap: 48px;
-  padding: 42px 0 56px;
+  padding: 42px var(--page-padding) calc(var(--otto-safe-bottom) * 0.35 + 40px);
   display: flex;
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin-inline: auto;
+  min-width: 0;
 }
 
 .footer-note {
@@ -2804,11 +2908,12 @@ h1, h2, h3 {
   .workflow-section,
   .proof-section,
   .product-section,
-  .human-section {
-    padding: 72px 0;
-  }
-  .demo-section {
-    padding: 72px 0 90px;
+  .human-section,
+  .demo-section,
+  .security-section,
+  .providers-section,
+  .evidence-section {
+    padding-block: var(--section-padding-y-tight);
   }
   .demo-panel-head {
     flex-direction: column;

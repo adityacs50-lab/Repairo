@@ -33,7 +33,7 @@ export default function BlogIndex() {
               Engineering Notes.
             </h1>
             <p className="text-[18px] md:text-[24px] text-body-mid leading-[1.5] max-w-[600px] mt-[16px]">
-              Deep dives into API drift, Abstract Syntax Trees, and how to stop breaking production.
+              Notes on API drift, AST repairs, and keeping client code in sync with OpenAPI.
             </p>
           </div>
 

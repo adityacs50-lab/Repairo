@@ -165,7 +165,7 @@ export function VendorAgents({
   }
 
   return (
-    <div className="space-y-4 border border-line bg-bg-panel p-5">
+    <div className="vendor-agents-panel space-y-4 workspace-surface">
       <div>
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-dim">
           Vendor agents

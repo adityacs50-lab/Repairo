@@ -20,7 +20,7 @@ const comparisonData = [
   { feature: "AST-level code patching", manual: false, dependabot: false, renovate: false, repairo: true },
   { feature: "Full codebase impact mapping", manual: false, dependabot: false, renovate: false, repairo: true },
   { feature: "Auto-open GitHub PR", manual: false, dependabot: true, renovate: true, repairo: true },
-  { feature: "Zero AI hallucinations", manual: "N/A", dependabot: "N/A", renovate: "N/A", repairo: true },
+  { feature: "Compiler-checked repairs", manual: "N/A", dependabot: "N/A", renovate: "N/A", repairo: true },
   { feature: "Zero configuration", manual: false, dependabot: "Partial", renovate: "Partial", repairo: true },
 ];
 

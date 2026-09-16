@@ -9,33 +9,38 @@ export interface FaqItem {
 export const FAQ_LIST: FaqItem[] = [
   {
     id: "codeStorage",
-    question: "Do you store or train on our company's private code?",
-    answer: "Never. We follow a strict Zero-Retention policy. Your code is processed in secure temporary memory only while creating the fix, and is completely wiped immediately after. Your code always remains 100% private.",
-    hasSpecialContent: true,
+    question: "What happens to our code?",
+    answer:
+      "For a repair job we fetch the OpenAPI spec and consumer files you point us at, process them in memory, and use that output to build a diff. We do not sell your code or use it to train third-party models. Workspace metadata (integration config, run status, PR links) is stored in our database; file contents are not kept as a long-term archive after the job finishes. See /security for OAuth scopes and retention details.",
   },
   {
     id: "whatItDoes",
-    question: "What does Repairo actually do?",
-    answer: "Whenever external services you rely on (like OpenAI, Stripe, or Google Gemini) update their software, your app can break. Repairo automatically detects these changes and creates a ready-to-merge fix for your developers—so your app stays up and running without wasting engineering hours.",
+    question: "What does Repairo fix?",
+    answer:
+      "Breaking and risky changes in third-party OpenAPI specs — renames, removed fields, URL moves, enum changes, and similar contract drift. Repairo diffs the spec, finds affected TypeScript, JavaScript, Python, and Go call sites where we have transforms, runs compiler or syntax checks when configured, and opens a GitHub pull request for your team to review. It is not a general-purpose code generator.",
   },
   {
-    id: "saveMoneyTime",
-    question: "How does this save my team money and time?",
-    answer: "Engineers spend up to 20% of their time manually hunting down and fixing broken third-party tools. Repairo does this work automatically in seconds, letting your team focus on building new features that grow your business.",
+    id: "whyUse",
+    question: "Why would my team use this?",
+    answer:
+      "Because API updates still land in your repo as surprise compile errors, flaky tests, or production incidents. Repairo shortens the loop from “the vendor changed something” to “here is the diff that updates our clients,” with evidence attached instead of a manual file-by-file hunt.",
   },
   {
     id: "modelUpdate",
-    question: "What happens when an AI model or payment system updates?",
-    answer: "Repairo instantly flags the update, rewrites the affected lines of code, and opens a standard GitHub Pull Request. Your team simply clicks 'Approve' to apply the update safely.",
+    question: "What happens when an API changes?",
+    answer:
+      "On hosted plans, Repairo can poll vendor OpenAPI pins or react to spec changes in your repo (GitHub App or webhooks, depending on setup). When a breaking change is detected, it maps impact, prepares patches, and opens a PR. Nothing merges automatically — you review and merge on your schedule.",
   },
   {
     id: "securityVuln",
-    question: "Does Repairo also protect us from security vulnerabilities?",
-    answer: "Yes! Repairo constantly monitors your application for known security risks in third-party software and automatically submits security patches before issues ever hit production.",
+    question: "Does Repairo find security vulnerabilities too?",
+    answer:
+      "No. Repairo focuses on API contract drift and client repairs, not CVE scanning or dependency advisories. Use your existing security tooling for vulns; use Repairo when the API shape changed and your integration code needs to catch up.",
   },
   {
     id: "setupDifficulty",
-    question: "How hard is it to set up?",
-    answer: "It takes less than 2 minutes. Simply connect your GitHub account, choose which projects to protect, and Repairo starts working in the background automatically. No complex configuration required.",
+    question: "How do I get started?",
+    answer:
+      "Fastest path: try the in-browser demo at /demo, or install the CLI (npm i -g repairo-cli) against a local repo. For your own GitHub repo, install the GitHub App or sign in to the workspace, pick a repository, and tell Repairo where the OpenAPI spec and client files live. Vendor agents add remote spec watching once an integration is configured.",
   },
 ];

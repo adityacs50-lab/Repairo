@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="520" viewBox="0 0 880 520">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1e2e"/>
+      <stop offset="100%" stop-color="#181825"/>
+    </linearGradient>
+  </defs>
+  <rect width="880" height="520" rx="12" fill="url(#bg)"/>
+  <circle cx="28" cy="28" r="6" fill="#f38ba8"/>
+  <circle cx="48" cy="28" r="6" fill="#f9e2af"/>
+  <circle cx="68" cy="28" r="6" fill="#a6e3a1"/>
+  <text x="24" y="72" fill="#cdd6f4" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13">
+    <tspan x="24" dy="0">$ npx repairo-cli diff --spec ./fixtures/breaking-api-demo/specs/new-openapi.json \</tspan>
+    <tspan x="24" dy="22" fill="#cdd6f4">    --target ./fixtures/breaking-api-demo</tspan>
+    <tspan x="24" dy="32" fill="#f38ba8" font-weight="600">BREAKING</tspan>
+    <tspan x="24" dy="24" fill="#a6adc8">POST /v1/chat/completions  Parameter removed: max_tokens</tspan>
+    <tspan x="24" dy="24" fill="#a6adc8">POST /v1/chat/completions  Removed request field "max_tokens"</tspan>
+    <tspan x="24" dy="32" fill="#a6e3a1" font-weight="600">ADDITIVE</tspan>
+    <tspan x="24" dy="24" fill="#a6adc8">POST /v1/chat/completions  Parameter added: max_output_tokens</tspan>
+    <tspan x="24" dy="32" fill="#cdd6f4">Potential impact:</tspan>
+    <tspan x="24" dy="24" fill="#89b4fa">  1 file · 4 call sites</tspan>
+    <tspan x="24" dy="32" fill="#a6adc8">Next step: repairo repair --dry-run</tspan>
+  </text>
+</svg>

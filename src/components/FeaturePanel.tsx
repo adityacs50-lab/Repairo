@@ -20,7 +20,7 @@ export function FeaturePanel() {
           PLATFORM FEATURES
         </div>
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium font-display text-ink tracking-tight">
-          Understand the blast radius.
+          Find out what changed before it breaks your code.
         </h2>
       </motion.div>
 
@@ -46,7 +46,7 @@ export function FeaturePanel() {
                 Automatic change detection
               </h3>
               <p className="text-xs text-mute leading-relaxed mb-6">
-                We continuously poll the OpenAPI specs of your dependencies. When a breaking change is released, Repairo catches the diff instantly.
+                Repairo compares OpenAPI pins for vendors you watch and flags breaking diffs — polling on hosted plans, or on demand via CLI and PR hooks.
               </p>
             </div>
 
@@ -63,7 +63,7 @@ export function FeaturePanel() {
                     <div className="text-[10px] text-charcoal">2 breaking changes</div>
                   </div>
                 </div>
-                <div className="text-[10px] text-charcoal font-mono">2m ago</div>
+                <div className="text-[10px] text-charcoal font-mono">sample</div>
               </div>
             </div>
           </div>
@@ -81,10 +81,10 @@ export function FeaturePanel() {
                 </svg>
               </div>
               <h3 className="text-base font-medium text-ink mb-2">
-                Impact mapping across the codebase
+                Find the code that needs changing
               </h3>
               <p className="text-xs text-mute leading-relaxed mb-6">
-                Repairo scans your entire codebase to find every affected call site. TypeScript uses ts-morph; Python uses a tokenizer that skips comments.
+                Repairo traces the contract change to call sites in TypeScript (ts-morph), Python, and Go where we have transforms — not a whole-repo guess.
               </p>
             </div>
 
@@ -145,7 +145,7 @@ export function FeaturePanel() {
                 Safe, reviewable PRs
               </h3>
               <p className="text-xs text-mute leading-relaxed mb-6">
-                <span className="font-medium text-ink bg-surface-deep px-1.5 py-0.5 rounded">Zero AI hallucinations.</span> Repairo generates a clean, deterministic patch based on OpenAPI specification changes and opens a review-ready Pull Request.
+                Repairo prepares a focused diff from the spec change and opens a pull request. Your team reviews and merges — ambiguous AI mappings never auto-merge.
               </p>
             </div>
 
@@ -178,10 +178,10 @@ export function FeaturePanel() {
                 </svg>
               </div>
               <h3 className="text-base font-medium text-ink mb-2">
-                Zero configuration
+                A small setup
               </h3>
               <p className="text-xs text-mute leading-relaxed mb-6">
-                Connect your GitHub account and point Repairo at an OpenAPI URL. We handle the rest.
+                Connect GitHub, choose the repository, and tell Repairo where the OpenAPI spec and client files live.
               </p>
             </div>
 
@@ -203,7 +203,7 @@ export function FeaturePanel() {
                 </div>
               </div>
               <button className="w-full bg-ink text-primary-on text-[10px] font-medium py-1.5 rounded-lg hover:bg-body transition-colors mt-1">
-                Connect & Monitor
+                Save integration
               </button>
             </div>
           </div>

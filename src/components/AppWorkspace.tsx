@@ -457,10 +457,10 @@ export function AppWorkspace() {
         <div className="workspace-tabs" role="tablist" aria-label="Workspace">
           {(
             [
-              ["try", "Try your repo"],
-              ["agents", "Vendor agents"],
+              ["try", "Your repo"],
+              ["agents", "API providers"],
               ["overview", "Overview"],
-              ["integrations", "Watch"],
+              ["integrations", "Integrations"],
               ["runs", "Runs"],
               ["settings", "Settings"],
             ] as const

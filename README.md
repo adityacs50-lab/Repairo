@@ -1,110 +1,131 @@
 <p align="center">
-  <img src="./public/brand-mark.png" alt="Repairo AI" width="180">
+  <img src="./public/brand-mark.png" alt="Repairo" width="160">
 </p>
 
-<h1 align="center">Repairo AI</h1>
+<h1 align="center">Repairo</h1>
 
 <p align="center">
   <strong>Dependabot bumps the package. Repairo fixes the call sites that break.</strong>
 </p>
 
 <p align="center">
-  Detect third-party API breaking changes · map TypeScript, JavaScript, Python, and Go impact · open a verified repair PR
+  OpenAPI-grounded breaking-change detection · AST impact mapping · compile-checked repair PRs
 </p>
 
 <p align="center">
   <a href="https://www.heyrepairo.in">Website</a>
   ·
+  <a href="https://www.heyrepairo.in/demo">Live demo</a>
+  ·
   <a href="https://www.heyrepairo.in/docs">Docs</a>
   ·
   <a href="https://www.npmjs.com/package/repairo-cli">npm</a>
-  ·
-  <a href="https://www.heyrepairo.in/pricing">Pricing</a>
-  ·
-  <a href="https://www.heyrepairo.in/security">Security</a>
   ·
   <a href="https://github.com/adityacs50-lab/Repairo/issues">Issues</a>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/repairo-cli"><img alt="npm" src="https://img.shields.io/npm/v/repairo-cli?style=flat-square&label=repairo-cli&color=111827"></a>
+  <a href="https://www.npmjs.com/package/repairo-cli"><img alt="npm version" src="https://img.shields.io/npm/v/repairo-cli?style=flat-square&label=npm"></a>
+  <a href="https://www.npmjs.com/package/repairo-cli"><img alt="npm downloads" src="https://img.shields.io/npm/dm/repairo-cli?style=flat-square&label=downloads"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-0EA5E9?style=flat-square"></a>
-  <a href="https://github.com/adityacs50-lab/Repairo/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/adityacs50-lab/Repairo?style=flat-square"></a>
-  <a href="https://github.com/adityacs50-lab/Repairo/issues"><img alt="Issues" src="https://img.shields.io/github/issues/adityacs50-lab/Repairo?style=flat-square&color=64748B"></a>
+  <a href="https://github.com/adityacs50-lab/Repairo/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/adityacs50-lab/Repairo?style=flat-square"></a>
+  <a href="https://github.com/adityacs50-lab/Repairo/actions/workflows/test.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/adityacs50-lab/Repairo/test.yml?branch=main&style=flat-square&label=tests"></a>
+  <img alt="Node" src="https://img.shields.io/badge/node-%3E%3D22-339933?style=flat-square&logo=node.js&logoColor=white">
+  <img alt="Languages" src="https://img.shields.io/badge/TS·JS·Python·Go-64748B?style=flat-square">
 </p>
 
 ---
 
-## Why Repairo
+## See it (30 seconds)
 
-When Stripe, OpenAI, or another vendor ships a breaking OpenAPI change, you usually find out too late:
+**CLI on this repo’s fixtures** (recorded output — run the same commands locally to verify):
 
-1. **Dependabot / Renovate** bump the SDK — your build still breaks; you grep call sites by hand.
-2. **AI coding agents** rewrite files — probabilistic, hard to audit, and often means sending source to a model.
+<p align="center">
+  <img src="./docs/assets/terminal-scan.svg" alt="repairo-cli scan on fixtures/consumers" width="880">
+</p>
 
-Repairo fills the gap: **deterministic AST repair** grounded in an OpenAPI diff, with compile verification before you ever see a PR. An LLM may *propose* a mapping only when the spec diff is genuinely ambiguous — it never writes your files, and those PRs are never auto-merge eligible.
+```bash
+npx repairo-cli scan ./fixtures/consumers --vendors stripe
+```
+
+<p align="center">
+  <img src="./docs/assets/terminal-diff.svg" alt="repairo-cli diff on breaking-api-demo fixture" width="880">
+</p>
+
+**Full pipeline in the browser** (no install): [heyrepairo.in/demo](https://www.heyrepairo.in/demo) — OpenAPI diff → impact → patch → validation on bundled scenarios.
 
 ---
 
 ## Quick start
 
+No signup. No config file.
+
 ```bash
-# No signup. No config file.
 npx repairo-cli scan ./src --vendors stripe,openai,supabase
 ```
 
-Install globally when you want the full CLI:
+Global install + typical workflow:
 
 ```bash
-npm install -g repairo-cli
+npm install -g repairo-cli   # requires Node ≥ 22
 
-repairo init --repo owner/your-app
+repairo init --repo owner/your-app --vendors stripe,openai
 repairo scan ./src
-repairo check --vendors stripe,openai
-repairo repair --create-pr
+repairo check --vendors stripe,openai --target ./src
+repairo repair --dry-run --target ./src
+repairo repair --create-pr     # needs git + GitHub token for PR creation
 ```
 
-Requires **Node ≥ 22**.
+Try the **in-repo fixture** without touching your app:
 
----
-
-## Features
-
-- **OpenAPI diff** — structural before → after on live vendor specs (or your own pins)
-- **AST/token impact map** — `ts-morph` for TypeScript/JavaScript; tokenizer-based engines for Python and Go that skip comments/strings and never guess at ambiguous matches
-- **Deterministic transforms** — renames, required fields, URL bumps, enum updates, struct-tag renames (TS AST + Python + Go)
-- **Compiler gate** — TypeScript/JavaScript must typecheck; Python must pass syntax validation (plus optional Pyright when a project config is present); Go must pass syntax validation — before a patch is ever proposed
-- **Human review** — PRs never auto-merge when any fix was AI-assisted
-- **CI check** — fail the job when a watched vendor contract drifts
-- **Vendor agents** — Stripe, OpenAI, Anthropic, Supabase, Gemini, GitHub REST ([marketplace](https://www.heyrepairo.in/agents))
-- **GitHub App** — breaking-change comments on OpenAPI PRs + optional compile-verified fix PRs
-
----
-
-## How it works
-
-```
-OpenAPI (before → after)
-        │
-        ▼
-  Structural diff          what changed
-        │
-        ▼
-  AST impact scan          which call sites
-        │
-        ▼
-  Deterministic AST patch  (+ optional LLM proposal for ambiguous enums only)
-        │
-        ▼
-  tsc / in-memory validate must compile
-        │
-        ▼
-  Reviewable GitHub PR     labeled · scored · human merges
+```bash
+git clone https://github.com/adityacs50-lab/Repairo.git && cd Repairo
+npm install
+npx repairo-cli scan ./fixtures/consumers --vendors stripe
+cp fixtures/breaking-api-demo/specs/old-openapi.json .repairo/snapshots/openapi.json
+npx repairo-cli diff --spec ./fixtures/breaking-api-demo/specs/new-openapi.json --target ./fixtures/breaking-api-demo
 ```
 
 ---
 
-## Example
+## The problem
+
+Version bumpers update `package.json`. They do **not** rewrite your call sites when a vendor removes a field, renames a parameter, or ships a new base path.
+
+You end up grepping the repo, fixing files by hand, or handing broad context to an AI agent — hard to audit and easy to miss edge cases.
+
+---
+
+## What Repairo does
+
+- **Watches vendor OpenAPI** (live fetch or pinned specs) and computes a structural diff
+- **Maps impact** with compiler-grade parsing (TypeScript/JavaScript via `ts-morph`; Python/Go tokenizer paths in the engine)
+- **Applies deterministic AST/token transforms** where the spec change is unambiguous
+- **Validates before proposing** — TypeScript/JavaScript typecheck; Python/Go syntax checks (optional Pyright when your project already has config)
+- **Opens a reviewable PR** with evidence — **never auto-merges**, especially when optional agent assist was used
+
+Optional: `repairo repair --agent-resolve` proposes enum mappings only when the diff is ambiguous (off by default; needs your `ANTHROPIC_API_KEY`).
+
+---
+
+## Supported today (honest)
+
+| Area | Status |
+| --- | --- |
+| **npm CLI** (`repairo-cli`) | Shipped — badges above reflect live npm/GitHub stats |
+| **Languages** | **TypeScript/JavaScript** strongest; **Python** and **Go** repair paths exist with dedicated tests — expect rough edges on untyped or dynamic code |
+| **Vendors (watch list)** | Stripe, OpenAI, Anthropic, Supabase, Gemini, GitHub REST — plus your own OpenAPI files via `diff` / snapshots |
+| **Hosted app** | Beta at [heyrepairo.in](https://www.heyrepairo.in) — GitHub connect, watch list, repair PRs |
+| **GitHub App** | In repo (`src/github-app/`) — self-host or use when app slug is configured on the site |
+| **Distribution** | Early — treat stars/downloads as **signal**, not “customers” |
+
+Proof you can run locally: `npm test` (engine + GitHub app + Python/Go repair + web app suites). CI runs the same workflow on every push to `main`.
+
+---
+
+## Example repair
+
+From the `breaking-api-demo` fixture (`max_tokens` → `max_output_tokens` on chat completions):
 
 ```diff
 - const response = await openai.chat.completions.create({
@@ -118,7 +139,30 @@ OpenAPI (before → after)
 + });
 ```
 
-Scoped to the real call site via AST — an unrelated object with the same field name is left alone.
+Scoped to the real call site via AST — unrelated objects with the same property name are left alone.
+
+---
+
+## How it works
+
+```
+OpenAPI (before → after)
+        │
+        ▼
+  Structural diff
+        │
+        ▼
+  Impact map (AST / tokens)
+        │
+        ▼
+  Deterministic patch (+ optional agent proposal for ambiguous enums)
+        │
+        ▼
+  Compile / syntax validation
+        │
+        ▼
+  GitHub PR (human review)
+```
 
 ---
 
@@ -126,15 +170,15 @@ Scoped to the real call site via AST — an unrelated object with the same field
 
 | | Dependabot / Renovate | AI coding agents | **Repairo** |
 |---|:---:|:---:|:---:|
-| Bumps the package version | ✅ | — | ✅ |
-| Fixes the calling code | ❌ | ✅ (probabilistic) | ✅ (deterministic) |
-| Compile-verified before you see it | N/A | ❌ | ✅ |
-| Ambiguous mappings | N/A | Often guessed silently | Flagged, or LLM-proposed with **mandatory** review |
-| What leaves your machine (ambiguous case) | Nothing | Broad file context | Field names + candidates only — not your source |
+| Bumps package version | ✅ | — | ✅ (via your workflow) |
+| Fixes calling code | ❌ | ✅ (probabilistic) | ✅ (deterministic where spec is clear) |
+| Checked before you see a PR | N/A | Often no | ✅ (typecheck / syntax gate) |
+| Ambiguous mappings | N/A | Often silent guesses | Flagged or agent-**proposed**, review required |
+| Customer source in the cloud | N/A | Often broad context | CLI is local; hosted beta uses OAuth scopes you approve |
 
 ---
 
-## Run in CI
+## CI
 
 ```yaml
 # .github/workflows/repairo.yml
@@ -159,51 +203,12 @@ First run writes baselines under `.repairo/snapshots/` (commit them). Later runs
 
 ---
 
-## Agent resolve (optional)
+## Privacy & security
 
-For genuinely ambiguous enum remaps only:
-
-```bash
-repairo repair --agent-resolve   # needs ANTHROPIC_API_KEY
-```
-
-- Off by default (two opt-ins: flag + your key)
-- Model output constrained to candidates from the diff
-- Same AST path + compile gate as every other fix
-- **Any AI-touched PR is never auto-merge eligible**
-
-Details: [docs](https://www.heyrepairo.in/docs) · [security model](https://www.heyrepairo.in/security)
-
----
-
-## GitHub App
-
-Install on your repos from [heyrepairo.in](https://www.heyrepairo.in) (when `NEXT_PUBLIC_GITHUB_APP_SLUG` is set) or self-host:
-
-1. Create a GitHub App with webhook URL `{APP_URL}/api/github/webhooks`
-2. Set `APP_ID`, `PRIVATE_KEY`, `WEBHOOK_SECRET`, and `NEXT_PUBLIC_GITHUB_APP_SLUG` on Vercel
-3. Redeploy — `GET /api/github/webhooks` reports whether the app is configured
-
-`src/github-app/` watches PRs that touch OpenAPI specs, comments with a breaking-change table, and can open a compile-verified fix PR when every transform is safe.
-
-```bash
-cp .env.example .env.local   # APP_ID, PRIVATE_KEY, WEBHOOK_SECRET
-npm run dev                  # webhooks at http://localhost:3000/api/github/webhooks
-# or standalone: npm run dev:github-app + smee.io → localhost:3001/api/github/webhooks
-```
-
-```bash
-npm run test:github-app
-docker compose up --build github-app   # published on localhost:3001
-```
-
----
-
-## Hosted product
-
-- **Website:** [heyrepairo.in](https://www.heyrepairo.in) — demo booking, waitlist, evidence walkthrough
-- **App:** connect GitHub, watch integrations, open repair PRs
-- **Pricing:** [Free / Pro / Enterprise](https://www.heyrepairo.in/pricing) — CLI stays free (Apache-2.0)
+- **CLI**: runs on your machine; repairs are computed in-process for local commands.
+- **Hosted / GitHub App**: only the OAuth scopes and webhooks you configure — see [security](https://www.heyrepairo.in/security).
+- **Agent resolve**: sends minimal structured context (field names + candidates), not whole files, when you opt in.
+- Vulnerabilities: [info@heyrepairo.in](mailto:info@heyrepairo.in) (please don’t file public issues for security reports).
 
 ---
 
@@ -211,25 +216,21 @@ docker compose up --build github-app   # published on localhost:3001
 
 ```bash
 npm install
-npm run dev          # Next.js app
-npm test             # engine + app + Otto suites
+npm run dev          # Next.js app (heyrepairo.in UI)
+npm test             # full test matrix
+npm run repairo -- scan ./fixtures/consumers
 ```
 
----
-
-## Security
-
-Report vulnerabilities to [info@heyrepairo.in](mailto:info@heyrepairo.in) — please don’t open a public issue for security reports.
+Demo asset sources: [docs/assets/README.md](./docs/assets/README.md).
 
 ---
 
 ## Contributing
 
-Issues and PRs welcome. Start with a clear repro or a focused fix:
+Issues and focused PRs welcome — especially repro fixtures and deterministic repair cases.
 
 - [Open an issue](https://github.com/adityacs50-lab/Repairo/issues)
-- Prefer small PRs that keep the deterministic path intact
-- Don’t expand AI write access — proposals only, always review-gated
+- Keep the deterministic repair path strict; don’t expand unsupervised AI write access
 
 ---
 

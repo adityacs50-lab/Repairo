@@ -42,7 +42,7 @@ export default function Image() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2 }}>
-            Stop breaking production. Start repairing it.
+            Your API changed. Know what to repair.
           </div>
           <div style={{ fontSize: 28, color: "#a1a1aa", maxWidth: 980, lineHeight: 1.35 }}>
             {SITE_DESCRIPTION}

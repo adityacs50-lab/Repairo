@@ -8,7 +8,7 @@ const team = [
   {
     name: "Aditya",
     role: "Founder",
-    bio: "Building self-maintaining APIs.",
+    bio: "Building the repair engine and the product around it.",
     twitter: "https://x.com/Repairoai",
     linkedin: "https://www.linkedin.com/in/aditya-shinde-ai/",
     avatar: "/images/aditya.png"
@@ -16,7 +16,7 @@ const team = [
   {
     name: "Sanjay",
     role: "CTO",
-    bio: "Scaling infrastructure and developer experience.",
+    bio: "Engineering the hosted workflow, GitHub integration, and infra.",
     twitter: "https://x.com/Repairoai",
     linkedin: "https://www.linkedin.com/in/sanjaynandanj/",
     avatar: "/images/sanjay.png"
@@ -38,10 +38,11 @@ export function TeamSection() {
       >
         <motion.div variants={itemVariants} className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-display font-medium text-ink tracking-tight mb-4">
-            Built by developers, for developers.
+            Built because API maintenance gets old.
           </h2>
           <p className="text-lg text-mute max-w-2xl mx-auto">
-            We're on a mission to eliminate manual API maintenance and make breaking changes a thing of the past.
+            A dependency changes, your code breaks, and someone has to track down every affected file.
+            We want that work easier to find, review, and fix.
           </p>
         </motion.div>
 

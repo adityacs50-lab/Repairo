@@ -69,16 +69,17 @@ export function BookDemoSection() {
             Get in touch
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium font-display text-ink tracking-tight leading-tight mb-6">
-            <TextEffect preset="fade">Ready to stop breaking production?</TextEffect>
+            <TextEffect preset="fade">Want to see it on your API?</TextEffect>
           </h2>
           <p className="text-lg text-mute mb-8 leading-relaxed">
-            Book a personalized demo with our founders to see how Repairo can automatically maintain your APIs and save your engineering team hundreds of hours.
+            Tell us what your stack looks like and we&apos;ll walk through how Repairo detects
+            changes, finds affected code, and prepares a fix — on a technical call, not a sales deck.
           </p>
           <ul className="space-y-4 mb-8">
             {[
-              "Custom OpenAPI diffing analysis on your specific specs.",
-              "Deep dive into TypeScript and Python impact mapping.",
-              "Security and SOC2 compliance overview.",
+              "OpenAPI diff on specs you care about.",
+              "Impact mapping in TypeScript, Python, and Go where we support it.",
+              "Security model and permissions — honest about what we do and don't certify yet.",
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-ink shrink-0" />

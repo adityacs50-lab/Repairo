@@ -84,7 +84,7 @@ export default function DocsPage() {
     >
       <Section title="Overview & Architecture" id="overview">
         <p>
-          Instead of manually tracking down API changes, Repairo provides a seamless pipeline from an upstream OpenAPI spec directly into TypeScript, JavaScript, Python, and Go consumers.
+          Repairo diffs upstream OpenAPI specs, maps breaking changes into TypeScript, JavaScript, Python, and Go consumers, and opens a PR with patches your team can review.
         </p>
       </Section>
 

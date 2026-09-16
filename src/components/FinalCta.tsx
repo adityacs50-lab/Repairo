@@ -33,11 +33,11 @@ export function FinalCta() {
 
         <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
           <div className="font-mono text-xs uppercase tracking-widest text-charcoal mb-4">
-            READY TO AUTOMATE YOUR MAINTENANCE?
+            TRY REPAIRO
           </div>
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-medium font-display text-ink tracking-tight leading-tight mb-8">
-            <TextEffect per="word" preset="blur">Stop breaking production.</TextEffect><br />
-            <TextEffect per="word" preset="fade">Start repairing it.</TextEffect>
+            <TextEffect per="word" preset="blur">Keep API clients in sync</TextEffect><br />
+            <TextEffect per="word" preset="fade">without chasing every breaking change by hand.</TextEffect>
           </h2>
 
           <div className="w-full max-w-md mb-6">
@@ -45,7 +45,7 @@ export function FinalCta() {
           </div>
 
           <p className="text-xs text-mute">
-            Join the private beta. Get early access to Repairo.
+            Request workspace access — the interactive demo works today without a wait.
           </p>
         </div>
       </motion.div>

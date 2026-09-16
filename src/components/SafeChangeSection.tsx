@@ -98,7 +98,7 @@ export function SafeChangeSection() {
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-mono font-medium">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              Zero Hallucination
+              Review before merge
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs font-mono font-medium">
               <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />

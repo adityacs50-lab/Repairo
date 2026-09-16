@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import type { RepairRunResult } from "@/lib/engine/types";
-import { HeroEnter, PixelCluster } from "@/components/Motion";
+import { HeroEnter } from "@/components/Motion";
 
 import { DemoGitHubCta } from "@/components/DemoGitHubCta";
 import type { DemoScenarioId } from "@/lib/demo-scenarios";
@@ -23,11 +23,11 @@ type DemoPayload = {
 type DemoTabId = "inputs" | "changes" | "impact" | "diff" | "pr" | "sbom";
 
 const pipeline = [
-  "Ingesting OpenAPI specs",
-  "Diffing contracts",
-  "Tracing consumer call sites",
-  "Generating safe patches",
-  "Drafting pull request",
+  "Comparing OpenAPI specs",
+  "Flagging breaking changes",
+  "Finding affected files",
+  "Preparing the patch",
+  "Drafting the pull request",
 ] as const;
 
 function severityClass(severity: string) {
@@ -297,8 +297,6 @@ export function DemoWorkspace({
 
   return (
     <div className="demo-workspace-root">
-      <PixelCluster className="right-0 -top-2 hidden lg:grid" aria-hidden />
-
       {showGitHubCta && (
         <DemoGitHubCta oauthConfigured={oauthConfigured} />
       )}

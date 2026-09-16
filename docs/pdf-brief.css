@@ -1,0 +1,70 @@
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: #0b1220;
+  max-width: 100%;
+}
+
+h1 {
+  font-size: 22pt;
+  letter-spacing: -0.02em;
+  border-bottom: 2px solid #0b1220;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+h2 {
+  font-size: 13pt;
+  margin-top: 22px;
+  color: #1e2633;
+}
+
+h3 {
+  font-size: 11pt;
+  margin-top: 14px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9.5pt;
+  margin: 12px 0;
+}
+
+th,
+td {
+  border: 1px solid #d9dee7;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #f7f8fa;
+  font-weight: 600;
+}
+
+code,
+pre {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9pt;
+}
+
+pre {
+  background: #f7f8fa;
+  border: 1px solid #d9dee7;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+strong {
+  font-weight: 600;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #d9dee7;
+  margin: 20px 0;
+}

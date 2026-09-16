@@ -6,33 +6,27 @@ import { motion } from "framer-motion";
 const STEPS = [
   {
     number: "01",
-    tag: "DISCOVERY",
-    title: "Detect breaking changes",
-    desc: "Monitors vendor schemas, SDK releases, and API deprecation alerts continuously.",
+    tag: "DIFF",
+    title: "Find the breaking change",
+    desc: "Compare old and new OpenAPI specs and flag changes that can break client code.",
   },
   {
     number: "02",
-    tag: "IMPACT MAPPING",
-    title: "Trace external symbols",
-    desc: "Maps every imported type, method, and endpoint downstream to your exact call sites.",
+    tag: "IMPACT",
+    title: "Find the affected code",
+    desc: "Trace the changed API through your repo to call sites, types, and related files.",
   },
   {
     number: "03",
-    tag: "AST REWRITING",
-    title: "Prepare compiler-accurate repairs",
-    desc: "Uses type-aware AST transformations to rewrite call sites with zero hallucination.",
+    tag: "REPAIR",
+    title: "Prepare the fix",
+    desc: "Generate focused code changes and run validation (tsc, syntax, tests when available).",
   },
   {
     number: "04",
-    tag: "TEST & BENCHMARK",
-    title: "Run side-by-side verification",
-    desc: "Validates against existing unit tests, TypeScript typecheck, and Python syntax before a PR opens.",
-  },
-  {
-    number: "05",
-    tag: "PULL REQUEST",
-    title: "Ship your migration",
-    desc: "Opens clean, reviewable PRs with contextual diffs, migration notes, and verified test results.",
+    tag: "PR",
+    title: "Open a PR",
+    desc: "Review the diff on GitHub. Your team decides when it is ready to merge.",
   },
 ];
 

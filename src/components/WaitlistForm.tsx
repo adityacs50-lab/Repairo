@@ -88,13 +88,13 @@ export function WaitlistForm() {
     return (
       <div className="form-success">
         <p className="mono-label" style={{ color: "var(--repairo-teal)" }}>
-          BETA SPOT RESERVED
+          ON THE LIST
         </p>
         <h3>You&apos;re on the list.</h3>
         <p>
           {session?.user?.email
-            ? `Signed in as ${session.user.email}. We'll email launch updates.`
-            : "We've reserved your early access spot. Check your inbox for launch updates."}
+            ? `Signed in as ${session.user.email}. We'll email when workspace access opens.`
+            : "Thanks — we'll email when workspace access opens. The demo at /demo works today."}
         </p>
         {session && (
           <form action={signOutGoogle} style={{ marginTop: "1rem" }}>
@@ -137,7 +137,7 @@ export function WaitlistForm() {
           <span>
             {status === "loading" && session
               ? "Registering..."
-              : "Sign up with Google"}
+              : "Continue with Google"}
           </span>
         </button>
       </form>
@@ -175,7 +175,7 @@ export function WaitlistForm() {
           type="submit"
           disabled={status === "loading"}
         >
-          {status === "loading" && !session ? "Requesting..." : "Request Invite"}{" "}
+          {status === "loading" && !session ? "Sending..." : "Request access"}{" "}
           <span aria-hidden="true" className="arrow-mark">
             ↗
           </span>

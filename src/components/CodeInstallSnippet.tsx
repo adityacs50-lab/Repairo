@@ -4,22 +4,22 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { BorderTrail } from "@/components/ui/border-trail";
 
-const CLI_SNIPPET = `# 1. Scan your local codebase for third-party API dependencies
+const CLI_SNIPPET = `# 1. Find API dependencies in your codebase
 npx repairo-cli scan ./src --vendors stripe,openai,supabase
 
-# 2. Initialize local .repairo configuration workspace
+# 2. Set up your local workspace
 npx repairo-cli init --repo owner/your-app
 
-# 3. Detect API drift & map code impact from an OpenAPI spec
+# 3. Compare the spec and find affected code
 npx repairo-cli diff --spec ./specs/new-openapi.json
 
-# 4. Preview repairs (TypeScript typecheck + Python syntax)
+# 4. Preview the repair and run compiler checks
 npx repairo-cli repair --dry-run
 
-# 5. Apply validated AST repairs to your local working tree
+# 5. Apply the repair locally
 npx repairo-cli repair --apply
 
-# 6. Open a reviewable GitHub Pull Request
+# 6. Open a GitHub PR
 npx repairo-cli repair --create-pr`;
 
 export function CodeInstallSnippet() {
@@ -46,24 +46,25 @@ export function CodeInstallSnippet() {
             QUICKSTART
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium font-display text-ink tracking-tight mb-4">
-            Get started locally offline.
+            Try it locally.
           </h2>
           <p className="text-sm text-mute leading-relaxed mb-6">
-            Run our CLI locally against your codebase—no cloud backend or third-party AI keys required.
+            Run Repairo against your codebase without sending it to a hosted AI service. Scan for API
+            dependencies, inspect the diff, and preview the repair before you apply it or open a PR.
           </p>
 
           <div className="space-y-3 font-mono text-xs text-mute">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span>100% Offline &amp; Local Static AST Engine</span>
+              <span>Apache-2.0 CLI on npm</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent-blue"></span>
-              <span>Compiler-Grade Validation (<code className="text-ink">tsc --noEmit</code>)</span>
+              <span>Typecheck with <code className="text-ink">tsc --noEmit</code> when configured</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent-orange"></span>
-              <span>Zero-Disk Volatile Memory Vault</span>
+              <span>Optional hosted watching on Pro</span>
             </div>
           </div>
         </motion.div>

@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FORMSUBMIT_ENDPOINT } from "@/lib/contact";
 import { SOCIAL } from "@/lib/seo";
+import { FAQ_LIST } from "@/lib/faq";
 import {
-  DESIGN_PARTNER,
   ENGINE_METRICS,
+  HOMEPAGE_PROBLEM,
   VENDOR_MARKS,
 } from "@/lib/social-proof";
 
@@ -51,10 +52,10 @@ interface TabContent {
 
 const TAB_DATA: Record<TabId, TabContent> = {
   impact: {
-    eyebrow: "02 / semantic impact analysis",
-    title: "Know what changed before you touch the code.",
+    eyebrow: "02 / impact",
+    title: "Find the code that needs changing.",
     description:
-      "Repairo follows a vendor change through the dependency graph and identifies the application code that needs attention.",
+      "Repairo traces the API change through your codebase and lists affected call sites, types, and related files — not a vague “blast radius” chart.",
     statusText: "Needs review",
     statusType: "review",
     rows: [
@@ -65,10 +66,10 @@ const TAB_DATA: Record<TabId, TabContent> = {
     foot: ["confidence / 0.86", "provenance / vendor diff + compiler", "review / required"],
   },
   repair: {
-    eyebrow: "03 / ast repair generation",
-    title: "Propose changes grounded in compiler proof.",
+    eyebrow: "03 / repair",
+    title: "A patch you can review.",
     description:
-      "Targeted transforms update symbol paths and method invocations without hallucinating unverified edits.",
+      "Deterministic transforms update symbols and call sites where we have rules. Ambiguous mappings stay out of the auto-merge path.",
     statusText: "Generated",
     statusType: "review",
     rows: [
@@ -79,10 +80,10 @@ const TAB_DATA: Record<TabId, TabContent> = {
     foot: ["confidence / 0.94", "provenance / ts-morph + compiler AST", "review / optional"],
   },
   verify: {
-    eyebrow: "04 / compiler verification",
-    title: "Prove the repair is safe before opening the PR.",
+    eyebrow: "04 / verify",
+    title: "Run the checks your repo already trusts.",
     description:
-      "TypeScript patches must typecheck. Python patches must still parse. Tests run when the repo has them.",
+      "TypeScript repairs go through tsc when available. Python patches must parse. Tests run when you have them configured.",
     statusText: "Passed",
     statusType: "verified",
     rows: [
@@ -141,14 +142,14 @@ export function HomePage() {
             <span className="wordmark-ai" style={{ fontFamily: '"Figtree", sans-serif' }}>AI</span>
           </Link>
           <nav className="main-nav" aria-label="Main navigation">
-            <a href="#workflow">Workflow</a>
+            <a href="#workflow">How it works</a>
             <a href="#providers">Providers</a>
             <a href="#security">Security</a>
             <Link href="/pricing">Pricing</Link>
           </nav>
-          <a className="button button-dark button-small" href="#demo">
-            Book a demo <span aria-hidden="true" className="arrow-mark">↗</span>
-          </a>
+          <Link className="button button-dark button-small" href="/demo">
+            Try demo <span aria-hidden="true" className="arrow-mark">↗</span>
+          </Link>
         </div>
       </header>
 
@@ -156,26 +157,28 @@ export function HomePage() {
       <section className="hero-section section-rule">
         <div className="hero-copy">
           <div>
-            <p className="eyebrow">AI-ASSISTED API REPAIR / 01</p>
-            <h1>When the API changes, know exactly what to repair.</h1>
+            <p className="eyebrow">OPENAPI DRIFT → REPAIR PR</p>
+            <h1>Your API changed. Your code shouldn&apos;t be the last to know.</h1>
             <p className="hero-lede">
-              Repairo detects breaking third-party API changes, traces their impact into TypeScript and Python application code, and proposes a verified repair.
+              Repairo compares OpenAPI specs, finds breaking changes, traces impact into TypeScript,
+              JavaScript, Python, and Go clients, and opens a pull request with compiler-checked
+              patches for your team to review.
             </p>
             <div className="hero-actions">
+              <Link className="button button-dark" href="/demo">
+                Try the demo <span aria-hidden="true" className="arrow-mark">↗</span>
+              </Link>
               <a
-                className="button button-dark"
+                className="text-link"
                 href={GITHUB_APP_INSTALL_URL}
                 rel="noreferrer"
                 target="_blank"
               >
                 Install GitHub App <span aria-hidden="true" className="arrow-mark">↗</span>
               </a>
-              <Link className="text-link" href="/docs#github-app">
-                View docs <span aria-hidden="true" className="arrow-mark">↗</span>
+              <Link className="text-link" href="/docs">
+                Read the docs <span aria-hidden="true" className="arrow-mark">↗</span>
               </Link>
-              <a className="text-link" href="#demo">
-                Book a demo <span aria-hidden="true" className="arrow-mark">↗</span>
-              </a>
             </div>
             <div className="hero-trust-marquee" aria-label="Available vendors and install command">
               <div className="hero-trust-track">
@@ -246,7 +249,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       <section className="social-section section-rule" id="proof">
         <div className="social-proof-stack">
           <div className="home-logo-strip" aria-label="Vendors Repairo watches">
-            <p className="mono-label">Works with</p>
+            <p className="mono-label">Built for the APIs your code depends on</p>
             <div className="home-logo-strip-scroll">
               <ul className="logo-strip-list">
                 {VENDOR_MARKS.map((name) => (
@@ -260,25 +263,16 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
 
           <div className="home-proof-grid">
             <figure className="home-proof-card social-quote-block">
-              <p className="eyebrow">Design partner</p>
-              <blockquote className="social-quote">
-                “{DESIGN_PARTNER.beforeCode}
-                <code>{DESIGN_PARTNER.code}</code>
-                {DESIGN_PARTNER.afterCode}”
+              <p className="eyebrow">{HOMEPAGE_PROBLEM.eyebrow}</p>
+              <blockquote className="social-quote social-quote-sm">
+                {HOMEPAGE_PROBLEM.quote}
               </blockquote>
-              <figcaption className="social-attrib">
-                <span className="social-attrib-name">{DESIGN_PARTNER.role}</span>
-                <span className="hero-trust-sep" aria-hidden="true">
-                  /
-                </span>
-                {DESIGN_PARTNER.org}
-              </figcaption>
             </figure>
             <figure className="home-proof-card home-proof-card--trust social-quote-block">
-              <p className="eyebrow">Open source</p>
+              <p className="eyebrow">Open source engine</p>
               <blockquote className="social-quote social-quote-sm">
-                Apache-2.0 CLI on npm. Public engine suite. Human merge required — including every
-                AI-assisted mapping.
+                Run the repair engine locally. Inspect the diff. Keep the merge under your
+                team&apos;s control — including every AI-assisted mapping.
               </blockquote>
               <figcaption className="social-attrib">
                 <a className="text-link" href={SOCIAL.npm} rel="noreferrer" target="_blank">
@@ -312,46 +306,40 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 4. WORKFLOW SECTION */}
       <section className="workflow-section section-rule" id="workflow">
         <div className="section-intro">
-          <p className="eyebrow">THE REPAIR WORKFLOW</p>
-          <h2>From external change to reviewable repair.</h2>
+          <p className="eyebrow">HOW IT WORKS</p>
+          <h2>From spec diff to reviewable PR.</h2>
           <p>
-            One chain from what the vendor changed to what your code needs, with the evidence intact at every step.
+            Four engineering steps we actually run — detect the contract change, find affected
+            code, prepare the fix, let your team merge.
           </p>
         </div>
         <div className="workflow-list">
           <div className="workflow-step">
             <div className="step-number">01</div>
             <div className="step-copy">
-              <p className="mono-label">API DIFF</p>
-              <p>Detect breaking changes</p>
+              <p className="mono-label">01 / DIFF</p>
+              <p>Find the breaking change in the OpenAPI spec</p>
             </div>
           </div>
           <div className="workflow-step">
             <div className="step-number">02</div>
             <div className="step-copy">
-              <p className="mono-label">IMPACT ANALYSIS</p>
-              <p>Trace semantic impact into your code</p>
+              <p className="mono-label">02 / IMPACT</p>
+              <p>Find affected call sites and types in your repo</p>
             </div>
           </div>
           <div className="workflow-step">
             <div className="step-number">03</div>
             <div className="step-copy">
-              <p className="mono-label">AST REPAIR</p>
-              <p>Propose compiler-aware changes</p>
+              <p className="mono-label">03 / REPAIR</p>
+              <p>Prepare the fix and run validation checks</p>
             </div>
           </div>
           <div className="workflow-step">
             <div className="step-number">04</div>
             <div className="step-copy">
-              <p className="mono-label">COMPILER VERIFY</p>
-              <p>Prove the repair builds cleanly</p>
-            </div>
-          </div>
-          <div className="workflow-step">
-            <div className="step-number">05</div>
-            <div className="step-copy">
-              <p className="mono-label">HUMAN REVIEW</p>
-              <p>Keep your engineer in control</p>
+              <p className="mono-label">04 / PR</p>
+              <p>Open a GitHub PR — you decide when to merge</p>
             </div>
           </div>
         </div>
@@ -670,13 +658,31 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="pricing-faq-section section-rule" id="faq">
+        <div className="section-intro pricing-faq-intro">
+          <p className="eyebrow">FAQ</p>
+          <h2>Straight answers.</h2>
+          <p>What Repairo does, what it does not do, and how to try it.</p>
+        </div>
+        <div className="pricing-faq-list">
+          {FAQ_LIST.map((item) => (
+            <details key={item.id} className="pricing-faq-item">
+              <summary>{item.question}</summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* 11. DEMO BOOKING FORM SECTION */}
       <section className="demo-section" id="demo">
         <div className="demo-intro">
-          <p className="eyebrow">SEE THE REPAIR PATH</p>
-          <h2>Bring your hardest integration change.</h2>
+          <p className="eyebrow">BOOK A DEMO</p>
+          <h2>Want to see it on your API?</h2>
           <p>
-            Book a technical walkthrough of how Repairo moves from API diff to compiler-verified repair.
+            Tell us about your stack and a breaking change you&apos;ve dealt with. We&apos;ll walk
+            through detect → impact → patch on a call — no pitch deck required.
           </p>
         </div>
         <div className="demo-form-wrap">
@@ -699,11 +705,11 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
                 <input id="email" type="email" placeholder="you@company.com" required name="email" />
               </label>
               <label htmlFor="team">
-                What are you repairing?
+                What are you working on?
                 <textarea
                   id="team"
                   name="team"
-                  placeholder="A third-party API or integration you maintain"
+                  placeholder="Your APIs, stack, or a breaking change you've hit recently"
                   rows={3}
                 />
               </label>
@@ -722,10 +728,11 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
       {/* 9. BETA WAITLIST (secondary capture) */}
       <section className="demo-section section-rule" id="waitlist">
         <div className="demo-intro">
-          <p className="eyebrow">PRIVATE BETA</p>
-          <h2>Not ready for a walkthrough?</h2>
+          <p className="eyebrow">TRY REPAIRO</p>
+          <h2>Request access</h2>
           <p>
-            Join the waitlist with Google or work email. We only email when beta access opens.
+            We&apos;re opening the hosted workspace in stages. Start with the demo, or leave your
+            email and we&apos;ll reach out when you can connect your own repo.
           </p>
         </div>
         <div className="demo-form-wrap" style={{ maxWidth: "28rem" }}>
@@ -756,17 +763,19 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
         <div className="footer-links">
           <div>
             <p className="mono-label">Explore</p>
-            <a href="#workflow">Workflow</a>
+            <a href="#workflow">How it works</a>
             <a href="#providers">Providers</a>
-            <a href="#evidence">Evidence</a>
+            <a href="#faq">FAQ</a>
             <a href="#security">Security</a>
             <Link href="/docs">Docs</Link>
+            <Link href="/changelog">Changelog</Link>
           </div>
           <div>
             <p className="mono-label">Company</p>
             <Link href="/pricing">Pricing</Link>
+            <Link href="/demo">Demo</Link>
             <a href="#demo">Book a demo</a>
-            <a href="#waitlist">Beta waitlist</a>
+            <a href="#waitlist">Request access</a>
             <a href={SOCIAL.npm} rel="noreferrer" target="_blank">
               npm
             </a>

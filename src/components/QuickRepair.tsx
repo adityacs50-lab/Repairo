@@ -190,7 +190,7 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
     <div
       className={
         embedded
-          ? "repo-repair-panel space-y-5"
+          ? "repo-repair-panel repo-repair-panel--embedded space-y-5"
           : "repo-repair-panel space-y-5 border border-line bg-bg-panel p-5 sm:p-6"
       }
     >
@@ -198,10 +198,10 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
         <p className="font-mono text-xs uppercase tracking-[0.12em] text-accent-bright">
           Try on your GitHub
         </p>
-        <h2>Repair a real repo in one run</h2>
+        <h2>Try Repairo on your repo</h2>
         <p className="mt-2 text-sm text-muted leading-relaxed">
-          Scan the repo for OpenAPI + client files, or enter paths manually —
-          then open a PR on GitHub.
+          Find OpenAPI specs and client files automatically, or enter paths yourself — then run a
+          repair and open a PR on GitHub.
         </p>
       </div>
 
@@ -242,12 +242,12 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
             disabled={scanning}
             className="btn-ghost !py-2 !text-sm w-full sm:w-auto disabled:opacity-50"
           >
-            {scanning ? "Scanning repo…" : "Scan repo for OpenAPI + clients"}
+            {scanning ? "Scanning repository…" : "Scan repository"}
           </button>
 
           <div className="repo-form-grid">
             <label className="repo-form-field">
-              <span className="repo-form-label">Before OpenAPI path</span>
+              <span className="repo-form-label">Before spec (path in repo)</span>
               <input
                 value={beforePath}
                 onChange={(e) => setBeforePath(e.target.value)}
@@ -256,7 +256,7 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
               />
             </label>
             <label className="repo-form-field">
-              <span className="repo-form-label">Before ref (branch/tag/sha)</span>
+              <span className="repo-form-label">Before revision (branch, tag, or SHA)</span>
               <input
                 value={beforeRef}
                 onChange={(e) => setBeforeRef(e.target.value)}
@@ -265,7 +265,7 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
               />
             </label>
             <label className="repo-form-field">
-              <span className="repo-form-label">After OpenAPI path</span>
+              <span className="repo-form-label">After spec (path in repo)</span>
               <input
                 value={afterPath}
                 onChange={(e) => setAfterPath(e.target.value)}
@@ -274,7 +274,7 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
               />
             </label>
             <label className="repo-form-field">
-              <span className="repo-form-label">After ref</span>
+              <span className="repo-form-label">After revision</span>
               <input
                 value={afterRef}
                 onChange={(e) => setAfterRef(e.target.value)}
@@ -285,7 +285,7 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
           </div>
 
           <label className="repo-form-field">
-            <span className="repo-form-label">Consumer TypeScript / Python paths</span>
+            <span className="repo-form-label">Client files (TS / Python / Go paths)</span>
             <textarea
               value={consumerPaths}
               onChange={(e) => setConsumerPaths(e.target.value)}
@@ -312,7 +312,7 @@ export function QuickRepair({ repos, onDone, embedded = false }: Props) {
           </p>
 
           <button type="submit" className="btn-primary !py-2.5 !text-sm">
-            Run repair on this repo
+            Run repair
           </button>
         </form>
       )}

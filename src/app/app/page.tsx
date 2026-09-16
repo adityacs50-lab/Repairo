@@ -15,7 +15,9 @@ export default function AppPage() {
     <div className="site-shell">
       <SiteHeader active="app" />
       <main className="product-main">
-        <AppWorkspace />
+        <div className="product-page-stack">
+          <AppWorkspace />
+        </div>
       </main>
       <SiteFooter />
     </div>
