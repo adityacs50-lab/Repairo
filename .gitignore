@@ -20,6 +20,9 @@
 # production
 /build
 
+# vendored design catalog (clone locally; see docs/design-references/README.md)
+/_vendor/
+
 # misc
 .DS_Store
 *.pem
