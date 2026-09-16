@@ -158,6 +158,8 @@ export interface SchemaObject {
   required?: string[];
   properties?: Record<string, SchemaObject | RefObject>;
   items?: SchemaObject | RefObject;
+  allOf?: Array<SchemaObject | RefObject>;
+  oneOf?: Array<SchemaObject | RefObject>;
   additionalProperties?: boolean | SchemaObject | RefObject;
   description?: string;
 }

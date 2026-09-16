@@ -24,22 +24,24 @@ export default function ResultsPage() {
   }, []);
 
   return (
-    <div className="unkey-canvas min-h-screen bg-neutral-950 text-slate-100">
+    <div>
       <SiteHeader active="demo" />
-      <main className="relative z-10 mx-auto max-w-6xl px-4 pb-20 pt-8 sm:px-6">
-        {loading && (
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-12 text-center text-sm text-neutral-400">
-            Loading Migration Results output…
-          </div>
-        )}
+      <main className="product-main">
+        <div className="product-page-stack layout-contained">
+          {loading && (
+            <div className="rounded border border-[var(--repairo-rule)] bg-[var(--repairo-white)] p-12 text-center text-sm text-[var(--repairo-muted)]">
+              Loading migration results…
+            </div>
+          )}
 
-        {error && (
-          <div className="rounded-xl border border-red-800 bg-red-950/40 p-6 text-sm text-red-400">
-            Failed to load migration results: {error}
-          </div>
-        )}
+          {error && (
+            <div className="rounded border border-red-900/50 bg-red-950/30 p-6 text-sm text-red-300">
+              Failed to load migration results: {error}
+            </div>
+          )}
 
-        {!loading && !error && <MigrationResults data={data} />}
+          {!loading && !error && <MigrationResults data={data} theme="light" />}
+        </div>
       </main>
       <SiteFooter />
     </div>

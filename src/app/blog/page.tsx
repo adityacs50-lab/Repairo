@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
 import { BLOG_POSTS, formatPostDate } from "@/lib/blog";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { ContentPage } from "@/components/ContentPage";
 
 export const metadata = pageMetadata({
   title: "Blog",
@@ -20,47 +19,26 @@ const POSTS = BLOG_POSTS.map((p) => ({
 
 export default function BlogIndex() {
   return (
-    <div className="min-h-screen bg-canvas text-body font-sans selection:bg-ink selection:text-canvas overflow-x-hidden flex flex-col">
-      <SiteHeader active="resources" />
-
-      <main className="w-full flex-grow flex flex-col items-center py-[64px] md:py-[120px]">
-        <section className="px-[24px] w-full max-w-[800px] mx-auto">
-          <div className="flex flex-col gap-[16px] mb-[64px]">
-            <div className="font-mono text-[14px] uppercase tracking-[1.4px] text-ink">
-              Blog
-            </div>
-            <h1 className="text-[48px] md:text-[64px] leading-[1] font-normal tracking-[-1.2px] md:tracking-[-2px] text-ink">
-              Engineering Notes.
-            </h1>
-            <p className="text-[18px] md:text-[24px] text-body-mid leading-[1.5] max-w-[600px] mt-[16px]">
-              Notes on API drift, AST repairs, and keeping client code in sync with OpenAPI.
-            </p>
-          </div>
-
-          <div className="flex flex-col border-t border-hairline">
-            {POSTS.map((post) => (
-              <article key={post.slug} className="py-[32px] border-b border-hairline flex flex-col gap-[12px] group">
-                <div className="font-mono text-[12px] uppercase tracking-[1.2px] text-body-mid">
-                  {post.date}
-                </div>
-                <Link href={`/blog/${post.slug}`} className="block">
-                  <h2 className="text-[24px] md:text-[32px] font-medium tracking-[-0.5px] text-ink group-hover:underline decoration-hairline underline-offset-4">
-                    {post.title}
-                  </h2>
-                </Link>
-                <p className="text-[16px] text-body-mid leading-[1.6]">
-                  {post.excerpt}
-                </p>
-                <Link href={`/blog/${post.slug}`} className="text-ink font-medium mt-[8px] flex items-center gap-[4px] hover:underline decoration-hairline underline-offset-4 w-fit">
-                  Read post →
-                </Link>
-              </article>
-            ))}
-          </div>
-        </section>
-      </main>
-
-      <SiteFooter />
-    </div>
+    <ContentPage
+      eyebrow="Blog"
+      title="Engineering notes."
+      description="Notes on API drift, AST repairs, and keeping client code in sync with OpenAPI."
+      cta={{ href: "/docs", label: "Read the docs" }}
+    >
+      <ul className="blog-index-list">
+        {POSTS.map((post) => (
+          <li key={post.slug} className="blog-index-item">
+            <time className="blog-index-date" dateTime={post.date}>{post.date}</time>
+            <h2 className="blog-index-title">
+              <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+            </h2>
+            <p className="blog-index-excerpt">{post.excerpt}</p>
+            <Link className="text-link blog-index-read" href={`/blog/${post.slug}`}>
+              Read post <span className="arrow-mark" aria-hidden="true">↗</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </ContentPage>
   );
 }

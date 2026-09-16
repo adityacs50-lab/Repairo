@@ -33,8 +33,28 @@ export const SOCIAL = {
   npm: "https://www.npmjs.com/package/repairo-cli",
 };
 
+/** Default social preview — served by `app/opengraph-image.tsx`. */
+export const DEFAULT_OG_IMAGE_PATH = "/opengraph-image";
+
+export function defaultOgImages() {
+  const url = absoluteUrl(DEFAULT_OG_IMAGE_PATH);
+  return [
+    {
+      url,
+      width: 1200,
+      height: 630,
+      alt: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    },
+  ];
+}
+
 export function absoluteUrl(path = "/"): string {
   return new URL(path, SITE_URL).toString();
+}
+
+function googleSiteVerification(): string | undefined {
+  const v = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
+  return v || undefined;
 }
 
 /**
@@ -53,6 +73,10 @@ export function pageMetadata(options: {
 }): Metadata {
   const url = absoluteUrl(options.path);
   const ogTitle = `${options.title} · ${SITE_NAME}`;
+  const images = defaultOgImages();
+  const googleVerification = googleSiteVerification();
+  const indexable = !options.noIndex;
+
   return {
     title: options.title,
     description: options.description,
@@ -60,9 +84,24 @@ export function pageMetadata(options: {
     // the root layout value instead of inheriting it.
     ...(options.keywords ? { keywords: [...SITE_KEYWORDS, ...options.keywords] } : {}),
     alternates: { canonical: url },
-    ...(options.noIndex
-      ? { robots: { index: false, follow: false, googleBot: { index: false, follow: false } } }
-      : {}),
+    ...(googleVerification ? { verification: { google: googleVerification } } : {}),
+    robots: indexable
+      ? {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+          },
+        }
+      : {
+          index: false,
+          follow: false,
+          googleBot: { index: false, follow: false },
+        },
     openGraph: {
       title: ogTitle,
       description: options.description,
@@ -70,6 +109,7 @@ export function pageMetadata(options: {
       siteName: SITE_NAME,
       type: options.type ?? "website",
       locale: "en_US",
+      images,
       ...(options.type === "article"
         ? { publishedTime: options.publishedTime, modifiedTime: options.modifiedTime }
         : {}),
@@ -78,6 +118,7 @@ export function pageMetadata(options: {
       card: "summary_large_image",
       title: ogTitle,
       description: options.description,
+      images: images.map((img) => img.url),
     },
   };
 }
@@ -94,14 +135,24 @@ export function organizationJsonLd(): JsonLdObject {
     "@type": "Organization",
     "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
+    alternateName: SITE_TAGLINE,
     url: SITE_URL,
     logo: absoluteUrl("/logo.png"),
+    image: absoluteUrl(DEFAULT_OG_IMAGE_PATH),
     description: SITE_DESCRIPTION,
     sameAs: [SOCIAL.github, SOCIAL.npm],
+    knowsAbout: [
+      "OpenAPI",
+      "API breaking changes",
+      "AST refactoring",
+      "TypeScript codemods",
+      "GitHub pull requests",
+    ],
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "sales",
       url: absoluteUrl("/contact"),
+      availableLanguage: "English",
     },
   };
 }
@@ -117,6 +168,15 @@ export function webSiteJsonLd(): JsonLdObject {
     description: SITE_DESCRIPTION,
     publisher: { "@id": `${SITE_URL}/#organization` },
     inLanguage: "en",
+    copyrightYear: new Date().getUTCFullYear(),
+    potentialAction: {
+      "@type": "ReadAction",
+      target: [
+        absoluteUrl("/docs"),
+        absoluteUrl("/llms.txt"),
+        absoluteUrl("/demo"),
+      ],
+    },
   };
 }
 
@@ -141,14 +201,15 @@ export function softwareApplicationJsonLd(options?: {
     license: "https://www.apache.org/licenses/LICENSE-2.0",
     downloadUrl: SOCIAL.npm,
     installUrl: SOCIAL.npm,
-    programmingLanguage: ["TypeScript", "JavaScript", "Python"],
+    programmingLanguage: ["TypeScript", "JavaScript", "Python", "Go"],
     featureList: [
       "OpenAPI 3.0/3.1 spec diffing with breaking-change classification",
       "TypeScript impact mapping with ts-morph",
-      "Python consumer repair (URL, enums, required fields, explicit renames)",
-      "Deterministic repairs gated by tsc or Python syntax validation",
+      "Python and Go consumer repair (URL, enums, required fields, explicit renames)",
+      "Deterministic repairs gated by tsc, Python syntax, or Go syntax validation",
       "Automatic GitHub pull requests",
       "Background polling of vendor API specs",
+      "Offline repairo-cli (Apache-2.0)",
     ],
     offers: Object.values(PLANS).map((plan) => ({
       "@type": "Offer",
@@ -202,6 +263,60 @@ export function articleJsonLd(options: {
     publisher: { "@id": `${SITE_URL}/#organization` },
     image: absoluteUrl("/opengraph-image"),
     inLanguage: "en",
+  };
+}
+
+export function techDocumentationJsonLd(options: {
+  title: string;
+  description: string;
+  path: string;
+}): JsonLdObject {
+  const url = absoluteUrl(options.path);
+  return {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "@id": `${url}#documentation`,
+    headline: options.title,
+    description: options.description,
+    url,
+    mainEntityOfPage: url,
+    author: { "@id": `${SITE_URL}/#organization` },
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    image: absoluteUrl(DEFAULT_OG_IMAGE_PATH),
+    inLanguage: "en",
+  };
+}
+
+export function softwareSourceCodeJsonLd(): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "@id": `${SOCIAL.github}#source`,
+    name: `${SITE_NAME} CLI and engine`,
+    codeRepository: SOCIAL.github,
+    programmingLanguage: ["TypeScript", "JavaScript", "Python", "Go"],
+    license: "https://www.apache.org/licenses/LICENSE-2.0",
+    url: SOCIAL.github,
+    description: "Open-source repairo-cli and repair engine (Apache-2.0).",
+  };
+}
+
+/** Highlights indexable pages for rich results / answer engines. */
+export function siteNavigationJsonLd(
+  items: { name: string; path: string; description?: string }[],
+): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${SITE_URL}/#sitenav`,
+    name: `${SITE_NAME} site map`,
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      description: item.description,
+      url: absoluteUrl(item.path),
+    })),
   };
 }
 

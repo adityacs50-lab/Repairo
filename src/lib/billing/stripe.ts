@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { firstRow, getDb } from "@/lib/db";
 import { subscriptions, users, workspaces } from "@/lib/db/schema";
@@ -31,11 +31,16 @@ export async function ensureStripeCustomer(userId: string) {
     metadata: { userId: user.id, githubLogin: user.login },
   });
 
-  await db.update(users)
+  const claimed = await db
+    .update(users)
     .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
-    .where(eq(users.id, user.id));
+    .where(and(eq(users.id, user.id), isNull(users.stripeCustomerId)))
+    .returning();
 
-  return customer.id;
+  if (claimed.length) return customer.id;
+
+  const again = await firstRow(db.select().from(users).where(eq(users.id, user.id)));
+  return again?.stripeCustomerId || customer.id;
 }
 
 export async function setWorkspacePlan(

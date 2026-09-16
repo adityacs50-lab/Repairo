@@ -1,99 +1,71 @@
-"use client";
-
-import React, { useState } from "react";
 import Link from "next/link";
-import { BulletList, ContentPage, Section } from "@/components/ContentPage";
+import { DocsCallout } from "@/components/docs/DocsCallout";
+import { DocsCodeSnippet } from "@/components/docs/DocsCodeSnippet";
+import {
+  DocsCommandTable,
+  DocsRelatedLinks,
+  DocsShell,
+  Section,
+} from "@/components/docs/DocsShell";
+import { BulletList } from "@/components/ContentPage";
+import { getAppUrl } from "@/lib/auth/config";
+import { GITHUB_REPO_URL, SOCIAL } from "@/lib/seo";
 
-const docsNav = [
+const CLI_COMMANDS = [
   {
-    title: "GETTING STARTED",
-    items: [
-      { href: "#overview", label: "Overview & Architecture" },
-      { href: "#quickstart", label: "Quickstart Guide" },
-      { href: "#cli-installation", label: "CLI Installation" },
-    ],
+    command: "repairo scan [dir]",
+    summary:
+      "Discover third-party SDK and HTTP client usage. Options: --vendors stripe,openai,supabase",
   },
   {
-    title: "CORE CONCEPTS",
-    items: [
-      { href: "#diffing-engine", label: "OpenAPI Diffing Engine" },
-      { href: "#impact-mapping", label: "Impact Mapping" },
-      { href: "#ast-transforms", label: "Deterministic AST Transforms" },
-    ],
+    command: "repairo init",
+    summary:
+      "Create a local .repairo workspace. Options: --repo owner/name, --vendors …",
   },
   {
-    title: "INTEGRATIONS",
-    items: [
-      { href: "#github-app", label: "GitHub App" },
-      { href: "#github-webhooks", label: "Hosted integrations" },
-      { href: "#vendors", label: "Supported Vendors" },
-    ],
+    command: "repairo check",
+    summary:
+      "Fetch live vendor OpenAPI, diff against snapshot, exit 1 on breaking changes. Options: --vendors, --target, --json, --update-snapshot",
   },
   {
-    title: "SECURITY & COMPLIANCE",
-    items: [
-      { href: "#vault", label: "Zero-Disk Volatile RAM Vault" },
-      { href: "#oauth", label: "GitHub OAuth Scopes & Permissions" },
-      { href: "#soc2", label: "Enterprise Controls & Compliance" },
-    ],
+    command: "repairo diff",
+    summary:
+      "Diff a spec file against your snapshot and map blast radius. Options: --spec, --target",
   },
-];
-
-function CodeSnippet({ code }: { code: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="docs-code">
-      <button
-        onClick={handleCopy}
-        type="button"
-        className="docs-code-copy"
-      >
-        {copied ? "Copied" : "Copy"}
-      </button>
-      <pre>
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function Callout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="docs-callout">
-      <p className="mono-label">Info</p>
-      <div>{children}</div>
-    </div>
-  );
-}
+  {
+    command: "repairo repair",
+    summary:
+      "Generate compile-checked patches. Default --dry-run; use --apply or --create-pr when ready. Optional --agent-resolve for ambiguous enums (requires ANTHROPIC_API_KEY).",
+  },
+] as const;
 
 export default function DocsPage() {
+  const appUrl = getAppUrl();
+  const githubAppSlug = process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai";
+  const webhookUrl = `${appUrl}/api/github/webhooks`;
+
   return (
-    <ContentPage
-      eyebrow="Documentation"
-      title="How Repairo Works"
-      description="Repairo sits as the deterministic application layer between external API contracts and your internal codebase—automating the complete detect → impact → patch loop."
-      activeHref="/docs"
-      customNav={docsNav}
+    <DocsShell
+      title="How Repairo works"
+      description="Install the CLI, diff OpenAPI contracts, map impact into TypeScript, JavaScript, Python, and Go, then open a reviewable PR — or run the same engine in the hosted workspace."
     >
-      <Section title="Overview & Architecture" id="overview">
+      <Section title="Overview & architecture" id="overview">
         <p>
-          Repairo diffs upstream OpenAPI specs, maps breaking changes into TypeScript, JavaScript, Python, and Go consumers, and opens a PR with patches your team can review.
+          Repairo sits between vendor OpenAPI contracts and your application code. It classifies
+          breaking changes, traces call sites, applies deterministic transforms where the spec
+          change is unambiguous, and validates before anything merges.
         </p>
         <p>
-          The repair engine is orchestrated by <code className="docs-inline-code">runRepair()</code> in{" "}
-          <code className="docs-inline-code">src/lib/engine/index.ts</code> (hosted demo, API, and GitHub App).
-          Local <code className="docs-inline-code">repairo repair</code> uses the same diff → impact →{" "}
-          <code className="docs-inline-code">generateFixes</code> stages, then runs disk{" "}
-          <code className="docs-inline-code">validateCodebase</code> before apply or PR creation.
+          The hosted product, demo, and GitHub App flows call{" "}
+          <code className="docs-inline-code">runRepair()</code> in{" "}
+          <code className="docs-inline-code">src/lib/engine/index.ts</code>. The{" "}
+          <code className="docs-inline-code">repairo repair</code> CLI uses the same diff → impact →{" "}
+          <code className="docs-inline-code">generateFixes</code> pipeline, then runs full-tree{" "}
+          <code className="docs-inline-code">validateCodebase</code> before{" "}
+          <code className="docs-inline-code">--apply</code> or{" "}
+          <code className="docs-inline-code">--create-pr</code>.
         </p>
-        <CodeSnippet
+        <DocsCodeSnippet
           code={`before/after OpenAPI → parseOpenApi → diffOpenApi → ApiChange[]
 consumer files       → findImpactedCode → ImpactMatch[]
 optional agentResolve → resolveAmbiguousEnums
@@ -102,166 +74,219 @@ optional agentResolve → resolveAmbiguousEnums
                       → validateInMemory (hosted) / validateCodebase (CLI)
                       → RepairRunResult + SBOM`}
         />
-        <p>
-          Full diagram and validation notes:{" "}
-          <a href="https://github.com/adityacs50-lab/Repairo/blob/main/docs/architecture.md" className="text-fg underline">
-            docs/architecture.md
-          </a>{" "}
-          (same graph as the VC technical brief).
-        </p>
+        <DocsRelatedLinks
+          links={[
+            { href: "/docs/architecture", label: "Engine architecture (full diagram)" },
+            { href: `${GITHUB_REPO_URL}/blob/main/docs/architecture.md`, label: "architecture.md on GitHub", external: true },
+            { href: "/demo", label: "Live demo — no install" },
+          ]}
+        />
       </Section>
 
-      <Section title="Quickstart Guide" id="quickstart">
+      <Section title="Quickstart" id="quickstart">
         <ol className="docs-steps">
           <li>
-            <strong>Scan your repository</strong>
-            <p>Run Repairo locally against any directory to discover third-party API dependencies (Stripe, OpenAI, Supabase, etc.).</p>
-          </li>
-          <li>
-            <strong>Diff OpenAPI specs</strong>
-            <p>Compare new OpenAPI 3.0/3.1 specs against baseline snapshots to calculate exact AST call site impacts.</p>
-          </li>
-          <li>
-            <strong>Validate &amp; apply patches</strong>
+            <strong>Try the browser demo</strong>
             <p>
-              Preview AST transformations with compiler-grade typechecking (
-              <code className="docs-inline-code">tsc --noEmit</code>
-              ) before applying to disk or opening a GitHub PR.
+              Open{" "}
+              <Link href="/demo" className="text-link">
+                /demo
+              </Link>{" "}
+              to run OpenAPI diff → impact → patch → validation on bundled scenarios (no API keys).
+            </p>
+          </li>
+          <li>
+            <strong>Scan a repo locally</strong>
+            <p>Discover Stripe, OpenAI, Supabase, and other vendor usage in seconds.</p>
+          </li>
+          <li>
+            <strong>Diff and repair</strong>
+            <p>
+              Point at a new OpenAPI file, preview AST changes with compiler validation, then apply
+              locally or open a GitHub PR.
             </p>
           </li>
         </ol>
+        <DocsCodeSnippet
+          title="Fixture walkthrough (clone this repo)"
+          code={`git clone ${GITHUB_REPO_URL}.git && cd Repairo
+npm install
+npx repairo-cli scan ./fixtures/consumers --vendors stripe
+cp fixtures/breaking-api-demo/specs/old-openapi.json .repairo/snapshots/openapi.json
+npx repairo-cli diff --spec ./fixtures/breaking-api-demo/specs/new-openapi.json --target ./fixtures/breaking-api-demo`}
+        />
       </Section>
 
-      <Section title="CLI Installation" id="cli-installation">
+      <Section title="CLI installation" id="cli">
         <p>
-          You can run Repairo 100% offline against any local repository without requiring a cloud backend or third-party AI keys.
+          Requires <strong>Node.js 22+</strong>. No cloud account required for local scan, diff, and
+          dry-run repair.
         </p>
-        <CodeSnippet code={`# 1. Scan any codebase for API dependencies
+        <DocsCodeSnippet
+          code={`# One-off (no global install)
 npx repairo-cli scan ./src --vendors stripe,openai,supabase
 
-# 2. Initialize local .repairo configuration workspace
-repairo init --repo owner/your-app
+# Global install
+npm install -g repairo-cli
 
-# 3. Detect contract drift & map code impact from an OpenAPI spec
-repairo diff --spec ./specs/new-openapi.json
-
-# 4. Preview AST repairs with tsc compiler validation (--dry-run)
-repairo repair --dry-run
-
-# 5. Apply validated AST repairs to working tree (--apply)
-repairo repair --apply`} />
-      </Section>
-
-      <Section title="OpenAPI Diffing Engine" id="diffing-engine">
+repairo init --repo owner/your-app --vendors stripe,openai
+repairo scan ./src
+repairo check --vendors stripe,openai --target ./src
+repairo repair --dry-run --target ./src
+repairo repair --create-pr   # git + GitHub token for PR creation`}
+        />
         <p>
-          Repairo parses before and after OpenAPI documents, then classifies
-          changes into breaking, additive, and safe categories — path/method
-          moves, required fields, enum renames, base URL / version bumps, and
-          status-code shifts.
+          Package on npm:{" "}
+          <a href={SOCIAL.npm} className="text-link" rel="noreferrer" target="_blank">
+            repairo-cli
+          </a>
+          . Current engine version matches the site build.
         </p>
       </Section>
 
-      <Section title="Impact Mapping" id="impact-mapping">
+      <Section title="Command reference" id="commands">
+        <p>Run <code className="docs-inline-code">repairo --help</code> for the full flag list.</p>
+        <DocsCommandTable rows={[...CLI_COMMANDS]} />
+        <DocsCallout variant="warn">
+          <p>
+            <code className="docs-inline-code">--agent-resolve</code> is opt-in. It proposes enum
+            mappings only when the diff is ambiguous; proposals still pass through deterministic
+            transforms and compile checks. Repairo never auto-merges agent-assisted PRs.
+          </p>
+        </DocsCallout>
+      </Section>
+
+      <Section title="OpenAPI diffing engine" id="diffing-engine">
         <p>
-          For each classified change, Repairo traces call sites in TypeScript/JavaScript
-          (ts-morph), Python, and Go (both tokenizer-based, skipping comments and string
-          literals). Output is a blast-radius summary: which files and symbols are likely
-          affected.
+          Repairo parses before and after OpenAPI 3.x documents (and common 2.0 shapes), then
+          classifies changes as breaking, additive, or safe — including path/method moves, required
+          fields, enum renames, base URL / version bumps, and status-code shifts.
         </p>
       </Section>
 
-      <Section title="Deterministic AST Transforms" id="ast-transforms">
+      <Section title="Impact mapping" id="impact-mapping">
         <p>
-          Patches are rule-based, not free-form LLM rewrites. TypeScript/JavaScript use ts-morph
-          AST transforms; Python and Go use tokenizer-based engines that skip comments and string
-          literals. All three support the same safe transform set: URL/base-path bumps, required
-          field additions where a default is unambiguous, enum rename updates in string literals,
-          and field/struct-tag renames. Ambiguous cases (more than one plausible enum
-          replacement) are flagged for manual review rather than guessed, in every language,
-          unless <code className="docs-inline-code">--agent-resolve</code> is explicitly enabled.
+          For each classified change, Repairo traces likely call sites in TypeScript and JavaScript
+          (ts-morph), Python, and Go (tokenizer-based, skipping comments and string literals). Output
+          is a blast-radius summary: files, symbols, and severity.
+        </p>
+      </Section>
+
+      <Section title="Deterministic AST transforms" id="ast-transforms">
+        <p>
+          Patches are rule-based, not free-form LLM rewrites. Supported safe transforms include URL /
+          base-path bumps, required field additions when a default is unambiguous, enum rename updates
+          in string literals, and field or struct-tag renames. Ambiguous enum cases are flagged for
+          human review unless <code className="docs-inline-code">--agent-resolve</code> is enabled.
         </p>
       </Section>
 
       <Section title="GitHub App" id="github-app">
         <p>
-          Install the Repairo GitHub App on your repositories. When a pull request touches an OpenAPI
-          spec, Repairo diffs base vs head, posts a breaking-change table on the PR, and can open a
-          compile-verified fix PR when every transform is safe.
+          Install the Repairo GitHub App on repositories that store OpenAPI specs. On pull requests
+          that touch a watched spec, Repairo diffs base vs head, posts a breaking-change summary, and
+          can open a compile-verified fix PR when every transform is safe.
         </p>
         <p>
           <a
             className="text-link"
-            href={`https://github.com/apps/${process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai"}/installations/new`}
+            href={`https://github.com/apps/${githubAppSlug}/installations/new`}
             rel="noreferrer"
             target="_blank"
           >
             Install Repairo on GitHub ↗
           </a>
         </p>
-        <p>
-          Required permissions: <strong>Contents</strong> read/write, <strong>Pull requests</strong>{" "}
-          read/write, <strong>Metadata</strong> read. Subscribe to <strong>Pull request</strong> and{" "}
-          <strong>Installation</strong> events. Set the webhook URL to{" "}
-          <code className="docs-inline-code">https://www.heyrepairo.in/api/github/webhooks</code> (or your{" "}
-          <code className="docs-inline-code">APP_URL</code> + <code className="docs-inline-code">/api/github/webhooks</code>
-          ).
-        </p>
-        <p>
-          Self-hosting: set <code className="docs-inline-code">APP_ID</code>,{" "}
-          <code className="docs-inline-code">PRIVATE_KEY</code>, and{" "}
-          <code className="docs-inline-code">WEBHOOK_SECRET</code> on Vercel (or run{" "}
-          <code className="docs-inline-code">npm run dev:github-app</code> locally with smee.io).
-        </p>
-      </Section>
-
-      <Section title="Hosted integrations" id="github-webhooks">
-        <p>
-          In the Repairo workspace, vendor agents can register repo webhooks that trigger repair runs
-          when watched OpenAPI paths change on your default branch.
-        </p>
-      </Section>
-
-      <Section title="Supported Vendors" id="vendors">
         <BulletList
           items={[
-            "Stripe API",
-            "OpenAI (Platform & Chat APIs)",
-            "Anthropic Claude",
-            "Supabase Management API",
-            "Google Gemini",
-            "GitHub REST",
-            "Custom OpenAPI 3.x / 2.0 schemas",
-            "Languages: TypeScript, JavaScript, Python, and Go — same deterministic repair set for all four",
-            "Upcoming: Clerk, private / team-pinned specs",
+            "Permissions: Contents read/write, Pull requests read/write, Metadata read",
+            "Webhook events: Pull request, Installation",
+            `Webhook URL: ${webhookUrl}`,
+            "Self-host: set APP_ID, PRIVATE_KEY, WEBHOOK_SECRET (see Deploy docs)",
           ]}
         />
       </Section>
 
-      <Section title="Zero-Disk Volatile RAM Vault" id="vault">
+      <Section title="Hosted integrations" id="hosted-integrations">
         <p>
-          Your code's privacy and security is the core foundation of our architecture.
-        </p>
-        <Callout>
-          Repairo never writes your proprietary code to disk. All refactoring is processed strictly inside volatile memory and wiped immediately upon completion.
-        </Callout>
-      </Section>
-
-      <Section title="GitHub OAuth Scopes & Permissions" id="oauth">
-        <p>
-          OAuth scopes: <code className="docs-inline-code">repo</code> (read specs + open
-          PRs) and <code className="docs-inline-code">read:user</code> (identity).
+          In the{" "}
+          <Link href="/app" className="text-link">
+            Repairo workspace
+          </Link>
+          , connect GitHub OAuth, pin vendor OpenAPI sources, and register repo webhooks that trigger
+          repair runs when watched spec paths change on your default branch.
         </p>
       </Section>
 
-      <Section title="Enterprise Controls & Compliance" id="soc2">
+      <Section title="Supported vendors" id="vendors">
+        <BulletList
+          items={[
+            "Stripe, OpenAI, Anthropic, Supabase, Google Gemini, GitHub REST",
+            "Any custom OpenAPI 3.x / 2.0 schema via diff and snapshots",
+            "Languages: TypeScript, JavaScript, Python, Go — same deterministic repair set",
+            "Browse per-vendor agents at /agents",
+          ]}
+        />
+      </Section>
+
+      <Section title="Code & data handling" id="data-handling">
         <p>
-          Enterprise plans can include an isolated VPC runner and SSO integration with Entra ID or Okta — talk to sales about your requirements. Formal SOC 2 / ISO programs are on Repairo&apos;s roadmap, not completed today; see{" "}
-          <Link href="/security#compliance">
-            /security
+          Security expectations differ by surface — we document both honestly.
+        </p>
+        <DocsCallout>
+          <p>
+            <strong>Hosted /demo and /app:</strong> Spec and consumer files are fetched for a repair
+            job, transformed in memory for that run, and not sold or used to train third-party models.
+            See{" "}
+            <Link href="/security" className="text-link">
+              Security & trust
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-link">
+              Privacy
+            </Link>
+            .
+          </p>
+        </DocsCallout>
+        <DocsCallout variant="warn">
+          <p>
+            <strong>Local CLI:</strong> <code className="docs-inline-code">repairo repair --apply</code>{" "}
+            and <code className="docs-inline-code">--create-pr</code> write to your working tree or
+            remote — by design. Use <code className="docs-inline-code">--dry-run</code> to preview
+            without touching disk.
+          </p>
+        </DocsCallout>
+      </Section>
+
+      <Section title="GitHub OAuth scopes" id="oauth">
+        <p>
+          The hosted workspace uses a GitHub OAuth App (not the GitHub App installation above).
+          Scopes: <code className="docs-inline-code">repo</code> (read specs, open PRs you request) and{" "}
+          <code className="docs-inline-code">read:user</code> (identity). Revoke anytime in GitHub →
+          Settings → Applications.
+        </p>
+      </Section>
+
+      <Section title="Enterprise & compliance" id="compliance">
+        <p>
+          Enterprise plans can include isolated runners and SSO (Entra ID, Okta). Formal SOC 2 / ISO
+          programs are on the roadmap — see{" "}
+          <Link href="/security#compliance" className="text-link">
+            compliance roadmap
           </Link>{" "}
-          for the current state and to request a security questionnaire.
+          or{" "}
+          <Link href="/contact" className="text-link">
+            contact sales
+          </Link>{" "}
+          for a questionnaire.
         </p>
+        <DocsRelatedLinks
+          links={[
+            { href: "/docs/deploy", label: "Self-host on Vercel" },
+            { href: "/pricing", label: "Pricing" },
+          ]}
+        />
       </Section>
-    </ContentPage>
+    </DocsShell>
   );
 }

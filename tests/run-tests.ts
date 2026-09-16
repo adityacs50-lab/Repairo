@@ -92,6 +92,46 @@ const diffChanges = diffOpenApi(beforeSpec, afterSpec);
 assert(diffChanges.some((c) => c.kind === "field-removed" && c.field === "amount"), "Detects removed parameter 'amount'");
 assert(diffChanges.some((c) => c.kind === "field-added" && c.field === "total_amount"), "Detects added parameter 'total_amount'");
 
+const nestedBefore = parseOpenApi(`
+openapi: 3.0.0
+info: { title: API, version: 1.0.0 }
+paths:
+  /v1/charge:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                card:
+                  type: object
+                  properties:
+                    brand: { type: string }
+`);
+const nestedAfter = parseOpenApi(`
+openapi: 3.0.0
+info: { title: API, version: 1.0.0 }
+paths:
+  /v1/charge:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                card:
+                  type: object
+                  properties:
+                    brand: { type: integer }
+`);
+const nestedDiff = diffOpenApi(nestedBefore, nestedAfter);
+assert(
+  nestedDiff.some((c) => c.kind === "type-changed" && c.field === "card.brand"),
+  "Detects nested property type changes, not only top-level fields",
+);
+
 // Test 3: Breaking parameter detection test
 console.log("\nTest 3: Breaking parameter detection test");
 const breakingChanges = diffChanges.filter((c) => c.severity === "breaking");

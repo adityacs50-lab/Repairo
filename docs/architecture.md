@@ -53,9 +53,10 @@ Vendor OpenAPI / snapshots          Your repo (CLI) or OAuth checkout (hosted)
                     GitHub PR (human merge)
 ```
 
-**Hosted deployment:** Next.js on Vercel, Neon Postgres, encrypted GitHub tokens, GitHub App webhooks — see `DEPLOY.md` and `/security`.
+**Hosted deployment:** Next.js on Vercel, Neon Postgres, encrypted GitHub tokens, GitHub App webhooks — see [/docs/deploy](/docs/deploy) and [/security](/security).
 
 ## Related docs
 
-- VC / diligence brief: [technical-deep-dive-vc.md](./technical-deep-dive-vc.md)
-- Public docs site: [heyrepairo.in/docs](https://www.heyrepairo.in/docs)
+- Self-host guide: [/docs/deploy](/docs/deploy)
+- VC / diligence brief: [technical-deep-dive-vc.md](https://github.com/adityacs50-lab/Repairo/blob/main/docs/technical-deep-dive-vc.md)
+- Documentation index: [/docs](/docs)

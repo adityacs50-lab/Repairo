@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     };
     const workspaceId = session.metadata?.workspaceId;
     if (workspaceId && session.subscription) {
-      setWorkspacePlan(workspaceId, "pro", {
+      await setWorkspacePlan(workspaceId, "pro", {
         subscriptionId: String(session.subscription),
         status: "active",
         priceId: process.env.STRIPE_PRICE_PRO,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (workspaceId) {
       const active = ["active", "trialing"].includes(sub.status);
-      setWorkspacePlan(workspaceId, active ? "pro" : "free", {
+      await setWorkspacePlan(workspaceId, active ? "pro" : "free", {
         subscriptionId: sub.id,
         status: sub.status,
         priceId: sub.items?.data?.[0]?.price?.id,
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         const { getWorkspaceForUser } = await import("@/lib/db/users");
         const workspace = await getWorkspaceForUser(user.id);
         if (workspace) {
-          setWorkspacePlan(workspace.id, workspace.plan, {
+          await setWorkspacePlan(workspace.id, workspace.plan, {
             subscriptionId: invoice.subscription
               ? String(invoice.subscription)
               : undefined,

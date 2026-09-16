@@ -55,8 +55,15 @@ Optional but recommended:
 | `CRON_SECRET` | Protect `/api/cron/poll-vendors` (Vercel Cron in `vercel.json` also runs daily) |
 | `ANTHROPIC_API_KEY` | Not used by the website — CLI `--agent-resolve` only |
 | `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google waitlist sign-in (if enabled) |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console HTML tag verification (optional) |
 
 After changing secrets, **redeploy** Vercel so serverless functions pick them up.
+
+### SEO & AI discovery (no secrets)
+
+- Set `APP_URL` to your canonical domain (including `www` if that is primary) — drives sitemap, `llms.txt`, Open Graph, and JSON-LD.
+- Public summaries: `/llms.txt`, `/llms-full.txt`, `/ai.txt` (also at `/.well-known/llms.txt`).
+- Submit `https://YOUR-DOMAIN/sitemap.xml` in [Google Search Console](https://search.google.com/search-console).
 
 ---
 

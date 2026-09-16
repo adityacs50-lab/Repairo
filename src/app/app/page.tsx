@@ -12,7 +12,7 @@ export const metadata = pageMetadata({
 
 export default function AppPage() {
   return (
-    <div className="site-shell">
+    <div>
       <SiteHeader active="app" />
       <main className="product-main">
         <div className="product-page-stack">

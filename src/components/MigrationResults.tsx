@@ -44,7 +44,7 @@ interface Props {
 
 export function MigrationResults({
   data,
-  theme = "dark",
+  theme = "light",
   title = "Migration Results",
   onBack,
   onOpenPR,
@@ -113,8 +113,8 @@ export function MigrationResults({
 
   const rootClass =
     theme === "light"
-      ? "migration-results-light w-full space-y-6 font-sans text-fg"
-      : "w-full space-y-6 font-sans text-slate-100";
+      ? "repairo-results migration-results-light w-full space-y-6 font-sans text-fg"
+      : "repairo-results w-full space-y-6 font-sans text-fg";
 
   return (
     <div className={rootClass}>

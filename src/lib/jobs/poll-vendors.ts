@@ -51,6 +51,24 @@ export async function pollVendorAgents(options?: {
   };
 
   for (const integration of candidates) {
+    const claimed = await db
+      .update(integrations)
+      .set({ lastCheckedAt: new Date(), updatedAt: new Date() })
+      .where(
+        and(
+          eq(integrations.id, integration.id),
+          or(
+            isNull(integrations.lastCheckedAt),
+            lt(integrations.lastCheckedAt, cutoff),
+          ),
+        ),
+      )
+      .returning({ id: integrations.id });
+    if (!claimed.length) {
+      result.skipped += 1;
+      continue;
+    }
+
     const workspace = await firstRow(
       db
         .select()

@@ -87,8 +87,8 @@ function applyNonJsFallback(
         description: "Update API base URL",
         before: change.before,
         after: change.after,
-        safe: true,
-        safetyNotes: ["Deterministic string replacement of known base URL"],
+        safe: false,
+        safetyNotes: ["Whole-file string replacement of a URL — review before merge"],
       });
     }
 

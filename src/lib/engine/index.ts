@@ -12,9 +12,18 @@ import type {
 } from "./types";
 
 export function parseOpenApi(source: string): OpenApiDocument {
+  if (typeof source !== "string" || !source.trim()) {
+    throw new Error("OpenAPI spec is empty");
+  }
+  if (source.length > 2_000_000) {
+    throw new Error("OpenAPI spec is too large");
+  }
   const doc = parse(source);
   if (isDiscoveryDocument(doc)) {
     return convertDiscoveryToOpenApi(doc);
+  }
+  if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
+    throw new Error("OpenAPI spec must be a YAML/JSON object");
   }
   return doc as OpenApiDocument;
 }

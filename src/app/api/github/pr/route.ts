@@ -6,12 +6,18 @@ import {
   getRepo,
 } from "@/lib/github/client";
 import type { RepairRunResult } from "@/lib/engine/types";
+import { assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
     requireGithubConfig();
+    assertRateLimit({
+      key: `pr:${clientIp(request)}`,
+      limit: 10,
+      windowMs: 60_000,
+    });
     const session = await requireSession();
     const body = (await request.json()) as {
       owner?: string;

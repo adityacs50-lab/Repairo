@@ -50,8 +50,10 @@ export async function GET(request: NextRequest) {
 
   const storedState = request.cookies.get("repairo_oauth_state")?.value;
   const stateOk =
-    verifyOAuthState(state, config.sessionSecret) ||
-    (Boolean(state) && Boolean(storedState) && state === storedState);
+    Boolean(state) &&
+    Boolean(storedState) &&
+    state === storedState &&
+    verifyOAuthState(state, config.sessionSecret);
 
   if (!code || !state || !stateOk) {
     return fail("invalid_oauth_state");

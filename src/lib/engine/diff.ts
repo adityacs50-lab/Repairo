@@ -14,18 +14,49 @@ function isRef(value: unknown): value is RefObject {
   return Boolean(value && typeof value === "object" && "$ref" in value);
 }
 
+function resolveRef(doc: OpenApiDocument, ref: string): SchemaObject | RefObject | undefined {
+  if (!ref.startsWith("#/")) return undefined;
+  let cur: unknown = doc;
+  for (const part of ref.slice(2).split("/")) {
+    if (!cur || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[part];
+  }
+  if (!cur || typeof cur !== "object" || Array.isArray(cur)) return undefined;
+  return cur as SchemaObject | RefObject;
+}
+
 function resolveSchema(
   doc: OpenApiDocument,
   schema: SchemaObject | RefObject | undefined,
+  seen: Set<string> = new Set(),
 ): SchemaObject | undefined {
   if (!schema) return undefined;
   if (isRef(schema)) {
-    const name = schema.$ref.split("/").pop();
-    if (!name) return undefined;
-    return doc.components?.schemas?.[name];
+    if (seen.has(schema.$ref)) return undefined;
+    seen.add(schema.$ref);
+    return resolveSchema(doc, resolveRef(doc, schema.$ref), seen);
+  }
+  if (schema.allOf?.length) {
+    const merged: SchemaObject = {
+      ...schema,
+      properties: { ...(schema.properties ?? {}) },
+      required: [...(schema.required ?? [])],
+    };
+    for (const part of schema.allOf) {
+      const resolved = resolveSchema(doc, part, seen);
+      if (!resolved) continue;
+      merged.properties = { ...merged.properties, ...(resolved.properties ?? {}) };
+      merged.required = [...(merged.required ?? []), ...(resolved.required ?? [])];
+      if (!merged.type && resolved.type) merged.type = resolved.type;
+      if (!merged.items && resolved.items) merged.items = resolved.items;
+      if (!merged.enum && resolved.enum) merged.enum = resolved.enum;
+    }
+    return merged;
   }
   return schema;
 }
+
+const MAX_SCHEMA_DEPTH = 8;
 
 function severityFor(kind: ChangeKind): ChangeSeverity {
   switch (kind) {
@@ -65,6 +96,10 @@ function methodsOf(item: PathItem): Array<[string, OperationObject]> {
   );
 }
 
+function fieldName(prefix: string, key: string) {
+  return prefix ? `${prefix}.${key}` : key;
+}
+
 function compareSchemas(
   changes: ApiChange[],
   path: string,
@@ -74,7 +109,10 @@ function compareSchemas(
   afterDoc: OpenApiDocument,
   beforeSchema: SchemaObject | RefObject | undefined,
   afterSchema: SchemaObject | RefObject | undefined,
+  depth = 0,
+  prefix = "",
 ) {
+  if (depth > MAX_SCHEMA_DEPTH) return;
   const before = resolveSchema(beforeDoc, beforeSchema);
   const after = resolveSchema(afterDoc, afterSchema);
   if (!before && !after) return;
@@ -93,12 +131,13 @@ function compareSchemas(
 
   for (const key of Object.keys(beforeProps)) {
     if (!(key in afterProps)) {
+      const field = fieldName(prefix, key);
       pushChange(changes, {
         kind: "field-removed",
         path,
         operation,
-        field: key,
-        summary: `Removed ${side} field "${key}" on ${operation.toUpperCase()} ${path}`,
+        field,
+        summary: `Removed ${side} field "${field}" on ${operation.toUpperCase()} ${path}`,
         before: key,
         relatedFields,
         fieldType: tsTypeFor(resolveSchema(beforeDoc, beforeProps[key])),
@@ -109,12 +148,13 @@ function compareSchemas(
 
   for (const key of Object.keys(afterProps)) {
     if (!(key in beforeProps)) {
+      const field = fieldName(prefix, key);
       pushChange(changes, {
         kind: "field-added",
         path,
         operation,
-        field: key,
-        summary: `Added ${side} field "${key}" on ${operation.toUpperCase()} ${path}`,
+        field,
+        summary: `Added ${side} field "${field}" on ${operation.toUpperCase()} ${path}`,
         after: key,
         relatedFields,
         fieldType: tsTypeFor(resolveSchema(afterDoc, afterProps[key])),
@@ -125,12 +165,13 @@ function compareSchemas(
 
   for (const key of afterRequired) {
     if (!beforeRequired.has(key)) {
+      const field = fieldName(prefix, key);
       pushChange(changes, {
         kind: "field-required",
         path,
         operation,
-        field: key,
-        summary: `Field "${key}" is now required on ${operation.toUpperCase()} ${path} ${side}`,
+        field,
+        summary: `Field "${field}" is now required on ${operation.toUpperCase()} ${path} ${side}`,
         before: "optional",
         after: "required",
         relatedFields,
@@ -145,14 +186,15 @@ function compareSchemas(
     const b = resolveSchema(beforeDoc, beforeProps[key]);
     const a = resolveSchema(afterDoc, afterProps[key]);
     if (!b || !a) continue;
+    const field = fieldName(prefix, key);
 
     if (b.type && a.type && b.type !== a.type) {
       pushChange(changes, {
         kind: "type-changed",
         path,
         operation,
-        field: key,
-        summary: `Type changed for "${key}" on ${path}`,
+        field,
+        summary: `Type changed for "${field}" on ${path}`,
         before: b.type,
         after: a.type,
         relatedFields,
@@ -169,8 +211,8 @@ function compareSchemas(
           kind: "enum-value-removed",
           path,
           operation,
-          field: key,
-          summary: `Enum value "${value}" removed from "${key}"`,
+          field,
+          summary: `Enum value "${value}" removed from "${field}"`,
           before: value,
           relatedFields,
           fieldType: "string",
@@ -185,14 +227,43 @@ function compareSchemas(
           kind: "enum-value-added",
           path,
           operation,
-          field: key,
-          summary: `Enum value "${value}" added to "${key}"`,
+          field,
+          summary: `Enum value "${value}" added to "${field}"`,
           after: value,
           relatedFields,
           fieldType: "string",
           side,
         });
       }
+    }
+
+    if (b.properties || a.properties || b.allOf || a.allOf) {
+      compareSchemas(
+        changes,
+        path,
+        operation,
+        side,
+        beforeDoc,
+        afterDoc,
+        b,
+        a,
+        depth + 1,
+        field,
+      );
+    }
+    if (b.items || a.items) {
+      compareSchemas(
+        changes,
+        path,
+        operation,
+        side,
+        beforeDoc,
+        afterDoc,
+        b.items,
+        a.items,
+        depth + 1,
+        `${field}[]`,
+      );
     }
   }
 }

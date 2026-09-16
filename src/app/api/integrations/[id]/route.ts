@@ -4,7 +4,9 @@ import { jsonError, requireGithubConfig } from "@/lib/api/errors";
 import {
   deleteIntegration,
   getIntegration,
+  pickClientIntegrationPatch,
   requireWorkspaceAccess,
+  requireWorkspaceOwner,
   serializeIntegration,
   updateIntegration,
 } from "@/lib/db/integrations";
@@ -42,26 +44,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (!integration) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    await requireWorkspaceAccess(session.userId, integration.workspaceId);
+    await requireWorkspaceOwner(session.userId, integration.workspaceId);
 
-    const body = (await request.json()) as Partial<{
-      name: string;
-      beforePath: string;
-      afterPath: string;
-      beforeRef: string;
-      afterRef: string;
-      consumerPaths: string[];
-      consumerRef: string;
-      baseBranch: string;
-      enabled: boolean;
-    }>;
-
-    const updated = await updateIntegration(id, {
-      ...body,
-      consumerPaths: body.consumerPaths
-        ? body.consumerPaths.map((p) => p.trim()).filter(Boolean)
-        : undefined,
-    });
+    const raw = (await request.json()) as Record<string, unknown>;
+    const patch = pickClientIntegrationPatch(raw);
+    const updated = await updateIntegration(id, patch);
 
     return NextResponse.json({
       integration: serializeIntegration(updated),
@@ -80,7 +67,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     if (!integration) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    await requireWorkspaceAccess(session.userId, integration.workspaceId);
+    await requireWorkspaceOwner(session.userId, integration.workspaceId);
 
     if (integration.webhookId) {
       await deleteRepoWebhook({

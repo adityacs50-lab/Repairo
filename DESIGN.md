@@ -1,118 +1,102 @@
 # Repairo — DESIGN.md
 
-**For coding agents:** Read this before changing marketing UI (`src/components/HomePage.tsx`, `src/app/globals.css`, `/demo`, `/app`). Match the product voice: CLI-first API repair, not generic AI SaaS.
+**Canonical reference:** [Warp](https://www.warp.dev/) — light dot-grid, column hairlines, black CTAs. Applied **site-wide** via `site-shell marketing-warp` on the root layout wrapper (`src/app/layout.tsx`). Reference analysis: [docs/design-references/warp-DESIGN.md](./docs/design-references/warp-DESIGN.md).
 
-**Sources (curated from [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)):**
+**For coding agents:** Read this before changing **any** user-facing UI.
 
-| Priority | File | Why |
-| --- | --- | --- |
-| **Primary** | [docs/design-references/warp-DESIGN.md](./docs/design-references/warp-DESIGN.md) | Warm charcoal canvas, terminal mockups, quiet Inter-scale type — fits `repairo-cli` |
-| **Accent rules** | [docs/design-references/clickhouse-DESIGN.md](./docs/design-references/clickhouse-DESIGN.md) | Use **one** high-voltage accent (amber) sparingly on black — good for “repair / warning / CTA” |
-
-Full upstream catalog: [awesome-design-md](https://github.com/VoltAgent/awesome-design-md).
+| Area | Primary files |
+| --- | --- |
+| Warp spec (source) | `docs/design-references/warp-DESIGN.md` |
+| Tokens & global styles | `src/app/globals.css`, `src/lib/design-tokens.ts` |
+| Marketing | `HomePage.tsx`, `MarketingHeader.tsx`, `ContentPage.tsx` |
+| Product | `DemoWorkspace.tsx`, `AppWorkspace.tsx`, `MigrationResults.tsx` |
 
 ---
 
-## 1. Visual theme & atmosphere
+## 1. Visual theme (from Warp)
 
-- **Mood:** Workshop terminal at 11pm — warm dark, not purple startup gradient.
-- **Density:** Marketing pages breathe; product surfaces (`/demo`, `/app`) are denser, table/code forward.
-- **Decoration:** Terminal output, diffs, and real CLI strings — **no** blob gradients, no stock “AI sparkle”.
-- **Copy tone:** Short, specific, engineer-to-engineer (see homepage). No “leverage”, “unlock”, “journey”, or triple-adjective headlines.
+- **Mood:** One warm dark band across the page (`#2b2622`), like [warp.dev](https://www.warp.dev/) — developer reading mode, not a gradient hero.
+- **Decoration:** Terminal / `factory.yaml`-style blocks, real CLI strings, hairline borders. No blob meshes or stock AI art.
+- **Accent:** Warp uses **no chromatic brand color** — off-white on warm dark *is* the brand. Repairo adds **teal** only for verify/pass and **muted amber** only for breaking/warn in product surfaces (diffs, severity chips).
 
-## 2. Color palette & roles
+## 2. Color palette
 
-Map to CSS variables in `src/app/globals.css`.
-
-| Role | Token | Hex | Use |
+| Warp token | CSS variable | Hex | Use |
 | --- | --- | --- | --- |
-| Canvas | `--repairo-paper` | `#100f0d` | Page background (Warp-warm black) |
-| Surface | `--repairo-white` | `#1a1916` | Cards, panels, tabs |
-| Foreground | `--repairo-ink` | `#eeede6` | Headlines, body |
-| Muted | `--repairo-muted` | `#9a9488` | Secondary text, labels |
-| Border | `--repairo-rule` | `#2e2b26` | 1px dividers |
-| **Repair accent** | `--repairo-accent` | `#e8a317` | Eyebrows, links hover, one CTA emphasis (ClickHouse-style **sparse** yellow) |
-| Safe / verify | `--repairo-teal` | `#3dd6b5` | `tsc` pass, verified badges only |
-| Code slab | `--repairo-media-frame` | `#0a0908` | Hero terminal, `docs-code`, OG-style blocks |
-| CTA fill | `--repairo-contrast` | `#f5f2ea` | Primary buttons (dark text on light chip) |
+| `colors.canvas` | `--repairo-paper` | `#2b2622` | Page background |
+| `colors.canvas-soft` | `--repairo-white` | `#383330` | Cards, panels, mockup chrome |
+| `colors.ink` / `colors.primary` | `--repairo-ink` | `#f7f5f0` | Headlines, body, primary CTA fill |
+| `colors.on-primary` | `--repairo-contrast-fg` | `#2b2622` | Text on primary buttons |
+| `colors.body` | `--repairo-muted` | `#c9c0ad` | Secondary copy |
+| `colors.body-strong` | `--repairo-slate` | `#dad2c1` | Emphasis, eyebrows, link hover |
+| `colors.mute` | `--repairo-mute` | `#aea69c` | Fine print |
+| `colors.hairline` | `--repairo-rule` | `#3f3a36` | 1px dividers |
+| — | `--repairo-contrast` | `#f7f5f0` | Alias for primary button fill |
+| — | `--repairo-media-frame` | `#2f2a26` | Terminal body inset |
+| Product | `--repairo-teal` | `#3dd6b5` | `tsc` / verified only |
+| Product | `--repairo-warn` | `#c9a227` | Breaking API severity only |
 
-**Do not** reintroduce full-page purple gradients or neon violet CTAs.
+Legacy `--repairo-accent` maps to `--repairo-slate` (emphasis, not yellow).
 
-## 3. Typography
+## 3. Typography (Warp)
 
 | Role | Family | Notes |
 | --- | --- | --- |
 | Wordmark | **Pixelify Sans** | “Repairo” only |
-| UI / marketing | **Figtree** (`--font-figtree`) | Body and headings; weight **500** on H1–H2, not 400 billboard |
-| Labels / CLI | **System mono** (`--font-mono`) | Eyebrows, tabs, `demo-row`, code — uppercase optional, not every section |
-| Scale | Warp-inspired | Hero `clamp(2.35rem, 5.2vw, 3.75rem)`; section titles ~`2.5rem` max |
+| UI / marketing | **Inter** (`--font-inter` → `--font-sans`) | H1 **400** at hero scale, negative tracking |
+| Code / labels | **DM Mono** | Tabs, CLI, mockups, `>_`-style captions |
+| Optional editorial | Instrument Serif | Rare italic moments — not required yet |
 
-**Hierarchy:** One idea per H2. Lead paragraph ≤ 2 sentences.
+Hero: `clamp(2.35rem, 5.2vw, 3.75rem)`, weight **400**, letter-spacing ~`-0.04em`.
 
-## 4. Components
+## 4. Components (Warp primitives)
 
-### Buttons
-- **Primary:** `--repairo-contrast` fill, `--repairo-contrast-fg` text, 2px radius (not pills).
-- **Hover:** `--repairo-accent` fill, dark text.
-- **Ghost:** surface border `--repairo-rule`, no shadow stack.
+### Buttons (`button-primary` in warp-DESIGN)
+- Fill `--repairo-contrast`, text `--repairo-contrast-fg`, radius **3px** (`rounded.sm`).
+- Hover: slightly dimmed off-white (`color-mix` toward canvas), **not** a yellow flash.
 
-### Tabs (homepage + workspace)
-- Inactive: surface bg, muted text.
-- Active: contrast fill (light chip on dark), **not** inverted ink/white mistake.
+### Cards (`card-content` / `card-mockup`)
+- `background: var(--repairo-white)`, `border: 1px solid var(--repairo-rule)`, radius **4px**.
+- No drop shadows on marketing cards.
 
-### Cards
-- Border `1px solid var(--repairo-rule)`, bg `var(--repairo-white)`.
-- No glassmorphism; optional 1px top highlight only on featured pricing tier.
+### Nav (`nav-bar`)
+- Flat `--repairo-paper` background, hairline bottom border — no glass blur.
 
-### Terminal / proof blocks
-- Background `--repairo-media-frame`, text `#e4e4e7`, mono.
-- Show **real** commands: `npx repairo-cli scan`, `repair --dry-run`.
+### Terminal blocks
+- Outer: canvas-soft; inner mono at 13px; copy real commands (`npx repairo-cli scan`, etc.).
 
-### Otto chat widget
-- Same tokens as site; compact markdown; no purple bubble UI.
+### Product-only
+- `MigrationResults`: root `repairo-results`, `theme="light"` on `site-shell` routes.
+- Otto: same tokens; compact markdown.
 
 ## 5. Layout
 
-- Max width `--page-max-width: 1440px`; padding `--page-padding` 16→32px.
-- Section rhythm `--section-padding-y`.
-- Mobile: single column ≤1024px hero; hamburger nav on homepage (`MarketingHeader`).
+- Max width `--page-max-width: 1440px` (Repairo); Warp marketing ~1200px — we keep 1440 for dense product tables.
+- Section rhythm `--section-padding-y`; mobile hero stacks ≤1024px.
 
-## 6. Depth & elevation
+## 6. Depth
 
-- Prefer **borders** over shadows.
-- Shadows only on floating Otto launcher: `rgba(0,0,0,0.55)` soft.
+- Hairlines + surface contrast only (Warp level 0–2). Shadow only on floating Otto launcher.
 
 ## 7. Do / don’t
 
 | Do | Don’t |
 | --- | --- |
-| Show CLI output and OpenAPI diff evidence | Fake metrics, fake testimonials |
-| Amber accent on one primary action per viewport | Rainbow accents + gradient mesh |
-| Sentence-case eyebrows (“How it works”) | `HOW IT WORKS / TRUST BOUNDARY` spam |
-| Link to `/demo`, npm, GitHub | “Book a strategy call” fluff |
-| Keep `/demo` and `/app` visually aligned with tokens | One-off hex in components |
+| Warm canvas `#2b2622`, off-white CTAs | Pure black `#000` or neutral gray chrome |
+| Inter 400 heroes, DM Mono for CLI | Heavy 700 billboard headlines |
+| 3–4px button radius | Pill CTAs |
+| Teal / warn only in product evidence | Rainbow marketing accents |
 
-## 8. Responsive
-
-- Touch targets ≥44px on tabs and header menu.
-- Horizontal scroll only for tab strips and logo strip.
-- Otto: full-screen panel on phones (`otto-panel-open`).
-
-## 9. Agent prompt guide
-
-When asked to restyle Repairo:
+## 8. Agent prompt
 
 ```
-Use DESIGN.md + src/app/globals.css tokens.
-Base layout on Warp (warm dark #100f0d, minimal chrome).
-Use amber #e8a317 only for accent/CTA hover, teal only for pass states.
-Fonts: Figtree + Pixelify wordmark + mono for code.
-Copy: short, human, no AI marketing clichés.
-Hero must show repairo-cli terminal output.
+Follow DESIGN.md + docs/design-references/warp-DESIGN.md.
+Canvas #2b2622, surface #383330, ink #f7f5f0, hairline #3f3a36.
+Inter + DM Mono; Pixelify wordmark only.
+No page gradients; terminal mockups for proof.
+Repairo: teal = pass, warn = breaking only.
 ```
-
-**Preview upstream:** open `docs/design-references/warp-DESIGN.md` and optional `preview-dark.html` in the same folder if you add it from the vendor repo.
 
 ---
 
-*Repairo-specific DESIGN.md — forked from community [awesome-design-md](https://github.com/VoltAgent/awesome-design-md) (MIT). Warp & ClickHouse analyses are inspired interpretations of public sites, not official brand guidelines.*
+*Inspired by [Warp](https://www.warp.dev/); not an official Warp brand guide. Community warp analysis: MIT via [awesome-design-md](https://github.com/VoltAgent/awesome-design-md).*

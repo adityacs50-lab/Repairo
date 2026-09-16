@@ -281,13 +281,22 @@ export function createGitHubClient(octokit: Octokit): GitHubClient {
 
           const treeEntries = [];
           for (const file of files) {
+            const safePath = file.path.replace(/\\/g, "/").replace(/^\/+/, "");
+            if (
+              !safePath ||
+              safePath.includes("..") ||
+              safePath.startsWith(".git/") ||
+              safePath.startsWith(".github/")
+            ) {
+              throw new Error(`Refusing to commit unsafe path: ${file.path}`);
+            }
             const { data: blob } = await octokit.rest.git.createBlob({
               owner,
               repo,
               content: file.content,
               encoding: "utf-8",
             });
-            treeEntries.push({ path: file.path, mode: "100644" as const, type: "blob" as const, sha: blob.sha });
+            treeEntries.push({ path: safePath, mode: "100644" as const, type: "blob" as const, sha: blob.sha });
           }
 
           const { data: tree } = await octokit.rest.git.createTree({

@@ -20,6 +20,8 @@ import { createHmac, randomUUID } from "crypto";
 import { buildSessionValue, decodeSession, sessionCookieOptions, publicUser, AuthError } from "../src/lib/auth/session";
 import { createOAuthState, verifyOAuthState } from "../src/lib/auth/oauth-state";
 import { encryptToken, decryptToken } from "../src/lib/crypto/token";
+import { isBlockedSpecHost, isPrivateIp } from "../src/lib/engine/fetch-spec";
+import { sanitizeCommitPath, assertGithubName, GitHubError } from "../src/lib/github/client";
 import { getPlanLimits } from "../src/lib/billing/plans";
 import { getDb } from "../src/lib/db";
 import { users, workspaces, workspaceMembers, repairRuns, auditLogs } from "../src/lib/db/schema";
@@ -30,6 +32,7 @@ import {
   assertCanRunRepair,
   createIntegration,
   countRunsThisMonth,
+  pickClientIntegrationPatch,
 } from "../src/lib/db/integrations";
 import { assertCanInvite, createPendingInvite, listPendingInvites, acceptPendingInvitesForLogin } from "../src/lib/db/invites";
 import { POST as chatPost } from "../src/app/api/chat/route";
@@ -114,6 +117,11 @@ async function main() {
   assert(!verifyOAuthState(`${state}-tampered`, secret), "A tampered state string is rejected");
   assert(!verifyOAuthState(null, secret), "A null state is rejected outright");
   assert(!verifyOAuthState("no-dot-here", secret), "A state with no nonce.signature split is rejected");
+  const expiredStatePayload = `deadbeefdeadbeef.${Date.now() - 5_000}`;
+  const expiredStateSig = createHmac("sha256", secret).update(expiredStatePayload).digest("base64url");
+  assert(!verifyOAuthState(`${expiredStatePayload}.${expiredStateSig}`, secret), "An expired OAuth state is rejected even with a valid HMAC");
+  const twoPart = `${state.split(".").slice(0, 2).join(".")}`;
+  assert(!verifyOAuthState(twoPart, secret), "Legacy two-part HMAC state without expiry is rejected");
 
   // ---------------------------------------------------------------------
   console.log("\nTest 3: access-token encryption");
@@ -276,6 +284,7 @@ async function main() {
     const teammateId = (await getDb().select().from(users)).find((u) => u.login === "future-teammate")!.id;
     await acceptPendingInvitesForLogin(teammateId, "future-teammate");
     assert((await requireWorkspaceAccess(teammateId, inviteWorkspaceId)).member.role === "member", "The invited user is now a member of the inviting workspace, not just their own");
+    assert((await getWorkspaceForUser(teammateId))?.id === inviteWorkspaceId, "After accepting an invite, getWorkspaceForUser resolves to the invited workspace");
 
     // Free plan seats = 3: owner (1) + this invited member (1) leaves exactly 1 more before the gate trips.
     await createPendingInvite({ workspace: inviteWorkspace, githubLogin: "second-teammate", invitedByUserId: gateOwnerId });
@@ -316,9 +325,33 @@ async function main() {
   );
   assert(validNoKeyRes.status === 503, "A well-formed request is accepted past validation but fails cleanly (503) without SARVAM_API_KEY, instead of a raw 500 crash");
   const validNoKeyBody = await validNoKeyRes.json();
-  assert(typeof validNoKeyBody.error === "string" && validNoKeyBody.error.includes("SARVAM_API_KEY"), "The missing-key error names the actual env var to set, not a generic failure");
+  assert(typeof validNoKeyBody.error === "string" && validNoKeyBody.error.includes("isn't configured"), "The missing-key error is a generic config failure, not an env-var leak");
 
   if (savedSarvamKey !== undefined) process.env.SARVAM_API_KEY = savedSarvamKey;
+
+  console.log("\nTest 11: integration patch allowlist, spec URL SSRF, commit path sanitization");
+  const allowed = pickClientIntegrationPatch({
+    name: "Payments",
+    enabled: true,
+    workspaceId: "steal-me",
+    webhookSecret: "rotate",
+    baselineSpec: "ignored",
+  });
+  assert(allowed.name === "Payments" && allowed.enabled === true, "Client patch keeps declared fields");
+  assert(!("workspaceId" in allowed) && !("webhookSecret" in allowed) && !("baselineSpec" in allowed), "Client patch drops mass-assignment keys");
+  assert(isPrivateIp("127.0.0.1") && isPrivateIp("10.0.0.8") && isPrivateIp("169.254.169.254"), "Loopback, RFC1918, and link-local IPs are treated as private");
+  assert(isBlockedSpecHost("localhost") && isBlockedSpecHost("169.254.169.254"), "Metadata and localhost spec hosts are blocked");
+  assert(!isBlockedSpecHost("raw.githubusercontent.com"), "Public GitHub raw hosts are allowed");
+  assert(sanitizeCommitPath("src/client.ts") === "src/client.ts", "Normal consumer paths are accepted");
+  assert(sanitizeCommitPath("../etc/passwd") === null, "Path traversal is rejected");
+  assert(sanitizeCommitPath(".github/workflows/x.yml") === null, "GitHub workflow drops are rejected");
+  let invalidOwner = false;
+  try {
+    assertGithubName("acme/other", "owner");
+  } catch (e) {
+    invalidOwner = e instanceof GitHubError;
+  }
+  assert(invalidOwner, "Owner names containing slashes are rejected");
 
   console.log("\n==================================================");
   console.log(`TEST SUMMARY: ${passedTests} / ${totalTests} PASSED`);

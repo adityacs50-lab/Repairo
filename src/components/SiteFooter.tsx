@@ -7,7 +7,7 @@ export function SiteFooter() {
       <div>
         <Link href="/" className="wordmark" aria-label="Repairo AI home">
           <span style={{ fontFamily: '"Pixelify Sans", monospace' }}>Repairo</span>
-          <span className="wordmark-ai" style={{ fontFamily: '"Figtree", sans-serif' }}>
+          <span className="wordmark-ai" style={{ fontFamily: "var(--font-sans)" }}>
             AI
           </span>
         </Link>
@@ -33,6 +33,15 @@ export function SiteFooter() {
           >
             npm
           </a>
+        </div>
+        <div>
+          <p className="mono-label">Discover</p>
+          <Link href="/llms.txt" prefetch={false}>
+            llms.txt
+          </Link>
+          <Link href="/sitemap.xml" prefetch={false}>
+            Sitemap
+          </Link>
         </div>
       </div>
     </footer>

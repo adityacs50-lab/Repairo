@@ -17,11 +17,9 @@ export async function GET() {
     time: new Date().toISOString(),
     appUrl: getAppUrl(),
     databaseOk: database.ok,
-    databaseError: database.ok ? undefined : database.error,
     githubOAuth: githubConfigured(),
     githubApp: githubApp.configured,
     githubAppInstallUrl: githubApp.installUrl,
-    githubAppMissing: githubApp.missing,
     stripe: stripeConfigured(),
   });
 }

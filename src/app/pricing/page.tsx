@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function PricingPage() {
   return (
-    <main className="site-shell">
+    <main>
       <SiteHeader active="pricing" />
 
       <section className="pricing-hero section-rule">

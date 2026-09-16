@@ -3,9 +3,16 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "Documentation",
   description:
-    "Repairo docs: install repairo-cli, scan your codebase for vendor SDK usage, diff OpenAPI specs to detect breaking changes, and apply compiler-validated AST repairs or open GitHub PRs.",
+    "Production docs for Repairo: repairo-cli quickstart, command reference, OpenAPI diffing, GitHub App and OAuth, engine architecture, and Vercel self-hosting.",
   path: "/docs",
-  keywords: ["repairo-cli", "OpenAPI diffing", "ts-morph", "quickstart"],
+  keywords: [
+    "repairo-cli",
+    "OpenAPI diffing",
+    "ts-morph",
+    "quickstart",
+    "self-host",
+    "GitHub App",
+  ],
 });
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {

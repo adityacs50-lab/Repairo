@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { WaitlistForm } from "@/components/WaitlistForm";
@@ -14,6 +13,14 @@ import {
   VENDOR_MARKS,
 } from "@/lib/social-proof";
 import { MarketingHeader } from "@/components/MarketingHeader";
+import { HomeCliSandbox } from "@/components/HomeCliSandbox";
+import { HomePatchPreview } from "@/components/HomePatchPreview";
+import { HomeTrustBadges } from "@/components/HomeTrustBadges";
+import { HomeVendorStatus } from "@/components/HomeVendorStatus";
+import { HomeCommunityBand } from "@/components/HomeCommunityBand";
+import { HomeHeroTerminal } from "@/components/HomeHeroTerminal";
+import { HomeVerifyPreview } from "@/components/HomeVerifyPreview";
+import { HomePrReviewPreview } from "@/components/HomePrReviewPreview";
 
 const GITHUB_APP_INSTALL_URL = `https://github.com/apps/${
   process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai"
@@ -134,8 +141,8 @@ export function HomePage() {
   const currentTab = TAB_DATA[activeTab];
 
   return (
-    <main id="top" className="site-shell">
-      <MarketingHeader />
+    <main id="top">
+      <MarketingHeader variant="warp" />
 
       {/* 2. HERO SECTION */}
       <section className="hero-section section-rule">
@@ -149,23 +156,31 @@ export function HomePage() {
             </p>
             <div className="hero-actions">
               <Link className="button button-dark" href="/demo">
-                Try the demo <span aria-hidden="true" className="arrow-mark">↗</span>
+                Try the demo
               </Link>
               <a
-                className="text-link"
+                className="button button-outline"
+                href="https://www.npmjs.com/package/repairo-cli"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Install CLI
+              </a>
+            </div>
+            <p className="hero-promo mono-label">
+              OpenAPI diff · impact map · PR you merge ·{" "}
+              <a
+                className="hero-promo-link"
                 href={GITHUB_APP_INSTALL_URL}
                 rel="noreferrer"
                 target="_blank"
               >
-                Install GitHub App <span aria-hidden="true" className="arrow-mark">↗</span>
+                GitHub App
               </a>
-              <Link className="text-link" href="/docs">
-                Read the docs <span aria-hidden="true" className="arrow-mark">↗</span>
-              </Link>
-            </div>
+            </p>
             <div className="hero-trust-marquee" aria-label="Available vendors and install command">
               <div className="hero-trust-track">
-                {[0, 1, 2, 3].map((copy) => (
+                {[0, 1].map((copy) => (
                   <p
                     key={copy}
                     className="hero-trust"
@@ -196,37 +211,10 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        <div className="hero-art-wrap">
-          <motion.div
-            className="asset-frame hero-product-frame"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="hero-product-bar">
-              <span>repairo · scan</span>
-              <span>ts + python · pass</span>
-            </div>
-            <pre className="hero-product-body" aria-label="Example Repairo CLI output">
-              <code>{`$ npx repairo-cli scan ./src --vendors stripe,openai
-watching 2 vendors · OpenAPI diff · TS + Python impact
-
-stripe   breaking  high   src/payments/customer.ts:42
-  customer.source → removed in 2024-06-20
-stripe   breaking  high   src/shipments_client.py:9
-  status "queued" → "pending"
-
-2 call sites · verified repair ready
-$ npx repairo-cli repair --open-pr
-opened PR #184  fix(stripe): migrate consumer call sites`}</code>
-            </pre>
-            <div className="asset-caption">
-              <span>cli · scan + repair</span>
-              <span>example output</span>
-            </div>
-          </motion.div>
-        </div>
+        <HomeHeroTerminal />
       </section>
+
+      <HomeCliSandbox />
 
       {/* 3. SOCIAL PROOF */}
       <section className="social-section section-rule" id="proof">
@@ -270,6 +258,8 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
               </figcaption>
             </figure>
           </div>
+
+          <HomeTrustBadges />
 
           <div className="home-metrics-strip" aria-label="Engine-verified metrics">
             {ENGINE_METRICS.map((m) => (
@@ -326,22 +316,12 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
         </div>
       </section>
 
+      <HomePatchPreview />
+
       {/* 4. PROOF SECTION / WHY REPAIRO */}
       <section className="proof-section section-rule" id="why-repairo">
         <div className="proof-media">
-          <div className="asset-frame proof-art-frame">
-            <Image
-              alt="Compiler verification workspace with structured code panes"
-              width={1200}
-              height={900}
-              loading="lazy"
-              src="/assets/repairo-code-reality.png"
-            />
-            <div className="asset-caption">
-              <span>patch view</span>
-              <span>tsc clean</span>
-            </div>
-          </div>
+          <HomeVerifyPreview />
         </div>
         <div className="proof-copy">
           <p className="eyebrow">Why bother</p>
@@ -466,19 +446,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
           </div>
         </div>
         <div className="human-media">
-          <div className="asset-frame human-art-frame">
-            <Image
-              alt="Engineer reviewing an API repair workspace"
-              width={1200}
-              height={900}
-              loading="lazy"
-              src="/assets/repairo-human-review.png"
-            />
-            <div className="asset-caption">
-              <span>review in github</span>
-              <span>you merge</span>
-            </div>
-          </div>
+          <HomePrReviewPreview />
         </div>
       </section>
 
@@ -526,6 +494,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
             </a>
           </div>
         </div>
+        <HomeVendorStatus />
       </section>
 
       {/* 9. SECURITY BOUNDARY */}
@@ -716,6 +685,8 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
         </div>
       </section>
 
+      <HomeCommunityBand />
+
       {/* 13. PRICING PATH */}
       <section className="pricing-strip section-rule" id="pricing-path">
         <p className="mono-label">PRICING</p>
@@ -732,7 +703,7 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
         <div>
           <Link href="#top" className="wordmark" aria-label="Repairo AI home">
             <span style={{ fontFamily: '"Pixelify Sans", monospace' }}>Repairo</span>
-            <span className="wordmark-ai" style={{ fontFamily: '"Figtree", sans-serif' }}>AI</span>
+            <span className="wordmark-ai" style={{ fontFamily: "var(--font-sans)" }}>AI</span>
           </Link>
           <p className="footer-note">Spec diff · call sites · PR you merge</p>
         </div>
@@ -758,6 +729,8 @@ opened PR #184  fix(stripe): migrate consumer call sites`}</code>
             <a href={SOCIAL.github} rel="noreferrer" target="_blank">
               GitHub
             </a>
+            <a href="#community">Community</a>
+            <Link href="/changelog">Changelog</Link>
           </div>
         </div>
       </footer>

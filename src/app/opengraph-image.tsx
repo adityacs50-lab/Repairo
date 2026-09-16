@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { REPAIRO_DESIGN } from "@/lib/design-tokens";
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/seo";
 
 export const alt = `${SITE_NAME} — ${SITE_TAGLINE}`;
@@ -16,9 +17,9 @@ export default function Image() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 72,
-          background: "linear-gradient(135deg, #0b0b0f 0%, #15161c 100%)",
-          color: "#f5f5f7",
-          fontFamily: "Inter, system-ui, sans-serif",
+          background: REPAIRO_DESIGN.paper,
+          color: REPAIRO_DESIGN.ink,
+          fontFamily: "system-ui, sans-serif",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 32 }}>
@@ -26,9 +27,9 @@ export default function Image() {
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
-              background: "#f5f5f7",
-              color: "#0b0b0f",
+              borderRadius: 4,
+              background: REPAIRO_DESIGN.contrast,
+              color: REPAIRO_DESIGN.contrastFg,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -44,7 +45,7 @@ export default function Image() {
           <div style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2 }}>
             Your API changed. Know what to repair.
           </div>
-          <div style={{ fontSize: 28, color: "#a1a1aa", maxWidth: 980, lineHeight: 1.35 }}>
+          <div style={{ fontSize: 28, color: REPAIRO_DESIGN.muted, maxWidth: 980, lineHeight: 1.35 }}>
             {SITE_DESCRIPTION}
           </div>
         </div>
@@ -54,7 +55,7 @@ export default function Image() {
             display: "flex",
             justifyContent: "space-between",
             fontSize: 24,
-            color: "#a1a1aa",
+            color: REPAIRO_DESIGN.muted,
           }}
         >
           <span>{SITE_TAGLINE}</span>

@@ -7,6 +7,8 @@ import {
   streamSarvamCompletion,
   type SarvamMessage,
 } from "@/lib/otto/sarvam";
+import { assertRateLimit, clientIp } from "@/lib/rate-limit";
+import { AuthError } from "@/lib/auth/session";
 
 /**
  * Otto — the Repairo chat assistant, backed by Sarvam AI.
@@ -81,6 +83,11 @@ function mapSarvamError(error: SarvamError) {
 
 export async function POST(request: Request) {
   try {
+    assertRateLimit({
+      key: `chat:${clientIp(request)}`,
+      limit: 20,
+      windowMs: 60_000,
+    });
     const body = await request.json();
     const messages = sanitizeHistory(body?.messages);
     if (!messages) {
@@ -92,7 +99,7 @@ export async function POST(request: Request) {
     const { apiKey, model, baseUrl, reasoningEffort } = ottoSarvamConfigFromEnv();
     if (!apiKey) {
       return NextResponse.json(
-        { error: "The chat assistant isn't configured on the server (missing SARVAM_API_KEY)." },
+        { error: "The chat assistant isn't configured on the server." },
         { status: 503 },
       );
     }
@@ -135,10 +142,7 @@ export async function POST(request: Request) {
             controller.enqueue(encoder.encode(`${JSON.stringify({ delta: full })}\n`));
             controller.enqueue(encoder.encode(`${JSON.stringify({ done: true, message: full })}\n`));
           } catch (fallbackError) {
-            const payload =
-              fallbackError instanceof SarvamError
-                ? { error: fallbackError.message, kind: fallbackError.kind }
-                : { error: fallbackError instanceof Error ? fallbackError.message : "Stream failed" };
+            const payload = { error: "The chat assistant is temporarily unavailable." };
             controller.enqueue(encoder.encode(`${JSON.stringify(payload)}\n`));
           }
         } finally {
@@ -154,13 +158,16 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof SarvamError) {
       return mapSarvamError(error);
     }
 
     console.error("Error in chat handler:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "An unexpected error occurred." },
+      { error: "An unexpected error occurred." },
       { status: 500 },
     );
   }

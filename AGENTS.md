@@ -8,4 +8,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-For marketing and product UI, follow [DESIGN.md](./DESIGN.md) (Warp + ClickHouse-inspired tokens; see `docs/design-references/`).
+For all user-facing UI, follow [DESIGN.md](./DESIGN.md) (aligned with [Warp](https://www.warp.dev/) via `docs/design-references/warp-DESIGN.md`) and `src/lib/design-tokens.ts`. Use `--repairo-*` CSS variables — no one-off marketing hex.

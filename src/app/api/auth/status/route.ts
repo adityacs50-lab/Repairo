@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     clientIdPrefix: config ? `${config.clientId.slice(0, 8)}…` : null,
     sessionSecretOk: Boolean(config?.sessionSecret),
     githubConfigured: Boolean(config),
-    db,
+    db: { ok: db.ok },
     // What the OAuth App must have registered. Derived from the origin the
     // request actually came in on, not from APP_URL, so a wrong APP_URL cannot
     // make this field agree with itself and hide the misconfiguration.

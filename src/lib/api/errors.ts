@@ -19,7 +19,12 @@ export function jsonError(error: unknown) {
       { status: 503 },
     );
   }
-  const message = error instanceof Error ? error.message : "Request failed";
+  const message =
+    process.env.NODE_ENV === "production"
+      ? "Request failed"
+      : error instanceof Error
+        ? error.message
+        : "Request failed";
   return NextResponse.json({ error: message }, { status: 400 });
 }
 

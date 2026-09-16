@@ -15,6 +15,33 @@ export class GitHubError extends Error {
   }
 }
 
+const GITHUB_NAME = /^[\w.-]{1,100}$/;
+const COMMIT_FILE = /\.(ts|tsx|js|jsx|mts|cts|mjs|cjs|py|go)$/i;
+
+export function assertGithubName(value: string, label: string): string {
+  const v = value.trim();
+  if (!GITHUB_NAME.test(v) || v.includes("..")) {
+    throw new GitHubError(`Invalid GitHub ${label}`, 400);
+  }
+  return v;
+}
+
+export function githubRepoPath(owner: string, repo: string): string {
+  return `/repos/${encodeURIComponent(assertGithubName(owner, "owner"))}/${encodeURIComponent(assertGithubName(repo, "repo"))}`;
+}
+
+/** Reject path traversal and workflow drops in client-supplied repair file lists. */
+export function sanitizeCommitPath(path: string): string | null {
+  const trimmed = path.replace(/\\/g, "/").replace(/^\/+/, "").trim();
+  if (!trimmed || trimmed.includes("..") || trimmed.split("/").some((p) => p === "." || p === "")) {
+    return null;
+  }
+  if (trimmed.startsWith(".git/") || trimmed.includes("/.git/")) return null;
+  if (trimmed.startsWith(".github/")) return null;
+  if (!COMMIT_FILE.test(trimmed)) return null;
+  return trimmed;
+}
+
 async function gh<T>(
   token: string,
   path: string,
@@ -94,7 +121,7 @@ export async function getFileContent(
       content: string;
       sha: string;
       path: string;
-    }>(token, `/repos/${owner}/${repo}/contents/${encodedPath}${qs}`);
+    }>(token, `${githubRepoPath(owner, repo)}/contents/${encodedPath}${qs}`);
 
     if (data.type !== "file") {
       throw new GitHubError(`${path} is not a file`, 400);
@@ -122,7 +149,7 @@ export async function getRepo(
   owner: string,
   repo: string,
 ): Promise<GitHubRepo> {
-  return gh<GitHubRepo>(token, `/repos/${owner}/${repo}`);
+  return gh<GitHubRepo>(token, `${githubRepoPath(owner, repo)}`);
 }
 
 export async function getRecursiveTreePaths(
@@ -141,7 +168,7 @@ export async function getRecursiveTreePaths(
   const tree = await gh<{
     truncated: boolean;
     tree: Array<{ path?: string; type?: string }>;
-  }>(token, `/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`);
+  }>(token, `${githubRepoPath(owner, repo)}/git/trees/${sha}?recursive=1`);
 
   const paths = tree.tree
     .filter((n) => n.type === "blob" && n.path)
@@ -162,7 +189,7 @@ export async function getRefSha(
   try {
     const data = await gh<{ object: { sha: string } }>(
       token,
-      `/repos/${owner}/${repo}/git/ref/${normalized}`,
+      `${githubRepoPath(owner, repo)}/git/ref/${normalized}`,
     );
     return data.object.sha;
   } catch {
@@ -170,7 +197,7 @@ export async function getRefSha(
     if (/^[0-9a-f]{7,40}$/i.test(ref)) {
       const commit = await gh<{ sha: string }>(
         token,
-        `/repos/${owner}/${repo}/git/commits/${ref}`,
+        `${githubRepoPath(owner, repo)}/git/commits/${ref}`,
       );
       return commit.sha;
     }
@@ -186,7 +213,14 @@ export async function createPullRequestFromRepair(options: {
   result: RepairRunResult;
 }): Promise<{ url: string; number: number; branch: string }> {
   const { token, owner, repo, baseBranch, result } = options;
-  const files = result.pullRequest.files;
+  const files = [];
+  for (const file of result.pullRequest.files) {
+    const path = sanitizeCommitPath(file.path);
+    if (!path || typeof file.content !== "string") {
+      throw new GitHubError(`Refusing to commit unsafe path: ${file.path}`, 400);
+    }
+    files.push({ ...file, path });
+  }
   if (!files.length) {
     throw new GitHubError("No file changes to commit", 400);
   }
@@ -194,14 +228,14 @@ export async function createPullRequestFromRepair(options: {
   const baseSha = await getRefSha(token, owner, repo, baseBranch);
   const baseCommit = await gh<{ tree: { sha: string }; sha: string }>(
     token,
-    `/repos/${owner}/${repo}/git/commits/${baseSha}`,
+    `${githubRepoPath(owner, repo)}/git/commits/${baseSha}`,
   );
 
   const branchName = sanitizeBranch(result.pullRequest.branch);
 
   // Create or reset branch ref
   try {
-    await gh(token, `/repos/${owner}/${repo}/git/refs`, {
+    await gh(token, `${githubRepoPath(owner, repo)}/git/refs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -211,7 +245,7 @@ export async function createPullRequestFromRepair(options: {
     });
   } catch (err) {
     if (err instanceof GitHubError && err.status === 422) {
-      await gh(token, `/repos/${owner}/${repo}/git/refs/heads/${branchName}`, {
+      await gh(token, `${githubRepoPath(owner, repo)}/git/refs/heads/${branchName}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sha: baseSha, force: true }),
@@ -225,7 +259,7 @@ export async function createPullRequestFromRepair(options: {
   for (const file of files) {
     const blob = await gh<{ sha: string }>(
       token,
-      `/repos/${owner}/${repo}/git/blobs`,
+      `${githubRepoPath(owner, repo)}/git/blobs`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -233,7 +267,7 @@ export async function createPullRequestFromRepair(options: {
       },
     );
     treeItems.push({
-      path: file.path.replace(/^\//, ""),
+      path: file.path,
       mode: "100644" as const,
       type: "blob" as const,
       sha: blob.sha,
@@ -242,7 +276,7 @@ export async function createPullRequestFromRepair(options: {
 
   const tree = await gh<{ sha: string }>(
     token,
-    `/repos/${owner}/${repo}/git/trees`,
+    `${githubRepoPath(owner, repo)}/git/trees`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -258,7 +292,7 @@ export async function createPullRequestFromRepair(options: {
 
   const commit = await gh<{ sha: string }>(
     token,
-    `/repos/${owner}/${repo}/git/commits`,
+    `${githubRepoPath(owner, repo)}/git/commits`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -270,7 +304,7 @@ export async function createPullRequestFromRepair(options: {
     },
   );
 
-  await gh(token, `/repos/${owner}/${repo}/git/refs/heads/${branchName}`, {
+  await gh(token, `${githubRepoPath(owner, repo)}/git/refs/heads/${branchName}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sha: commit.sha, force: true }),
@@ -278,7 +312,7 @@ export async function createPullRequestFromRepair(options: {
 
   const pr = await gh<{ html_url: string; number: number }>(
     token,
-    `/repos/${owner}/${repo}/pulls`,
+    `${githubRepoPath(owner, repo)}/pulls`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -295,11 +329,16 @@ export async function createPullRequestFromRepair(options: {
 }
 
 function sanitizeBranch(name: string) {
-  return name
+  const cleaned = name
     .replace(/[^a-zA-Z0-9._\-/]/g, "-")
     .replace(/\/+/g, "/")
+    .replace(/^\/+|\/+$/g, "")
     .replace(/^-+|-+$/g, "")
     .slice(0, 200);
+  if (!cleaned || cleaned.includes("..") || cleaned.startsWith("refs/")) {
+    return `repairo/repair-${Date.now().toString(36)}`;
+  }
+  return cleaned;
 }
 
 export async function findOpenPrByHead(
@@ -310,7 +349,7 @@ export async function findOpenPrByHead(
 ): Promise<{ url: string; number: number } | null> {
   const data = await gh<
     Array<{ html_url: string; number: number; head: { ref: string } }>
-  >(token, `/repos/${owner}/${repo}/pulls?state=open&per_page=50`);
+  >(token, `${githubRepoPath(owner, repo)}/pulls?state=open&per_page=50`);
   const match = data.find((pr) => pr.head.ref === headBranch);
   return match ? { url: match.html_url, number: match.number } : null;
 }
@@ -324,7 +363,7 @@ export async function createRepoWebhook(options: {
 }): Promise<number> {
   const hook = await gh<{ id: number }>(
     options.token,
-    `/repos/${options.owner}/${options.repo}/hooks`,
+      `${githubRepoPath(options.owner, options.repo)}/hooks`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -353,7 +392,7 @@ export async function deleteRepoWebhook(options: {
   try {
     await gh(
       options.token,
-      `/repos/${options.owner}/${options.repo}/hooks/${options.hookId}`,
+      `${githubRepoPath(options.owner, options.repo)}/hooks/${options.hookId}`,
       { method: "DELETE" },
     );
   } catch {

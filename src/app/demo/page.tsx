@@ -14,7 +14,7 @@ export const metadata = pageMetadata({
 
 export default function DemoPage() {
   return (
-    <div className="site-shell">
+    <div>
       <SiteHeader active="demo" />
       <main className="demo-page-main">
         <div className="product-page-stack">

@@ -12,9 +12,6 @@ export async function GET() {
   return NextResponse.json({
     ok: status.configured,
     service: "repairo-github-app",
-    webhookPath: status.webhookPath,
-    installUrl: status.installUrl,
-    missing: status.missing,
   });
 }
 

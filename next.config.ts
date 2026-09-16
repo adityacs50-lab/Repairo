@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
   ...(useStandalone ? { output: "standalone" as const } : {}),
   serverExternalPackages: ["better-sqlite3"],
   poweredByHeader: false,
+  async rewrites() {
+    return [
+      { source: "/.well-known/llms.txt", destination: "/llms.txt" },
+      { source: "/.well-known/ai.txt", destination: "/ai.txt" },
+    ];
+  },
   async headers() {
     return [
       {

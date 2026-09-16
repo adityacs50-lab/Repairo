@@ -2,29 +2,25 @@ import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/seo";
 import { listVendors } from "@/lib/catalog/vendors";
 import { BLOG_POSTS } from "@/lib/blog";
+import { PUBLIC_MARKETING_ROUTES } from "@/lib/public-routes";
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]["changeFrequency"];
 
-const STATIC_ROUTES: { path: string; priority: number; changeFrequency: ChangeFrequency }[] = [
-  { path: "/", priority: 1, changeFrequency: "weekly" },
-  { path: "/docs", priority: 0.9, changeFrequency: "weekly" },
-  { path: "/pricing", priority: 0.9, changeFrequency: "monthly" },
-  { path: "/agents", priority: 0.8, changeFrequency: "weekly" },
-  { path: "/use-cases", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/demo", priority: 0.7, changeFrequency: "monthly" },
-  { path: "/blog", priority: 0.7, changeFrequency: "weekly" },
-  { path: "/changelog", priority: 0.6, changeFrequency: "weekly" },
-  { path: "/security", priority: 0.6, changeFrequency: "monthly" },
-  { path: "/about", priority: 0.5, changeFrequency: "monthly" },
-  { path: "/contact", priority: 0.5, changeFrequency: "yearly" },
-  { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
-  { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
+/** AI discovery endpoints — plain text, high crawl value for answer engines. */
+const DISCOVERY_ROUTES: {
+  path: string;
+  priority: number;
+  changeFrequency: ChangeFrequency;
+}[] = [
+  { path: "/llms.txt", priority: 0.95, changeFrequency: "weekly" },
+  { path: "/llms-full.txt", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/ai.txt", priority: 0.85, changeFrequency: "monthly" },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  const staticEntries = STATIC_ROUTES.map((r) => ({
+  const staticEntries = [...PUBLIC_MARKETING_ROUTES, ...DISCOVERY_ROUTES].map((r) => ({
     url: absoluteUrl(r.path),
     lastModified,
     changeFrequency: r.changeFrequency,

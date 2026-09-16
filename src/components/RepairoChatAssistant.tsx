@@ -185,7 +185,7 @@ export default function RepairoChatAssistant() {
 
   return (
     <div
-      className={`otto-launcher-root font-sans sm:right-6 sm:bottom-6${isOpen ? " otto-panel-open" : ""}`}
+      className={`otto-launcher-root otto-launcher-root--marketing font-sans${isOpen ? " otto-panel-open" : ""}`}
     >
       <AnimatePresence mode="wait">
         {!isOpen ? (
@@ -199,18 +199,16 @@ export default function RepairoChatAssistant() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={handleOpen}
             aria-label="Open the Otto assistant"
-            className="flex cursor-pointer items-center gap-2.5 rounded-full py-2 pr-4 pl-2"
-            style={{
-              background: WHITE,
-              border: `1px solid ${RULE}`,
-              boxShadow: "0 12px 40px -8px rgba(0, 0, 0, 0.55)",
-            }}
+            className="otto-launcher-chip flex cursor-pointer items-center gap-2.5 rounded-full py-2 pr-4 pl-2"
           >
             <span
               className="relative flex h-8 w-8 items-center justify-center rounded-full"
-              style={{ background: "linear-gradient(135deg, var(--repairo-purple), var(--repairo-ink))" }}
+              style={{
+                background: "var(--repairo-contrast)",
+                color: "var(--repairo-contrast-fg)",
+              }}
             >
-              <Wrench className="size-4 text-white" />
+              <Wrench className="size-4" />
               {hasNewMessage && (
                 <span
                   className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2"
@@ -218,13 +216,8 @@ export default function RepairoChatAssistant() {
                 />
               )}
             </span>
-            <span style={{ color: INK, fontSize: 13, fontWeight: 500 }}>Ask Otto</span>
-            <span
-              className="font-mono uppercase"
-              style={{ color: "var(--repairo-muted)", fontSize: 10, letterSpacing: "0.08em" }}
-            >
-              Ctrl /
-            </span>
+            <span className="otto-launcher-chip-label">Ask Otto</span>
+            <span className="otto-launcher-chip-kbd font-mono uppercase">Ctrl /</span>
           </motion.button>
         ) : (
           <motion.div

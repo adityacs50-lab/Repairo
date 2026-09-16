@@ -61,7 +61,7 @@ const WHITE = "var(--repairo-white)";
 const RULE = "var(--repairo-rule)";
 const MUTED = "var(--repairo-muted)";
 const SLATE = "var(--repairo-slate)";
-const PURPLE = "var(--repairo-purple)";
+const ACCENT = "var(--repairo-accent)";
 const TEAL = "var(--repairo-teal)";
 
 /**
@@ -90,16 +90,20 @@ const BUBBLE_TEXT = { fontSize: 14, lineHeight: 1.55 } as const;
  */
 const AVATAR = 24;
 
-const BRAND_GRADIENT = "linear-gradient(135deg, var(--repairo-purple), var(--repairo-ink))";
-
 function Avatar({ size = 32, style }: { size?: number; style?: React.CSSProperties }) {
   return (
     <div
       className="flex shrink-0 items-center justify-center rounded-full"
-      style={{ width: size, height: size, background: BRAND_GRADIENT, ...style }}
+      style={{
+        width: size,
+        height: size,
+        background: "var(--repairo-contrast)",
+        color: "var(--repairo-contrast-fg)",
+        ...style,
+      }}
       aria-hidden
     >
-      <Wrench className="text-white" style={{ width: size * 0.45, height: size * 0.45 }} />
+      <Wrench style={{ width: size * 0.45, height: size * 0.45 }} />
     </div>
   );
 }
@@ -208,7 +212,7 @@ function MessageBubble({
             ? {
                 ...BUBBLE_TEXT,
                 padding: "12px 16px",
-                background: PURPLE,
+                background: ACCENT,
                 color: WHITE,
                 whiteSpace: "pre-wrap",
                 overflowWrap: "anywhere",
@@ -267,8 +271,8 @@ function Suggestions({ items, onPick }: { items: string[]; onPick: (text: string
               lineHeight: 1.35,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = PURPLE;
-              e.currentTarget.style.color = PURPLE;
+              e.currentTarget.style.borderColor = ACCENT;
+              e.currentTarget.style.color = ACCENT;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = RULE;
@@ -416,7 +420,7 @@ export function ChatMessages({
             e.preventDefault();
             submit(inputValue);
           }}
-          className="flex items-center gap-2 rounded-xl border transition-colors focus-within:border-[var(--repairo-purple)]"
+          className="flex items-center gap-2 rounded-xl border transition-colors focus-within:border-[var(--repairo-accent)]"
           style={{ background: PAPER, borderColor: RULE, padding: "6px 6px 6px 14px" }}
         >
           <input
@@ -435,7 +439,7 @@ export function ChatMessages({
             disabled={!canSend}
             aria-label="Send message"
             className="flex h-9 w-9 flex-none cursor-pointer items-center justify-center self-center rounded-lg transition-all duration-150 active:scale-95 disabled:cursor-not-allowed"
-            style={canSend ? { background: PURPLE, color: WHITE } : { background: RULE, color: MUTED }}
+            style={canSend ? { background: ACCENT, color: WHITE } : { background: RULE, color: MUTED }}
           >
             <Send className="size-4" />
           </button>

@@ -20,11 +20,11 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="site-header">
+    <header className="site-header site-header--warp">
       <div className="header-inner">
         <Link href="/" className="wordmark" aria-label="Repairo AI home">
           <span style={{ fontFamily: '"Pixelify Sans", monospace' }}>Repairo</span>
-          <span className="wordmark-ai" style={{ fontFamily: '"Figtree", sans-serif' }}>
+          <span className="wordmark-ai" style={{ fontFamily: "var(--font-sans)" }}>
             AI
           </span>
         </Link>
@@ -33,20 +33,22 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
           {NAV.map((item) =>
             active === item.key ? (
               <span key={item.key} className="nav-current" aria-current="page">
-                {item.label}
+                {item.label.toLowerCase()}
               </span>
             ) : (
               <Link key={item.key} href={item.href}>
-                {item.label}
+                {item.label.toLowerCase()}
               </Link>
             ),
           )}
+          <Link href="/app">app</Link>
         </nav>
 
         <div className="header-actions">
           {active !== "demo" ? (
-            <Link className="button button-dark button-small" href="/demo">
-              Try demo <span aria-hidden="true" className="arrow-mark">↗</span>
+            <Link className="button button-dark button-small header-cta header-cta--warp" href="/demo">
+              get started
+              <span aria-hidden="true" className="header-cta-caret">^</span>
             </Link>
           ) : null}
           <button
@@ -78,6 +80,7 @@ export function SiteHeader({ active }: SiteHeaderProps = {}) {
               </Link>
             ),
           )}
+          <Link href="/app" onClick={() => setMobileMenuOpen(false)}>Workspace</Link>
           {active !== "demo" ? (
             <Link href="/demo" onClick={() => setMobileMenuOpen(false)}>
               Try demo

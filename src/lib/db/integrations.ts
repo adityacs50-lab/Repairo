@@ -58,6 +58,12 @@ export async function requireWorkspaceAccess(userId: string, workspaceId: string
   return { workspace, member };
 }
 
+export async function requireWorkspaceOwner(userId: string, workspaceId: string) {
+  const access = await requireWorkspaceAccess(userId, workspaceId);
+  if (access.member.role !== "owner") throw new AuthError("Owner only", 403);
+  return access;
+}
+
 export async function countIntegrations(workspaceId: string) {
   const row = await firstRow(
     getDb()
@@ -246,27 +252,75 @@ export async function createIntegration(input: {
   return row;
 }
 
-export async function updateIntegration(
-  id: string,
-  patch: Partial<{
-    name: string;
-    beforePath: string;
-    afterPath: string;
-    beforeRef: string;
-    afterRef: string;
-    consumerPaths: string[];
-    consumerRef: string;
-    baseBranch: string;
-    enabled: boolean;
-    webhookId: number | null;
-    lastCheckedAt: Date | null;
-    baselineSpec: string | null;
-    vendorSpecUrl: string | null;
-  }>,
-) {
+export type IntegrationPatch = Partial<{
+  name: string;
+  beforePath: string;
+  afterPath: string;
+  beforeRef: string;
+  afterRef: string;
+  consumerPaths: string[];
+  consumerRef: string;
+  baseBranch: string;
+  enabled: boolean;
+  webhookId: number | null;
+  lastCheckedAt: Date | null;
+  baselineSpec: string | null;
+  vendorSpecUrl: string | null;
+}>;
+
+const CLIENT_PATCH_KEYS = [
+  "name",
+  "beforePath",
+  "afterPath",
+  "beforeRef",
+  "afterRef",
+  "consumerPaths",
+  "consumerRef",
+  "baseBranch",
+  "enabled",
+] as const satisfies ReadonlyArray<keyof IntegrationPatch>;
+
+/** Strip unknown JSON keys so a client cannot mass-assign workspaceId / webhookSecret. */
+export function pickClientIntegrationPatch(input: Record<string, unknown>): IntegrationPatch {
+  const patch: IntegrationPatch = {};
+  for (const key of CLIENT_PATCH_KEYS) {
+    if (!(key in input) || input[key] === undefined) continue;
+    if (key === "consumerPaths") {
+      if (!Array.isArray(input.consumerPaths)) continue;
+      patch.consumerPaths = input.consumerPaths
+        .filter((p): p is string => typeof p === "string")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      continue;
+    }
+    if (key === "enabled") {
+      if (typeof input.enabled === "boolean") patch.enabled = input.enabled;
+      continue;
+    }
+    if (typeof input[key] === "string") {
+      (patch as Record<string, string>)[key] = (input[key] as string).trim();
+    }
+  }
+  return patch;
+}
+
+export async function updateIntegration(id: string, patch: IntegrationPatch) {
+  const allowed: IntegrationPatch = {};
+  const serverKeys: Array<keyof IntegrationPatch> = [
+    ...CLIENT_PATCH_KEYS,
+    "webhookId",
+    "lastCheckedAt",
+    "baselineSpec",
+    "vendorSpecUrl",
+  ];
+  for (const key of serverKeys) {
+    if (patch[key] !== undefined) {
+      (allowed as Record<string, unknown>)[key] = patch[key];
+    }
+  }
   const [row] = await getDb()
     .update(integrations)
-    .set({ ...patch, updatedAt: new Date() })
+    .set({ ...allowed, updatedAt: new Date() })
     .where(eq(integrations.id, id))
     .returning();
   return row;

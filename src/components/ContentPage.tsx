@@ -56,6 +56,7 @@ export function ContentPage({
   wide = false,
   cta,
   customNav,
+  asideSlot,
 }: {
   eyebrow: string;
   title: string;
@@ -65,14 +66,18 @@ export function ContentPage({
   wide?: boolean;
   cta?: { href: string; label: string };
   customNav?: NavGroup[];
+  /** Replaces default or `customNav` aside (e.g. docs hash nav). */
+  asideSlot?: ReactNode;
 }) {
   return (
-    <div className="site-shell">
+    <div>
       <SiteHeader active={headerActive(activeHref)} />
 
       <div className={`content-layout${wide ? " content-layout-wide" : ""}`}>
         <aside className="content-aside">
-          {customNav ? (
+          {asideSlot ? (
+            asideSlot
+          ) : customNav ? (
             <div className="content-aside-groups">
               {customNav.map((group) => (
                 <div key={group.title} className="content-aside-group">

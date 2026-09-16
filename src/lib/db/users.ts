@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { firstRow, getDb } from "./index";
 import {
   users,
@@ -28,6 +28,7 @@ export async function upsertGithubUser(input: {
   );
 
   let user: User;
+  let isNew = false;
   if (existing) {
     const updated = await db
       .update(users)
@@ -42,6 +43,7 @@ export async function upsertGithubUser(input: {
       .returning();
     user = updated[0];
   } else {
+    isNew = true;
     const userId = randomUUID();
     const inserted = await db
       .insert(users)
@@ -58,48 +60,6 @@ export async function upsertGithubUser(input: {
       .returning();
     user = inserted[0];
 
-    const workspaceId = randomUUID();
-    const [workspace] = await db
-      .insert(workspaces)
-      .values({
-        id: workspaceId,
-        name: `${input.login}'s workspace`,
-        ownerUserId: user.id,
-        plan: "free",
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
-
-    await db.insert(workspaceMembers).values({
-      id: randomUUID(),
-      workspaceId: workspace.id,
-      userId: user.id,
-      role: "owner",
-      createdAt: now,
-    });
-
-    await acceptPendingInvitesForLogin(user.id, input.login);
-    await writeAudit({
-      workspaceId: workspace.id,
-      userId: user.id,
-      action: "user.signup",
-      meta: { login: input.login },
-    });
-
-    return { user, workspace };
-  }
-
-  const membership = await firstRow(
-    db.select().from(workspaceMembers).where(eq(workspaceMembers.userId, user.id)).limit(1),
-  );
-
-  let workspace: Workspace;
-  if (membership) {
-    workspace = (await firstRow(
-      db.select().from(workspaces).where(eq(workspaces.id, membership.workspaceId)).limit(1),
-    ))!;
-  } else {
     const [created] = await db
       .insert(workspaces)
       .values({
@@ -111,11 +71,40 @@ export async function upsertGithubUser(input: {
         updatedAt: now,
       })
       .returning();
-    workspace = created;
 
     await db.insert(workspaceMembers).values({
       id: randomUUID(),
-      workspaceId: workspace.id,
+      workspaceId: created.id,
+      userId: user.id,
+      role: "owner",
+      createdAt: now,
+    });
+  }
+
+  const membership = await firstRow(
+    db
+      .select()
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.userId, user.id))
+      .limit(1),
+  );
+
+  if (!membership) {
+    const [created] = await db
+      .insert(workspaces)
+      .values({
+        id: randomUUID(),
+        name: `${input.login}'s workspace`,
+        ownerUserId: user.id,
+        plan: "free",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+
+    await db.insert(workspaceMembers).values({
+      id: randomUUID(),
+      workspaceId: created.id,
       userId: user.id,
       role: "owner",
       createdAt: now,
@@ -123,6 +112,17 @@ export async function upsertGithubUser(input: {
   }
 
   await acceptPendingInvitesForLogin(user.id, input.login);
+  const workspace = await getWorkspaceForUser(user.id);
+  if (!workspace) throw new Error("Workspace missing after login");
+
+  if (isNew) {
+    await writeAudit({
+      workspaceId: workspace.id,
+      userId: user.id,
+      action: "user.signup",
+      meta: { login: input.login },
+    });
+  }
 
   return { user, workspace };
 }
@@ -136,7 +136,12 @@ export async function getUserById(id: string) {
 export async function getWorkspaceForUser(userId: string) {
   const db = getDb();
   const membership = await firstRow(
-    db.select().from(workspaceMembers).where(eq(workspaceMembers.userId, userId)).limit(1),
+    db
+      .select()
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.userId, userId))
+      .orderBy(desc(workspaceMembers.createdAt))
+      .limit(1),
   );
   if (!membership) return null;
   return (
