@@ -74,7 +74,7 @@ export default function RootLayout({
       lang="en"
       className={`${figtree.variable} ${pixelify.variable} h-full antialiased`}
     >
-      <body className="min-h-screen bg-[#f7f8fa] text-[#0b1220] font-sans">
+      <body className="min-h-screen bg-canvas text-ink font-sans">
         <AuthSessionProvider>
           <JsonLd data={[organizationJsonLd(), webSiteJsonLd()]} />
           {children}

@@ -203,7 +203,7 @@ export default function RepairoChatAssistant() {
             style={{
               background: WHITE,
               border: `1px solid ${RULE}`,
-              boxShadow: "0 12px 32px -10px rgba(11, 18, 32, 0.35)",
+              boxShadow: "0 12px 40px -8px rgba(0, 0, 0, 0.55)",
             }}
           >
             <span

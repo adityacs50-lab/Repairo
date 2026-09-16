@@ -1,15 +1,27 @@
 @import "tailwindcss";
 
+/*
+ * Dark dev-tools palette (Linear / Vercel / GitHub-dark inspired).
+ * Legacy token names kept: paper = canvas, white = elevated surface, ink = foreground.
+ */
 :root {
-  --repairo-paper: #f7f8fa;
-  --repairo-white: #ffffff;
-  --repairo-ink: #0b1220;
-  --repairo-slate: #1e2633;
-  --repairo-muted: #667080;
-  --repairo-rule: #d9dee7;
-  --repairo-purple: #6c5ce7;
-  --repairo-teal: #00bfa6;
-  --repairo-amber: #ffb020;
+  color-scheme: dark;
+
+  --repairo-paper: #09090b;
+  --repairo-white: #141419;
+  --repairo-ink: #fafafa;
+  --repairo-slate: #d4d4d8;
+  --repairo-muted: #a1a1aa;
+  --repairo-rule: #27272a;
+  --repairo-purple: #8b7cff;
+  --repairo-teal: #34d399;
+  --repairo-amber: #fbbf24;
+
+  --repairo-media-frame: #0c0c10;
+  --repairo-contrast: #fafafa;
+  --repairo-contrast-fg: #09090b;
+  --repairo-glow-purple: color-mix(in srgb, var(--repairo-purple) 22%, transparent);
+  --repairo-glow-teal: color-mix(in srgb, var(--repairo-teal) 12%, transparent);
 
   --page-max-width: 1440px;
   --page-padding: 16px;
@@ -72,17 +84,17 @@ body {
 
 /* Tailwind v4 color utilities for workspace/demo components */
 @theme {
-  --color-bg: #ffffff;
-  --color-bg-panel: #ffffff;
-  --color-fg: #0b1220;
-  --color-accent: #6c5ce7;
-  --color-accent-bright: #6c5ce7;
-  --color-line: #d9dee7;
-  --color-line-strong: #bcc4d0;
-  --color-warn: #ffb020;
-  --color-safe: #00bfa6;
-  --color-muted: #667080;
-  --color-muted-dim: #667080;
+  --color-bg: #141419;
+  --color-bg-panel: #18181f;
+  --color-fg: #fafafa;
+  --color-accent: #8b7cff;
+  --color-accent-bright: #a78bfa;
+  --color-line: #27272a;
+  --color-line-strong: #3f3f46;
+  --color-warn: #fbbf24;
+  --color-safe: #34d399;
+  --color-muted: #a1a1aa;
+  --color-muted-dim: #71717a;
 }
 
 /* Compatibility for pages still using the previous token class names */
@@ -112,7 +124,7 @@ body {
 .text-accent-bright { color: var(--repairo-purple); }
 .text-warn { color: var(--repairo-amber); }
 .border-accent { border-color: var(--repairo-purple); }
-.border-line-strong { border-color: #bcc4d0; }
+.border-line-strong { border-color: var(--color-line-strong); }
 .border-warn { border-color: var(--repairo-amber); }
 .bg-warn\/10 { background-color: color-mix(in srgb, var(--repairo-amber) 12%, transparent); }
 .bg-accent\/10 { background-color: color-mix(in srgb, var(--repairo-purple) 10%, transparent); }
@@ -159,8 +171,8 @@ body {
 }
 
 .workspace-tabs button[aria-selected="true"] {
-  background: var(--repairo-ink);
-  color: var(--repairo-white);
+  background: var(--repairo-contrast);
+  color: var(--repairo-contrast-fg);
 }
 
 .workspace-panel {
@@ -661,7 +673,7 @@ body {
   background: var(--repairo-white);
   padding: 16px 18px;
   min-width: 0;
-  box-shadow: 0 1px 0 rgba(11, 18, 32, 0.04);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 
 .demo-sbom-json-block {
@@ -853,6 +865,11 @@ html, body {
   text-rendering: optimizelegibility;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--repairo-purple) 40%, transparent);
+  color: var(--repairo-ink);
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -864,7 +881,10 @@ code {
 
 /* Base Site Architecture Classes matching exact live stylesheet */
 .site-shell {
-  background: var(--repairo-paper);
+  background-color: var(--repairo-paper);
+  background-image:
+    radial-gradient(ellipse 90% 55% at 50% -15%, var(--repairo-glow-purple), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 100% 0%, var(--repairo-glow-teal), transparent 50%);
   color: var(--repairo-ink);
   min-height: 100vh;
   width: 100%;
@@ -883,9 +903,9 @@ code {
 .site-header {
   z-index: 50;
   border-bottom: 1px solid var(--repairo-rule);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  background: rgba(247, 248, 250, 0.94);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+  background: color-mix(in srgb, var(--repairo-paper) 88%, transparent);
   position: sticky;
   top: 0;
 }
@@ -1021,7 +1041,7 @@ code {
 }
 
 .button:hover {
-  box-shadow: 0 2px 12px rgba(11, 18, 32, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 .button:focus-visible,
@@ -1032,24 +1052,27 @@ code {
 }
 
 .button-dark {
-  background: var(--repairo-ink);
-  color: var(--repairo-white);
+  background: var(--repairo-contrast);
+  color: var(--repairo-contrast-fg);
+  border-color: var(--repairo-contrast);
 }
 
 .button-dark:hover {
   background: var(--repairo-purple);
   border-color: var(--repairo-purple);
+  color: #fff;
 }
 
 .button-light {
   background: var(--repairo-white);
   color: var(--repairo-ink);
+  border-color: var(--repairo-rule);
 }
 
 .button-light:hover {
-  background: var(--repairo-paper);
+  background: color-mix(in srgb, var(--repairo-white) 92%, var(--repairo-purple));
   border-color: var(--repairo-purple);
-  color: var(--repairo-purple);
+  color: var(--repairo-ink);
 }
 
 .button-small {
@@ -1295,7 +1318,7 @@ h1, h2, h3 {
 }
 
 .asset-frame {
-  background: var(--repairo-ink);
+  background: var(--repairo-media-frame);
   position: relative;
   overflow: hidden;
 }
@@ -1352,8 +1375,8 @@ h1, h2, h3 {
 }
 
 .workflow-list {
-  border-top: 1px solid var(--repairo-ink);
-  border-bottom: 1px solid var(--repairo-ink);
+  border-top: 1px solid var(--color-line-strong);
+  border-bottom: 1px solid var(--color-line-strong);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: clamp(40px, 6vw, 56px);
   display: grid;
@@ -1478,8 +1501,8 @@ h1, h2, h3 {
 
 .tab:hover,
 .tab-active {
-  background: var(--repairo-ink) !important;
-  color: var(--repairo-white) !important;
+  background: var(--repairo-contrast) !important;
+  color: var(--repairo-contrast-fg) !important;
 }
 
 .demo-panel {
@@ -1816,7 +1839,7 @@ h1, h2, h3 {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  box-shadow: 0 1px 0 rgba(11, 18, 32, 0.04);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 
 .metric-cell:last-child,
@@ -2113,8 +2136,8 @@ h1, h2, h3 {
 }
 
 .plan-tier-featured {
-  border-color: var(--repairo-ink);
-  background: #f3f5f8;
+  border-color: color-mix(in srgb, var(--repairo-purple) 45%, var(--repairo-rule));
+  background: color-mix(in srgb, var(--repairo-purple) 8%, var(--repairo-white));
 }
 
 .plan-tier-head {
@@ -2140,8 +2163,8 @@ h1, h2, h3 {
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--repairo-white);
-  background: var(--repairo-ink);
+  color: #fff;
+  background: var(--repairo-purple);
   padding: 5px 8px;
 }
 
@@ -2367,16 +2390,16 @@ h1, h2, h3 {
   height: 6px;
   margin-top: 8px;
   border-radius: 999px;
-  background: var(--repairo-ink);
+  background: var(--repairo-purple);
 }
 
 .docs-code {
   position: relative;
   margin: 8px 0 0;
   padding: 20px 20px 22px;
-  background: var(--repairo-ink);
-  border: 1px solid var(--repairo-slate);
-  color: rgba(247, 248, 250, 0.92);
+  background: var(--repairo-media-frame);
+  border: 1px solid var(--repairo-rule);
+  color: #e4e4e7;
 }
 
 .docs-code-copy {
@@ -2575,9 +2598,9 @@ h1, h2, h3 {
   gap: 8px;
   min-height: var(--control-height);
   padding: 0 18px;
-  border: 1px solid var(--repairo-ink);
-  background: var(--repairo-ink);
-  color: var(--repairo-white);
+  border: 1px solid var(--repairo-contrast);
+  background: var(--repairo-contrast);
+  color: var(--repairo-contrast-fg);
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.07em;
@@ -2612,8 +2635,8 @@ h1, h2, h3 {
 }
 
 .btn-ghost:hover {
-  border-color: var(--repairo-ink);
-  background: var(--repairo-paper);
+  border-color: var(--color-line-strong);
+  background: color-mix(in srgb, var(--repairo-white) 85%, var(--repairo-purple));
 }
 
 .bg-bg { background-color: var(--repairo-white); }
@@ -2679,12 +2702,12 @@ h1, h2, h3 {
 .demo-form textarea:focus,
 .demo-form select:focus {
   border-color: var(--repairo-purple);
-  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.16);
+  box-shadow: var(--focus-ring);
 }
 
 .demo-form input::placeholder,
 .demo-form textarea::placeholder {
-  color: #9aa2ae;
+  color: var(--repairo-muted);
 }
 
 .form-submit {
@@ -3152,8 +3175,9 @@ h1, h2, h3 {
   padding: 12px 14px;
   max-width: 100%;
   border-radius: 10px;
-  background: var(--repairo-ink);
-  color: var(--repairo-paper);
+  background: #050508;
+  border: 1px solid var(--repairo-rule);
+  color: #e4e4e7;
   overflow-x: auto;
 }
 .otto-md pre code {
