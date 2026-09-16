@@ -52,8 +52,11 @@ const GUARDRAILS = `## Guardrails
 - Be honest about limits. Repairo supports TypeScript, JavaScript, Python, and Go for deterministic repairs today, each with its own validation gate before a PR is proposed. If you do not know, say so and point to ${LINKS.docs} or ${LINKS.contact}.`;
 
 /** Assemble the full system prompt for one turn. */
-export function buildOttoSystemPrompt(messages: PromptMessage[]): string {
-  const sections = retrieveKnowledge(buildRetrievalQuery(messages));
+export function buildOttoSystemPrompt(messages: PromptMessage[], compact = false): string {
+  const sections = retrieveKnowledge(
+    buildRetrievalQuery(messages),
+    compact ? { maxSections: 2, maxChars: 4200 } : { maxSections: 3, maxChars: 6500 },
+  );
   return `${PERSONA}
 
 ${LANGUAGE_RULES}

@@ -782,8 +782,32 @@ body {
 
 @media (max-width: 767px) {
   .otto-launcher-root {
-    bottom: max(20px, env(safe-area-inset-bottom, 0px));
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
     right: max(12px, env(safe-area-inset-right, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
+    max-width: none;
+  }
+
+  .otto-launcher-root.otto-panel-open {
+    inset: 0;
+    padding: max(8px, env(safe-area-inset-top, 0px))
+      max(8px, env(safe-area-inset-right, 0px))
+      max(8px, env(safe-area-inset-bottom, 0px))
+      max(8px, env(safe-area-inset-left, 0px));
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+  }
+
+  .otto-launcher-root.otto-panel-open .otto-chat-panel {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: 100% !important;
+    height: 100%;
+  }
+
+  .otto-launcher-root button[aria-label="Open the Otto assistant"] span:last-child {
+    display: none;
   }
 }
 
@@ -2497,8 +2521,23 @@ h1, h2, h3 {
   width: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: clamp(32px, 5vw, 48px) var(--page-padding) calc(var(--otto-safe-bottom) + 48px);
+  padding: clamp(24px, 4vw, 48px) var(--page-padding) calc(var(--otto-safe-bottom) + 48px);
   min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .demo-page-main,
+  .product-main {
+    padding-top: 20px;
+    padding-bottom: calc(var(--otto-safe-bottom) + 24px);
+  }
+  .content-layout {
+    padding-top: 32px;
+    padding-bottom: calc(var(--otto-safe-bottom) + 24px);
+  }
+  .content-title {
+    font-size: clamp(1.85rem, 8vw, 2.4rem);
+  }
 }
 
 .site-shell > .site-footer {
@@ -2716,6 +2755,47 @@ h1, h2, h3 {
 }
 
 /* Responsive Media Queries */
+@media (max-width: 1100px) {
+  .workflow-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workflow-step:nth-child(2) {
+    border-right: 0;
+  }
+  .workflow-step + .workflow-step {
+    padding-left: 20px;
+  }
+  .workflow-step:nth-child(odd) {
+    padding-right: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+    padding-top: clamp(48px, 7vw, 72px);
+  }
+  .hero-section h1 {
+    font-size: clamp(2.6rem, 8vw, 4.2rem);
+    max-width: none;
+  }
+  .hero-lede {
+    font-size: 15px;
+  }
+  .hero-actions {
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .hero-actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .hero-actions .text-link {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 900px) {
   .main-nav {
     display: none;
@@ -2873,6 +2953,37 @@ h1, h2, h3 {
 }
 
 @media (max-width: 560px) {
+  .header-cta .arrow-mark {
+    display: none;
+  }
+  .header-cta {
+    padding-inline: 12px !important;
+    font-size: 9px !important;
+  }
+  .demo-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    align-items: start;
+  }
+  .demo-row code {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .row-state {
+    justify-self: start;
+  }
+  .demo-panel {
+    padding: 20px 16px 28px;
+  }
+  .demo-panel-foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .tab {
+    min-height: 44px;
+    padding: 12px 14px;
+  }
   .metrics-strip,
   .home-metrics-strip,
   .evidence-metrics {

@@ -13,6 +13,7 @@ import {
   HOMEPAGE_PROBLEM,
   VENDOR_MARKS,
 } from "@/lib/social-proof";
+import { MarketingHeader } from "@/components/MarketingHeader";
 
 const GITHUB_APP_INSTALL_URL = `https://github.com/apps/${
   process.env.NEXT_PUBLIC_GITHUB_APP_SLUG?.trim() || "repairo-ai"
@@ -134,24 +135,7 @@ export function HomePage() {
 
   return (
     <main id="top" className="site-shell">
-      {/* 1. SITE HEADER */}
-      <header className="site-header">
-        <div className="header-inner">
-          <Link href="#top" className="wordmark" aria-label="Repairo AI home">
-            <span style={{ fontFamily: '"Pixelify Sans", monospace' }}>Repairo</span>
-            <span className="wordmark-ai" style={{ fontFamily: '"Figtree", sans-serif' }}>AI</span>
-          </Link>
-          <nav className="main-nav" aria-label="Main navigation">
-            <a href="#workflow">How it works</a>
-            <a href="#providers">Providers</a>
-            <a href="#security">Security</a>
-            <Link href="/pricing">Pricing</Link>
-          </nav>
-          <Link className="button button-dark button-small" href="/demo">
-            Try demo <span aria-hidden="true" className="arrow-mark">↗</span>
-          </Link>
-        </div>
-      </header>
+      <MarketingHeader />
 
       {/* 2. HERO SECTION */}
       <section className="hero-section section-rule">

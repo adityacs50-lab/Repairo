@@ -26,6 +26,12 @@ const pixelify = Pixelify_Sans({
   weight: ["400", "700"],
 });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Repairo AI | API changes, repaired with evidence",

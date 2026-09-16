@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { buildOttoSystemPrompt } from "@/lib/otto/prompt";
 import {
   createSarvamCompletion,
-  sarvamConfigFromEnv,
+  ottoSarvamConfigFromEnv,
   SarvamError,
+  streamSarvamCompletion,
   type SarvamMessage,
 } from "@/lib/otto/sarvam";
 
@@ -18,18 +19,11 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/**
- * This budget covers the model's THINKING PASS as well as the answer, and on
- * these models thinking is not optional (see lib/otto/sarvam.ts). A short
- * question like "What is Repairo?" was observed spending ~1400 tokens
- * reasoning; at the old 1200 the answer never got written and the visitor saw
- * "I couldn't come up with a response to that". 3000 leaves room for both,
- * and the client escalates once if a reply still gets truncated.
- */
-const MAX_TOKENS = 3000;
-const TIMEOUT_MS = 30_000;
+/** Widget answers stay short; conversations model is faster than full 105b reasoning. */
+const MAX_TOKENS = 1400;
+const TIMEOUT_MS = 45_000;
 /** Bounds how much conversation history (and therefore cost) one request can carry. */
-const MAX_HISTORY_MESSAGES = 16;
+const MAX_HISTORY_MESSAGES = 12;
 const MAX_MESSAGE_CHARS = 4000;
 
 interface ChatMessage {
@@ -56,6 +50,35 @@ function sanitizeHistory(input: unknown): ChatMessage[] | null {
   return messages.length > 0 ? messages : null;
 }
 
+function mapSarvamError(error: SarvamError) {
+  switch (error.kind) {
+    case "auth":
+      console.error("Chat: Sarvam auth error — check SARVAM_API_KEY:", error.message);
+      return NextResponse.json(
+        { error: "The chat assistant isn't configured correctly on the server." },
+        { status: 503 },
+      );
+    case "rate_limit":
+      console.error("Chat: Sarvam rate limited:", error.message);
+      return NextResponse.json(
+        { error: "Otto is getting a lot of questions right now — please try again in a moment." },
+        { status: 429 },
+      );
+    case "timeout":
+      console.error("Chat:", error.message);
+      return NextResponse.json({ error: "That took too long to answer — please try again." }, { status: 504 });
+    case "upstream":
+      console.error("Chat: Sarvam upstream error:", error.message);
+      return NextResponse.json({ error: "The chat assistant is temporarily unavailable." }, { status: 503 });
+    case "empty":
+      console.error("Chat:", error.message);
+      return NextResponse.json({ message: "I couldn't come up with a response to that — could you rephrase?" });
+    default:
+      console.error("Chat: Sarvam call failed:", error.message);
+      return NextResponse.json({ error: "The chat assistant is temporarily unavailable." }, { status: 503 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -64,7 +87,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A non-empty message history is required." }, { status: 400 });
     }
 
-    const { apiKey, model, baseUrl, reasoningEffort } = sarvamConfigFromEnv();
+    const wantStream = body?.stream !== false;
+
+    const { apiKey, model, baseUrl, reasoningEffort } = ottoSarvamConfigFromEnv();
     if (!apiKey) {
       return NextResponse.json(
         { error: "The chat assistant isn't configured on the server (missing SARVAM_API_KEY)." },
@@ -73,11 +98,11 @@ export async function POST(request: Request) {
     }
 
     const payload: SarvamMessage[] = [
-      { role: "system", content: buildOttoSystemPrompt(messages) },
+      { role: "system", content: buildOttoSystemPrompt(messages, true) },
       ...messages,
     ];
 
-    const text = await createSarvamCompletion({
+    const completionOpts = {
       apiKey,
       model,
       baseUrl,
@@ -86,37 +111,51 @@ export async function POST(request: Request) {
       temperature: 0.2,
       timeoutMs: TIMEOUT_MS,
       reasoningEffort,
+    };
+
+    if (!wantStream) {
+      const text = await createSarvamCompletion(completionOpts);
+      return NextResponse.json({ message: text });
+    }
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const full = await streamSarvamCompletion({
+            ...completionOpts,
+            onToken: (chunk) => {
+              controller.enqueue(encoder.encode(`${JSON.stringify({ delta: chunk })}\n`));
+            },
+          });
+          controller.enqueue(encoder.encode(`${JSON.stringify({ done: true, message: full })}\n`));
+        } catch (error) {
+          try {
+            const full = await createSarvamCompletion(completionOpts);
+            controller.enqueue(encoder.encode(`${JSON.stringify({ delta: full })}\n`));
+            controller.enqueue(encoder.encode(`${JSON.stringify({ done: true, message: full })}\n`));
+          } catch (fallbackError) {
+            const payload =
+              fallbackError instanceof SarvamError
+                ? { error: fallbackError.message, kind: fallbackError.kind }
+                : { error: fallbackError instanceof Error ? fallbackError.message : "Stream failed" };
+            controller.enqueue(encoder.encode(`${JSON.stringify(payload)}\n`));
+          }
+        } finally {
+          controller.close();
+        }
+      },
     });
 
-    return NextResponse.json({ message: text });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
   } catch (error) {
     if (error instanceof SarvamError) {
-      switch (error.kind) {
-        case "auth":
-          console.error("Chat: Sarvam auth error — check SARVAM_API_KEY:", error.message);
-          return NextResponse.json(
-            { error: "The chat assistant isn't configured correctly on the server." },
-            { status: 503 },
-          );
-        case "rate_limit":
-          console.error("Chat: Sarvam rate limited:", error.message);
-          return NextResponse.json(
-            { error: "Otto is getting a lot of questions right now — please try again in a moment." },
-            { status: 429 },
-          );
-        case "timeout":
-          console.error("Chat:", error.message);
-          return NextResponse.json({ error: "That took too long to answer — please try again." }, { status: 504 });
-        case "upstream":
-          console.error("Chat: Sarvam upstream error:", error.message);
-          return NextResponse.json({ error: "The chat assistant is temporarily unavailable." }, { status: 503 });
-        case "empty":
-          console.error("Chat:", error.message);
-          return NextResponse.json({ message: "I couldn't come up with a response to that — could you rephrase?" });
-        default:
-          console.error("Chat: Sarvam call failed:", error.message);
-          return NextResponse.json({ error: "The chat assistant is temporarily unavailable." }, { status: 503 });
-      }
+      return mapSarvamError(error);
     }
 
     console.error("Error in chat handler:", error);

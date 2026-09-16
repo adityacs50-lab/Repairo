@@ -89,6 +89,7 @@ export default function RepairoChatAssistant() {
   const handleSend = useCallback(
     async (text: string) => {
       const userMessage: ChatMessage = { id: nextId("user"), sender: "user", content: text };
+      const assistantId = nextId("assistant");
       setMessages((prev) => [...prev, userMessage]);
       setIsTyping(true);
 
@@ -100,27 +101,81 @@ export default function RepairoChatAssistant() {
 
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history }),
+          headers: { "Content-Type": "application/json", Accept: "application/x-ndjson, application/json" },
+          body: JSON.stringify({ messages: history, stream: true }),
         });
+
+        const contentType = response.headers.get("content-type") ?? "";
+
+        if (contentType.includes("ndjson") && response.body) {
+          setIsTyping(false);
+          setMessages((prev) => [...prev, { id: assistantId, sender: "assistant", content: "" }]);
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let assembled = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              const event = JSON.parse(line) as {
+                delta?: string;
+                done?: boolean;
+                message?: string;
+                error?: string;
+              };
+              if (event.error) {
+                throw new Error(event.error);
+              }
+              if (event.delta) {
+                assembled += event.delta;
+                const snapshot = assembled;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === assistantId ? { ...m, content: snapshot } : m)),
+                );
+              }
+              if (event.done && event.message) {
+                assembled = event.message;
+              }
+            }
+          }
+
+          if (!assembled.trim()) {
+            throw new Error("Empty response from Otto.");
+          }
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: assembled } : m)),
+          );
+          return;
+        }
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.error) {
           throw new Error(data.error || `Request failed (${response.status}).`);
         }
 
-        setMessages((prev) => [...prev, { id: nextId("assistant"), sender: "assistant", content: data.message }]);
+        setMessages((prev) => [...prev, { id: assistantId, sender: "assistant", content: data.message }]);
       } catch (error) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: nextId("assistant"),
-            sender: "assistant",
-            content: `Sorry — something went wrong: ${
-              error instanceof Error ? error.message : "unknown error"
-            }`,
-          },
-        ]);
+        setMessages((prev) => {
+          const withoutEmpty = prev.filter((m) => m.id !== assistantId || m.content.trim());
+          return [
+            ...withoutEmpty,
+            {
+              id: nextId("assistant"),
+              sender: "assistant",
+              content: `Sorry — something went wrong: ${
+                error instanceof Error ? error.message : "unknown error"
+              }`,
+            },
+          ];
+        });
       } finally {
         setIsTyping(false);
       }
@@ -129,7 +184,9 @@ export default function RepairoChatAssistant() {
   );
 
   return (
-    <div className="otto-launcher-root font-sans sm:right-6 sm:bottom-6">
+    <div
+      className={`otto-launcher-root font-sans sm:right-6 sm:bottom-6${isOpen ? " otto-panel-open" : ""}`}
+    >
       <AnimatePresence mode="wait">
         {!isOpen ? (
           <motion.button
@@ -182,7 +239,7 @@ export default function RepairoChatAssistant() {
               // Height is capped, not fixed: the panel grows with the
               // conversation and starts scrolling at the cap, instead of
               // opening as a tall box with one message stranded at the top.
-              className="max-h-[min(620px,calc(100dvh-6rem))] w-[min(408px,calc(100vw-2rem))]"
+              className="otto-chat-panel max-h-[min(620px,calc(100dvh-6rem))] w-[min(408px,calc(100vw-2rem))]"
               messages={messages}
               isTyping={isTyping}
               suggestions={SUGGESTIONS}

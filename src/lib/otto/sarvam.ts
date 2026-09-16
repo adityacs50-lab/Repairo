@@ -10,6 +10,8 @@
 
 export const DEFAULT_SARVAM_BASE_URL = "https://api.sarvam.ai/v1";
 export const DEFAULT_SARVAM_MODEL = "sarvam-105b";
+/** Tuned for low-latency chat (Otto widget). Override with OTTO_SARVAM_MODEL. */
+export const DEFAULT_OTTO_SARVAM_MODEL = "sarvam-105b-conversations";
 
 export interface SarvamMessage {
   role: "system" | "user" | "assistant";
@@ -193,6 +195,142 @@ export function sarvamConfigFromEnv(env: Record<string, string | undefined> = pr
     baseUrl: (env.SARVAM_BASE_URL?.trim() || DEFAULT_SARVAM_BASE_URL).replace(/\/+$/, ""),
     reasoningEffort: env.SARVAM_REASONING_EFFORT?.trim() || undefined,
   };
+}
+
+/** Otto (/api/chat) defaults to the conversations-tuned model unless overridden. */
+export function ottoSarvamConfigFromEnv(env: Record<string, string | undefined> = process.env) {
+  const shared = sarvamConfigFromEnv(env);
+  const model =
+    env.OTTO_SARVAM_MODEL?.trim() ||
+    env.SARVAM_MODEL?.trim() ||
+    env.CHAT_MODEL?.trim() ||
+    DEFAULT_OTTO_SARVAM_MODEL;
+  const reasoningEffort =
+    model.includes("conversations")
+      ? "none"
+      : env.SARVAM_REASONING_EFFORT?.trim() || env.OTTO_SARVAM_REASONING_EFFORT?.trim() || undefined;
+  return { ...shared, model, reasoningEffort };
+}
+
+interface StreamDeltaChoice {
+  delta?: { content?: string | Array<{ type?: string; text?: string }> | null };
+  message?: SarvamChoice["message"];
+}
+
+function extractStreamDelta(choice: StreamDeltaChoice | undefined): string {
+  const delta = choice?.delta?.content ?? choice?.message?.content;
+  if (typeof delta === "string") return delta;
+  if (Array.isArray(delta)) {
+    return delta.map((block) => (typeof block?.text === "string" ? block.text : "")).join("");
+  }
+  return "";
+}
+
+/**
+ * Stream tokens from Sarvam SSE. Returns the full assembled text when the stream ends.
+ */
+export async function streamSarvamCompletion(
+  options: SarvamCompletionOptions & { onToken: (chunk: string) => void },
+): Promise<string> {
+  const {
+    apiKey,
+    messages,
+    model = DEFAULT_SARVAM_MODEL,
+    baseUrl = DEFAULT_SARVAM_BASE_URL,
+    maxTokens = 700,
+    temperature = 0.2,
+    timeoutMs = 45_000,
+    reasoningEffort,
+    fetchImpl = fetch,
+    onToken,
+  } = options;
+
+  if (!apiKey) throw new SarvamError("auth", "No Sarvam API key was provided.");
+
+  const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
+  let effort = resolveReasoningEffort(reasoningEffort);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchImpl(url, {
+      method: "POST",
+      headers: {
+        "api-subscription-key": apiKey,
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+        stream: true,
+        ...(effort !== undefined ? { reasoning_effort: effort } : {}),
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => "")).slice(0, 500);
+      throw new SarvamError(
+        classifyStatus(response.status),
+        `Sarvam API returned ${response.status}${detail ? `: ${detail}` : ""}`,
+        response.status,
+      );
+    }
+
+    if (!response.body) {
+      throw new SarvamError("empty", "Sarvam stream returned no body.");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let full = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(payload) as { choices?: StreamDeltaChoice[] };
+          const piece = extractStreamDelta(parsed.choices?.[0]);
+          if (piece) {
+            full += piece;
+            onToken(piece);
+          }
+        } catch {
+          // ignore malformed SSE lines
+        }
+      }
+    }
+
+    if (!full.trim()) {
+      throw new SarvamError("empty", "Sarvam stream ended without assistant content.");
+    }
+    return full.trim();
+  } catch (error) {
+    if (error instanceof SarvamError) throw error;
+    if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
+      throw new SarvamError("timeout", `Sarvam API stream timed out after ${timeoutMs}ms.`);
+    }
+    throw new SarvamError(
+      "unknown",
+      error instanceof Error ? error.message : "Unexpected error calling the Sarvam API.",
+    );
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
