@@ -36,7 +36,19 @@
 
 ---
 
-## See it (30 seconds)
+## See it
+
+**The 47-second film** — what breaks when a vendor ships a contract change, how Repairo maps it to your call sites, and the compile gate that stops a bad patch from ever reaching a PR:
+
+<p align="center">
+  <a href="./docs/assets/repairo-demo.mp4">
+    <img src="./docs/assets/repairo-demo.gif" alt="Repairo — your vendor changed their API; Repairo fixes the call sites that break" width="880">
+  </a>
+</p>
+
+<p align="center">
+  <a href="./docs/assets/repairo-demo.mp4"><strong>▶ Watch the full film with narration (47s)</strong></a>
+</p>
 
 **CLI on this repo’s fixtures** (animated terminal capture — same commands you can run locally):
 
