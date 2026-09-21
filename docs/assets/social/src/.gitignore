@@ -1,0 +1,10 @@
+fonts2/
+node_modules/
+package.json
+package-lock.json
+preview/
+out/
+master-*.mp4
+sfx.wav
+mix.wav
+gf.css

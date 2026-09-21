@@ -8,6 +8,7 @@
 | `demo-diff.gif` | OpenAPI diff + impact on `fixtures/breaking-api-demo` |
 | `demo-*.tape` | Optional [VHS](https://github.com/charmbracelet/vhs) tapes (Linux/macOS) |
 | `terminal-*.svg` | Static fallbacks (same text as the GIFs) |
+| `social/` | 35.5s social film (9:16 + 1:1), caption track, post copy, and the sources that render it |
 
 The inset screens inside the film are real recordings of the app at `/demo`, not
 mockups. The GIF is the thumbnail because GitHub will not inline-play an `.mp4`

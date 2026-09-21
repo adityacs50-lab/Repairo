@@ -1,0 +1,79 @@
+1
+00:00:00,300 --> 00:00:02,250
+$ npm run build — tsc reports 14 errors across 11 files.
+
+2
+00:00:01,950 --> 00:00:02,300
+✗ Build failed in 38.4s
+
+3
+00:00:02,350 --> 00:00:03,400
+You didn't change a single line.
+
+4
+00:00:03,600 --> 00:00:05,000
+Dependabot bumps the package.
+
+5
+00:00:05,000 --> 00:00:07,350
+Repairo fixes the call sites that break.
+
+6
+00:00:07,600 --> 00:00:09,600
+Your vendor shipped a contract change.
+
+7
+00:00:09,600 --> 00:00:10,500
+BREAKING — max_tokens → max_output_tokens
+
+8
+00:00:10,550 --> 00:00:13,500
+A required parameter was renamed. Your build has no idea yet.
+
+9
+00:00:13,750 --> 00:00:14,600
+ts-morph walks the AST.
+
+10
+00:00:14,600 --> 00:00:17,500
+14 call sites impacted.
+
+11
+00:00:17,550 --> 00:00:19,500
+24 files scanned. The same identifier elsewhere? Left alone.
+
+12
+00:00:19,750 --> 00:00:22,300
+Deterministic AST transform — AST-scoped, nothing else touched.
+
+13
+00:00:22,550 --> 00:00:23,500
+$ tsc --noEmit
+
+14
+00:00:23,550 --> 00:00:24,800
+✓ 0 errors · 14 files · safe to propose
+
+15
+00:00:24,800 --> 00:00:25,900
+It never proposes a patch that doesn't compile.
+
+16
+00:00:26,150 --> 00:00:27,000
+And then it opens a PR.
+
+17
+00:00:27,050 --> 00:00:29,200
+Spec diff attached · 14 AST-scoped call sites · tsc passed · safety 0.96
+
+18
+00:00:29,200 --> 00:00:30,900
+Human review required — merge is yours. Never auto-merged.
+
+19
+00:00:31,100 --> 00:00:33,100
+Repairo — Dependabot bumps the package, Repairo fixes the call sites that break.
+
+20
+00:00:33,100 --> 00:00:35,200
+$ npx repairo-cli scan ./src — heyrepairo.in
