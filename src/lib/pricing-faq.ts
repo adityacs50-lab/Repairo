@@ -7,33 +7,39 @@ export type PricingFaqItem = {
 
 export const PRICING_FAQ: PricingFaqItem[] = [
   {
-    id: "free-vs-pro-vs-team",
-    question: "What’s included in the different plans?",
+    id: "free-forever",
+    question: "Is the free tier really free forever?",
     answer:
-      "Free covers public repos plus 1 private repo, including breaking-change detection and PR previews. Pro ($79/mo) unlocks up to 5 private repos and adds compiler-validated fix PRs. Team ($249/mo) provides unlimited private repos, merge-blocking gates, and advanced audit trails.",
+      "Yes. Public repos and 1 private repo, permanently. We grow when you grow \u2014 most teams upgrade the day their second private repo needs coverage.",
   },
   {
-    id: "cli-free",
-    question: "Is the CLI free forever?",
+    id: "active-contributor",
+    question: 'What counts as an "active contributor" on Team?',
     answer:
-      "Yes. The open-source CLI (Apache-2.0 on npm as repairo-cli) stays free for local scan, check, and repair. Hosted watching, automated PRs at scale, and team seats are what the paid plans cover.",
+      "Anyone who opened a pull request or pushed commits in the last 30 days. People who don\u2019t touch the repos don\u2019t get billed \u2014 and you\u2019re prorated to the day.",
   },
   {
-    id: "when-upgrade",
-    question: "When should we upgrade?",
+    id: "auto-merge",
+    question: "Will Repairo ever auto-merge a fix into my code?",
     answer:
-      "Stay on Free while you prove the repair path on your public repos or a single private repo. Upgrade to Pro when you need to cover more private repos or want compiler-validated fix PRs.",
+      "Never. Every fix PR is opened for human review with full evidence \u2014 the diff, the vendor changelog, and compiler validation. If a fix isn\u2019t 100% deterministic, we flag it instead of guessing.",
   },
   {
-    id: "billing",
-    question: "How does billing work?",
+    id: "sixth-repo",
+    question: "What happens when my 5th repo needs coverage on Pro?",
     answer:
-      "We bill a flat rate per organization — predictable and transparent, with no usage spikes. Payment is handled simply through Stripe or GitHub Marketplace.",
+      "You\u2019ll get a prompt at the moment you connect the 6th \u2014 upgrade to Team for unlimited repos, or manage which 5 are covered. No surprise charges, ever.",
   },
   {
-    id: "soc2",
-    question: "Do you have SOC 2?",
+    id: "code-storage",
+    question: "Do you store our code?",
     answer:
-      "Not yet. Formal SOC 2 / ISO programs are on the roadmap and not claimed as complete. We can work through your security questionnaire today — see /security or contact us.",
+      "No. Analysis runs in your CI or in volatile memory with zero disk persistence and zero retention. Security details are on our trust page.",
+  },
+  {
+    id: "self-host",
+    question: "Can I self-host?",
+    answer:
+      "The CLI is open source and runs fully offline today. A self-hosted enterprise license with SSO and SLAs is on the roadmap \u2014 talk to us.",
   },
 ];

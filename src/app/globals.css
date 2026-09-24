@@ -3526,6 +3526,134 @@ h1, h2, h3 {
   margin-left: 4px;
 }
 
+/* ── Pricing ROI banner ── */
+.pricing-roi-banner {
+  padding: 24px 0;
+}
+
+.pricing-roi-copy {
+  margin: 0;
+  max-width: 720px;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  line-height: 1.55;
+  color: var(--repairo-muted);
+  letter-spacing: -0.01em;
+}
+
+.pricing-roi-copy strong {
+  color: var(--repairo-ink);
+}
+
+/* ── Monthly / Annual toggle ── */
+.pricing-board-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.pricing-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid var(--repairo-rule);
+  border-radius: 3px;
+  overflow: hidden;
+  gap: 0;
+}
+
+.pricing-toggle-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  background: transparent;
+  color: var(--repairo-muted);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pricing-toggle-btn:hover {
+  color: var(--repairo-ink);
+}
+
+.pricing-toggle-active {
+  background: var(--repairo-contrast);
+  color: var(--repairo-contrast-fg) !important;
+}
+
+.pricing-toggle-save {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+/* ── Plan card additions ── */
+.plan-for {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--repairo-mute);
+  text-transform: uppercase;
+}
+
+.plan-tagline {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--repairo-muted);
+  line-height: 1.5;
+}
+
+.plan-annual-equiv {
+  margin: -8px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--repairo-muted);
+  letter-spacing: 0.04em;
+}
+
+.plan-cta-footnote {
+  margin: -20px 0 0;
+  font-size: 11px;
+  color: var(--repairo-mute);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.plan-team-note {
+  margin: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--repairo-rule);
+  font-size: 11px;
+  color: var(--repairo-mute);
+  line-height: 1.55;
+}
+
+/* ── Billing strip ── */
+.billing-strip {
+  padding: 24px 28px;
+  border: 1px solid var(--repairo-rule);
+  background: var(--repairo-white);
+}
+
+.billing-strip-copy {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--repairo-muted);
+  max-width: 900px;
+}
+
+.billing-strip-copy strong {
+  color: var(--repairo-ink);
+  font-weight: 500;
+}
+
 /* Content pages (docs, security, about, …) */
 .content-layout {
   width: 100%;
