@@ -1,7 +1,7 @@
 # Repairo — Investor research brief
 
 **Purpose:** External research + in-repo facts for traction framing, market sizing, competitive positioning, and fundraising prep.  
-**Last updated:** 2026-09-16 (public signals pulled same day).  
+**Last updated:** 2026-09-25 (pricing aligned to monetization plan; public signals from 2026-09-16).  
 **Not legal advice.** Cap table / entity questions need a CA/lawyer.
 
 ---
@@ -16,7 +16,7 @@
 | **npm downloads** | **~258** in the npm “last-month” window (2026-08-13 → 2026-09-11) | `api.npmjs.org/downloads/point/last-month/repairo-cli` |
 | **GitHub `adityacs50-lab/Repairo`** | **2** stars, **0** forks | GitHub API |
 | **Repo activity** | Created 2026-07-26; last push 2026-09-14 | GitHub API |
-| **Hosted pricing (in product)** | Free ($0), Pro **$29/mo** | `src/lib/billing/plans.ts` |
+| **Hosted pricing (in product)** | Free ($0), Pro **$79/org/mo**, Team **$249/org/mo**, Enterprise **$6–12K/yr** | `src/lib/billing/plans.ts` |
 | **Engine tests** | 113+ integration tests (CI) | `tests/run-tests.ts` summary |
 | **Website** | https://www.heyrepairo.in | README |
 
@@ -43,7 +43,7 @@ Track these in a spreadsheet (Stripe, Postgres, GitHub, analytics)—not in git:
 
 Use this until you have paying logos:
 
-> “We shipped an Apache-2.0 repair engine with 113+ integration tests, published `repairo-cli` on npm, and run hosted beta on Vercel + Neon. Public distribution is early (~258 npm downloads in the last reported month, 2 GitHub stars). We’re converting CLI and demo interest into **design partners** on hosted watch + repair PRs; revenue instrumentation is Stripe Pro at $29/mo.”
+> “We shipped an Apache-2.0 repair engine with 113+ integration tests, published `repairo-cli` on npm, and run hosted beta on Vercel + Neon. Public distribution is early (~258 npm downloads in the last reported month, 2 GitHub stars). We’re converting CLI and demo interest into **design partners** on hosted watch + repair PRs; list prices are Pro **$79/org/mo** and Team **$249/org/mo**.”
 
 ### 1.4 Pipeline template (fill in weekly)
 
@@ -73,10 +73,10 @@ Use **bottom-up** for seed credibility; top-down only as context.
 
 1. **Target companies:** Software companies with ≥5 engineers integrating ≥2 external APIs (payments + AI + auth).  
    - Global: order **100k–500k** such teams (wide); narrow to **US/EU + India product companies** → **~30k–80k** (needs your own filter on LinkedIn/Apollo).
-2. **Willingness to pay:** $29–99/mo per team (CLI free; hosted watch + PR automation).  
-   - At **$348/yr** (Pro): **10k paying teams ≈ $3.5M ARR** (SOM ambition for seed+18mo).  
-   - At **$1,200/yr** blended (Pro + future team tier): **5k teams ≈ $6M ARR**.
-3. **Expansion:** Seats, more integrations, enterprise VPC/SSO (custom)—not in current SKU.
+2. **Willingness to pay:** $79–249/org/mo (CLI + public/1-private free; Pro 5 private repos; Team unlimited).  
+   - At **$790/yr** (Pro annual): **10k paying orgs ≈ $7.9M ARR** (SOM ambition, not a forecast).  
+   - At **$2,490/yr** Team: **5k orgs ≈ $12.5M ARR**.
+3. **Expansion:** Team overage (+$10/dev beyond 15 contributors), then Enterprise $6–12K/yr self-hosted license.
 
 **TAM (narrative, not a single number):** Spend on **integration labor + incident cost** from external API change. Third-party integration maintenance is often quoted **$50k–$150k/yr per complex integration** in vendor content ([GVM 2026](https://gvmtechnologies.com/third-party-api-integration-hidden-costs/))—use only as “cost of status quo,” then show Repairo as partial automation of **detection + patch + review**.
 
@@ -135,7 +135,7 @@ Use **bottom-up** for seed credibility; top-down only as context.
 4. **Product:** Live demo: OpenAPI diff → impact → patch → `tsc` → PR (heyrepairo.in/demo).
 5. **How it works:** [docs/architecture.md](./architecture.md) — same `runRepair()` graph as README and VC brief.
 6. **Why now:** YC Self-Maintaining APIs RFS; agents normalized repo access; Optic gap.
-7. **Business model:** Free CLI (Apache-2.0) + Pro $29/mo (50 integrations, 500 runs) + enterprise VPC/SSO later.
+7. **Business model:** Free CLI + App (public + 1 private) · Pro $79/org/mo (5 private repos) · Team $249/org/mo · Enterprise $6–12K/yr self-hosted.
 8. **Traction:** **Honest** public numbers + design-partner pipeline (fill table §1.4).
 9. **Moat:** Transform library per vendor, fail-closed repair scoring, GitHub distribution, open engine adoption.
 10. **Ask:** $X for 18 months → N design partners, Y weekly PRs, Z MRR.
@@ -168,7 +168,7 @@ Use **bottom-up** for seed credibility; top-down only as context.
 
 ### 5.3 Financial model (minimal for seed)
 
-- **Revenue:** Pro seats × $29/mo + enterprise pilots (manual).
+- **Revenue:** Pro orgs × $79/mo + Team × $249/mo + enterprise licenses (manual).
 - **COGS:** Vercel, Neon, Sarvam (Otto), GitHub API, Stripe fees.
 - **Use of funds:** % eng (transform catalog), % GTM (design partners), % infra/compliance.
 
