@@ -7,28 +7,28 @@ export type PricingFaqItem = {
 
 export const PRICING_FAQ: PricingFaqItem[] = [
   {
-    id: "free-vs-pro",
-    question: "What’s included on Free vs Pro?",
+    id: "free-vs-pro-vs-team",
+    question: "What’s included in the different plans?",
     answer:
-      "Free covers one watched integration, 15 repair runs per month, and real GitHub PRs so you can evaluate the loop end-to-end. Pro raises that to 50 integrations, 500 runs per month, 15 seats, priority webhook processing, and a Stripe billing portal with invoices.",
+      "Free covers public repos plus 1 private repo, including breaking-change detection and PR previews. Pro ($79/mo) unlocks up to 5 private repos and adds compiler-validated fix PRs. Team ($249/mo) provides unlimited private repos, merge-blocking gates, and advanced audit trails.",
   },
   {
     id: "cli-free",
     question: "Is the CLI free forever?",
     answer:
-      "Yes. The open-source CLI (Apache-2.0 on npm as repairo-cli) stays free for local scan, check, and repair. Hosted watching, automated PRs at scale, and team seats are what the Pro plan pays for.",
+      "Yes. The open-source CLI (Apache-2.0 on npm as repairo-cli) stays free for local scan, check, and repair. Hosted watching, automated PRs at scale, and team seats are what the paid plans cover.",
   },
   {
     id: "when-upgrade",
     question: "When should we upgrade?",
     answer:
-      "Stay on Free while you prove the repair path on one vendor. Upgrade when you want continuous watching across more integrations, higher monthly run volume, or more engineers in the same workspace.",
+      "Stay on Free while you prove the repair path on your public repos or a single private repo. Upgrade to Pro when you need to cover more private repos or want compiler-validated fix PRs.",
   },
   {
     id: "billing",
     question: "How does billing work?",
     answer:
-      "Pro is $29/month via Stripe. You can manage payment method, invoices, and cancellation in the billing portal. Enterprise is custom — contact us for VPC, SSO, and private specs.",
+      "We bill a flat rate per organization — predictable and transparent, with no usage spikes. Payment is handled simply through Stripe or GitHub Marketplace.",
   },
   {
     id: "soc2",

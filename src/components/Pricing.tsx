@@ -34,17 +34,28 @@ const PLANS_UI: PlanBlock[] = [
     id: "pro",
     name: PLANS.pro.name,
     price: PLANS.pro.priceLabel,
-    priceNote: "/mo",
+    priceNote: "/mo per org",
     description:
       "Automated API maintenance and PR generation for growing engineering teams.",
-    cta: { href: "/#demo", label: "Book a demo" },
+    cta: { href: "/#demo", label: "Start Pro Trial" },
     features: PLANS.pro.features,
     highlighted: true,
   },
   {
+    id: "team",
+    name: PLANS.team.name,
+    price: PLANS.team.priceLabel,
+    priceNote: "/mo per org",
+    description:
+      "Advanced workflow controls and unlimited repos for professional teams.",
+    cta: { href: "/#demo", label: "Start Team Trial" },
+    features: PLANS.team.features,
+  },
+  {
     id: "enterprise",
     name: "Enterprise",
-    price: "Custom",
+    price: "$6k–$12k",
+    priceNote: "/yr",
     description:
       "Custom deployment and compliance support for teams with strict InfoSec requirements.",
     cta: { href: "/contact", label: "Contact us" },

@@ -4,9 +4,9 @@ import { absoluteUrl, breadcrumbJsonLd, pageMetadata, SITE_NAME } from "@/lib/se
 
 export const metadata = pageMetadata({
   title: "Pricing",
-  description: `Repairo pricing: ${PLANS.free.name} plan at ${PLANS.free.priceLabel} for local CLI scanning and ${PLANS.free.runsPerMonth} repair runs/month; ${PLANS.pro.name} plan at ${PLANS.pro.priceLabel}/month for background OpenAPI polling, automatic repair PRs, and team seats. Enterprise plans available.`,
+  description: `Repairo pricing: ${PLANS.free.name} plan at ${PLANS.free.priceLabel} for public repos + 1 private repo; ${PLANS.pro.name} plan at ${PLANS.pro.priceLabel}/org/month for 5 private repos and compiler-validated PRs; ${PLANS.team.name} plan at ${PLANS.team.priceLabel}/org/month for unlimited repos. Enterprise plans available.`,
   path: "/pricing",
-  keywords: ["pricing", "free tier", "pro plan"],
+  keywords: ["pricing", "free tier", "pro plan", "team plan"],
 });
 
 const offerCatalog = {
