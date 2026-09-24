@@ -691,7 +691,7 @@ export function HomePage() {
       <section className="pricing-strip section-rule" id="pricing-path">
         <p className="mono-label">PRICING</p>
         <p className="pricing-strip-copy">
-          Free CLI on npm · Hosted Free for early teams · Pro from $29/mo
+          Free CLI on npm · Hosted Free for public repos · Pro from $79/mo per org
         </p>
         <Link className="text-link" href="/pricing">
           See plans &amp; FAQ <span aria-hidden="true" className="arrow-mark">↗</span>
