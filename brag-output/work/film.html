@@ -1,0 +1,366 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Repairo launch film</title>
+<style>
+@font-face { font-family: "Inter"; src: url("fonts/inter-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; }
+@font-face { font-family: "DM Mono"; src: url("fonts/dm-mono-latin-400-normal.woff2") format("woff2"); font-weight: 400; }
+@font-face { font-family: "DM Mono"; src: url("fonts/dm-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; }
+@font-face { font-family: "Pixelify Sans"; src: url("fonts/pixelify-sans-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+
+:root {
+  --repairo-paper: #2b2622;
+  --repairo-white: #383330;
+  --repairo-ink: #f7f5f0;
+  --repairo-slate: #dad2c1;
+  --repairo-muted: #c9c0ad;
+  --repairo-mute: #aea69c;
+  --repairo-rule: #3f3a36;
+  --repairo-teal: #3dd6b5;
+  --repairo-warn: #c9a227;
+  --repairo-media-frame: #2f2a26;
+  /* Keynote stage: the Repairo canvas pushed toward black. */
+  --stage: color-mix(in srgb, var(--repairo-paper) 22%, #000);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--stage); }
+body { font-family: "Inter", sans-serif; color: var(--repairo-ink); -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; inset: 0; background: var(--stage); overflow: hidden; }
+.glow { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 55% 45% at 50% 58%, color-mix(in srgb, var(--repairo-paper) 70%, transparent), transparent 70%); }
+.scene { position: absolute; inset: 0; opacity: 0; }
+.center { position: absolute; left: 0; right: 0; text-align: center; }
+.head { font-weight: 600; letter-spacing: -0.035em; line-height: 1.04; }
+.sub { font-weight: 450; color: var(--repairo-muted); letter-spacing: -0.015em; }
+.w { display: inline-block; will-change: transform, opacity, filter; }
+.mono { font-family: "DM Mono", monospace; }
+.wordmark { font-family: "Pixelify Sans", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+
+/* Code block */
+.code { font-family: "DM Mono", monospace; white-space: pre; }
+.code .ln { position: relative; display: block; }
+.k { color: var(--repairo-mute); }
+.s { color: var(--repairo-slate); }
+.strike { position: absolute; left: 0; top: 52%; height: 3px; background: var(--repairo-warn); transform-origin: left center; border-radius: 2px; }
+
+.tag { display: inline-flex; align-items: center; gap: 14px; font-family: "DM Mono", monospace; font-size: 24px;
+  color: var(--repairo-warn); border: 1px solid color-mix(in srgb, var(--repairo-warn) 45%, transparent);
+  background: color-mix(in srgb, var(--repairo-warn) 10%, transparent); padding: 10px 18px; border-radius: 4px; }
+.tag b { font-weight: 500; letter-spacing: 0.12em; }
+
+/* Window chrome */
+.win { position: absolute; background: var(--repairo-white); border: 1px solid var(--repairo-rule); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 60px 120px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02); }
+.win .bar { height: 52px; display: flex; align-items: center; padding: 0 22px; gap: 10px; border-bottom: 1px solid var(--repairo-rule); }
+.win .dot { width: 13px; height: 13px; border-radius: 50%; background: var(--repairo-rule); }
+.win .title { margin-left: 16px; font-family: "DM Mono", monospace; font-size: 19px; color: var(--repairo-mute); }
+.win .body { background: var(--repairo-media-frame); position: absolute; top: 52px; left: 0; right: 0; bottom: 0; padding: 34px 44px; }
+.term { font-family: "DM Mono", monospace; font-size: 25px; line-height: 1.62; white-space: pre; color: var(--repairo-muted); }
+.term .l { display: block; }
+.prompt { color: var(--repairo-mute); }
+.cmd { color: var(--repairo-ink); }
+.warn { color: var(--repairo-warn); }
+.teal { color: var(--repairo-teal); }
+.ink { color: var(--repairo-ink); }
+.caret { display: inline-block; width: 13px; height: 28px; background: var(--repairo-ink); vertical-align: -5px; margin-left: 2px; }
+
+/* PR card */
+.row { display: flex; align-items: center; gap: 22px; font-size: 30px; padding: 22px 0; border-top: 1px solid var(--repairo-rule); }
+.row:first-child { border-top: 0; }
+.check { width: 40px; height: 40px; flex: none; }
+.pill { font-family: "DM Mono", monospace; font-size: 22px; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--repairo-rule); color: var(--repairo-slate); }
+.cta { display: inline-block; font-family: "DM Mono", monospace; font-size: 34px; color: var(--repairo-paper); background: var(--repairo-ink); padding: 18px 32px; border-radius: 3px; }
+#black { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="glow" id="glow"></div>
+
+  <!-- 1. HOOK -->
+  <section class="scene" id="s-hook">
+    <div class="center head" id="hookA" style="top:200px;font-size:84px"></div>
+    <div class="center head" id="hookB" style="top:200px;font-size:84px"></div>
+    <div id="hookCodeWrap" style="position:absolute;left:0;right:0;top:420px;display:flex;justify-content:center">
+      <div class="code" id="hookCode" style="font-size:46px;line-height:1.7;color:var(--repairo-muted)"><span class="ln"><span class="k">await</span> openai.chat.completions.create({</span><span class="ln">  model: <span class="s">"gpt-4"</span>,</span><span class="ln" id="hookLine">  <span id="hookTok">max_tokens: 500,</span><span class="strike" id="hookStrike"></span></span><span class="ln">});</span></div>
+    </div>
+    <div class="center" id="hookTag" style="top:800px"><span class="tag"><b>BREAKING</b><span>Parameter removed: max_tokens</span></span></div>
+  </section>
+
+  <!-- 2. REVEAL -->
+  <section class="scene" id="s-reveal">
+    <div class="center sub" id="intro" style="top:250px;font-size:40px">Introducing</div>
+    <div class="center wordmark" id="mark" style="top:318px;font-size:236px;line-height:1">Repairo</div>
+    <div class="center head" id="tag1" style="top:640px;font-size:58px;color:var(--repairo-muted);font-weight:500"></div>
+    <div class="center head" id="tag2" style="top:716px;font-size:58px;font-weight:600"></div>
+  </section>
+
+  <!-- 3. DETECT -->
+  <section class="scene" id="s-detect">
+    <div class="center head" id="dH" style="top:92px;font-size:120px"></div>
+    <div class="center sub" id="dS" style="top:238px;font-size:40px"></div>
+    <div class="win" id="dWin" style="left:340px;top:340px;width:1240px;height:600px">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">~/app — repairo</span></div>
+      <div class="body"><div class="term" id="term"></div></div>
+    </div>
+  </section>
+
+  <!-- 4. REPAIR -->
+  <section class="scene" id="s-repair">
+    <div class="center head" id="rH" style="top:92px;font-size:120px"></div>
+    <div class="center sub" id="rS" style="top:238px;font-size:40px"></div>
+    <div class="win" id="rWin" style="left:300px;top:360px;width:1320px;height:470px">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">src/ai/client.ts</span></div>
+      <div class="body" style="padding:40px 56px">
+        <div class="code" style="font-size:31px;line-height:1.75;color:var(--repairo-muted)"><span class="ln"><span class="k">const</span> response = <span class="k">await</span> openai.chat.completions.create({</span><span class="ln">  model: <span class="s">"gpt-4"</span>,</span><span class="ln">  messages: [{ role: <span class="s">"user"</span>, content: prompt }],</span><span class="ln" id="rOldLine" style="position:relative">  <span id="rOld">max_tokens: 500,</span><span class="strike" id="rStrike"></span></span><span class="ln" id="rNewLine" style="position:relative;height:0;overflow:visible"><span id="rNew" style="position:absolute;left:0;top:0;white-space:pre">  <span class="teal">max_output_tokens</span><span class="ink">: 500,</span></span></span><span class="ln">});</span></div>
+        <div id="rHl" style="position:absolute;left:0;right:0;height:54px;background:color-mix(in srgb,var(--repairo-warn) 9%,transparent);border-left:3px solid var(--repairo-warn);top:0"></div>
+        <div id="rGut" class="mono" style="position:absolute;left:20px;font-size:30px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. VERIFIED -->
+  <section class="scene" id="s-verify">
+    <div class="center head" id="vH" style="top:92px;font-size:120px"></div>
+    <div class="center sub" id="vS" style="top:238px;font-size:40px"></div>
+    <div class="win" id="vWin" style="left:410px;top:370px;width:1100px;height:470px">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">Pull request · repairo/fix-max-tokens</span></div>
+      <div class="body" style="padding:30px 56px">
+        <div style="font-size:36px;font-weight:600;letter-spacing:-0.02em;margin-bottom:14px" id="prTitle">Rename <span class="mono" style="font-size:32px">max_tokens</span> → <span class="mono" style="font-size:32px">max_output_tokens</span></div>
+        <div class="row" id="pr1"><svg class="check" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="var(--repairo-teal)" stroke-width="2.5" id="c1c" pathLength="1"/><path d="M12 20.5l5.5 5.5L28.5 14" fill="none" stroke="var(--repairo-teal)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" id="c1p" pathLength="1"/></svg><span class="mono" style="font-size:28px">tsc --noEmit</span><span style="margin-left:auto" class="teal mono" id="pr1r">passed</span></div>
+        <div class="row" id="pr2"><svg class="check" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="var(--repairo-teal)" stroke-width="2.5" id="c2c" pathLength="1"/><path d="M12 20.5l5.5 5.5L28.5 14" fill="none" stroke="var(--repairo-teal)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" id="c2p" pathLength="1"/></svg><span class="mono" style="font-size:28px">1 file changed</span><span style="margin-left:auto" class="mono"><span class="teal">+1</span> <span class="warn">−1</span></span></div>
+        <div class="row" id="pr3"><svg class="check" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="var(--repairo-slate)" stroke-width="2.5" id="c3c" pathLength="1"/><circle cx="20" cy="20" r="4" fill="var(--repairo-slate)" id="c3d"/></svg><span>Human review required</span><span style="margin-left:auto" class="pill">never auto-merges</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. OUTRO -->
+  <section class="scene" id="s-outro">
+    <div class="center wordmark" id="oMark" style="top:250px;font-size:176px;line-height:1">Repairo</div>
+    <div class="center head" id="oLine" style="top:480px;font-size:54px;font-weight:500;color:var(--repairo-muted)"></div>
+    <div class="center" id="oCta" style="top:640px"><span class="cta">npx repairo-cli scan ./src</span></div>
+    <div class="center mono" id="oUrl" style="top:790px;font-size:32px;color:var(--repairo-mute);letter-spacing:0.04em">heyrepairo.in</div>
+  </section>
+
+  <div id="black"></div>
+</div>
+
+<script>
+// ---------- helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = x => 1 - Math.pow(1 - x, 4);           // quart out
+const easeInOut = x => x < .5 ? 8 * x ** 4 : 1 - Math.pow(-2 * x + 2, 4) / 2;
+const easeIn = x => x * x * x;
+const $ = id => document.getElementById(id);
+
+// Split a line into words wrapped in spans (keeps inner HTML chunks intact).
+function words(el, chunks) {
+  el.innerHTML = chunks.map(c => `<span class="w">${c}</span>`).join(" ");
+  return [...el.querySelectorAll(".w")];
+}
+// Apple-style word rise: blur → sharp, drift up, fade in, per-word stagger.
+function rise(ws, t, start, { dur = 0.9, stagger = 0.07, dy = 28, blur = 14 } = {}) {
+  ws.forEach((w, i) => {
+    const p = easeOut(prog(t, start + i * stagger, start + i * stagger + dur));
+    w.style.opacity = p;
+    w.style.transform = `translateY(${(1 - p) * dy}px)`;
+    w.style.filter = `blur(${(1 - p) * blur}px)`;
+  });
+}
+// Fade a group out (drift up slightly, soft blur).
+function fall(el, t, a, b, { dy = -14, blur = 8 } = {}) {
+  const p = easeIn(prog(t, a, b));
+  return { o: 1 - p, dy: p * dy, blur: p * blur };
+}
+function set(el, { o = 1, x = 0, y = 0, s = 1, blur = 0, rx = 0 } = {}) {
+  el.style.opacity = o;
+  el.style.transform = `perspective(2000px) translate(${x}px, ${y}px) scale(${s}) rotateX(${rx}deg)`;
+  el.style.filter = blur > 0.01 ? `blur(${blur}px)` : "none";
+}
+function sceneWindow(el, t, a, b, fadeIn = 0.35, fadeOut = 0.35) {
+  const o = Math.min(prog(t, a, a + fadeIn), 1 - prog(t, b - fadeOut, b));
+  el.style.opacity = (t >= a && t < b) ? o : 0;
+  el.style.display = (t >= a - 0.01 && t < b + 0.01) ? "block" : "none";
+  return o;
+}
+
+// ---------- build ----------
+const W = {
+  hookA: words($("hookA"), ["Your", "vendor", "changed", "their", "API."]),
+  hookB: words($("hookB"), ["Your", "code", "didn’t", "get", "the", "memo."]),
+  tag1: words($("tag1"), ["Dependabot", "bumps", "the", "package."]),
+  tag2: words($("tag2"), ["Repairo", "fixes", "the", "call", "sites", "that", "break."]),
+  dH: words($("dH"), ["Detect."]),
+  dS: words($("dS"), ["OpenAPI-grounded.", "Not", "guessed."]),
+  rH: words($("rH"), ["Repair."]),
+  rS: words($("rS"), ["Only", "the", "real", "call", "site.", "Rewritten", "by", "the", "AST."]),
+  vH: words($("vH"), ["Verified."]),
+  vS: words($("vS"), ["Typechecked", "before", "it", "ever", "becomes", "a", "PR."]),
+  oLine: words($("oLine"), ["When", "the", "API", "changes,", "know", "exactly", "what", "to", "repair."]),
+};
+
+// Real `repairo diff` output from fixtures/breaking-api-demo (trimmed to the key lines).
+const CMD = "repairo diff --spec ./specs/new.json";
+const OUT = [
+  ["", ""],
+  ["ink", "API CONTRACT CHANGES"],
+  ["", ""],
+  ["warn", "BREAKING"],
+  ["ink", "POST /v1/chat/completions"],
+  ["warn", "  Parameter removed: max_tokens"],
+  ["teal", "ADDITIVE"],
+  ["", "  Parameter added: max_output_tokens"],
+  ["", ""],
+  ["ink", "Potential impact:  1 file · 4 call sites"],
+];
+
+// ---------- timeline ----------
+const T = { hook: [0, 5.5], reveal: [5.5, 10.5], detect: [10.5, 14.0], repair: [14.0, 17.5], verify: [17.5, 21.0], outro: [21.0, 25.0] };
+
+function render(t) {
+  // Global glow breathes with the product shots.
+  $("glow").style.opacity = 0.55 + 0.45 * easeInOut(prog(t, 9.5, 11.5)) - 0.3 * prog(t, 21, 23);
+
+  // ===== 1. HOOK =====
+  {
+    const el = $("s-hook");
+    sceneWindow(el, t, ...T.hook, 0.0, 0.5);
+    // Slow keynote push-in on the code.
+    const push = 0.94 + 0.08 * easeInOut(prog(t, 0, 5.5));
+    const codeIn = easeOut(prog(t, 0.0, 1.4));
+    set($("hookCodeWrap"), { o: codeIn, s: push, blur: (1 - codeIn) * 16, y: (1 - codeIn) * 20 });
+    // Headline A then B (stagger: A out fully before B in).
+    rise(W.hookA, t, 0.15, { dur: 0.8, stagger: 0.07 });
+    const fa = fall(null, t, 2.55, 2.85);
+    set($("hookA"), { o: fa.o, y: fa.dy, blur: fa.blur });
+    rise(W.hookB, t, 2.9, { dur: 0.8, stagger: 0.07 });
+    // Strike through the removed parameter.
+    const sp = easeInOut(prog(t, 1.55, 2.05));
+    const tok = $("hookTok");
+    $("hookStrike").style.width = (tok.offsetLeft + tok.offsetWidth) * sp - tok.offsetLeft * sp + "px";
+    $("hookStrike").style.left = tok.offsetLeft + "px";
+    const warm = prog(t, 1.6, 2.2);
+    tok.style.color = `color-mix(in srgb, var(--repairo-warn) ${Math.round(warm * 100)}%, var(--repairo-ink))`;
+    tok.style.textShadow = `0 0 ${24 * warm}px color-mix(in srgb, var(--repairo-warn) ${Math.round(warm * 55)}%, transparent)`;
+    const tagIn = easeOut(prog(t, 2.0, 2.8));
+    set($("hookTag"), { o: tagIn, y: (1 - tagIn) * 16, blur: (1 - tagIn) * 8 });
+  }
+
+  // ===== 2. REVEAL =====
+  {
+    const el = $("s-reveal");
+    sceneWindow(el, t, ...T.reveal, 0.01, 0.45);
+    const ip = easeOut(prog(t, 5.6, 6.4));
+    const iOut = prog(t, 6.9, 7.3);
+    set($("intro"), { o: ip * (1 - iOut), y: (1 - ip) * 14, blur: (1 - ip) * 8 });
+    const mp = easeOut(prog(t, 5.9, 7.3));
+    const drift = 1 - 0.03 * easeInOut(prog(t, 7.3, 10.5));
+    set($("mark"), { o: mp, s: (1.14 - 0.14 * mp) * drift, blur: (1 - mp) * 26, y: -28 * easeInOut(prog(t, 6.6, 7.4)) });
+    $("mark").style.textShadow = `0 0 ${60 * (1 - mp) + 30}px rgba(247,245,240,${0.12 + 0.25 * (1 - mp)})`;
+    rise(W.tag1, t, 7.0, { dur: 0.8, stagger: 0.06 });
+    rise(W.tag2, t, 7.55, { dur: 0.8, stagger: 0.06 });
+  }
+
+  // ===== 3. DETECT =====
+  {
+    const el = $("s-detect");
+    sceneWindow(el, t, ...T.detect, 0.01, 0.3);
+    rise(W.dH, t, 10.55, { dur: 0.8, dy: 36 });
+    rise(W.dS, t, 10.8, { dur: 0.8, stagger: 0.08 });
+    const wp = easeOut(prog(t, 10.7, 11.6));
+    set($("dWin"), { o: wp, y: (1 - wp) * 90, rx: (1 - wp) * 14, s: 0.97 + 0.03 * wp + 0.012 * easeInOut(prog(t, 11.6, 14)) });
+    // Typing + output.
+    const chars = Math.floor(clamp((t - 11.35) / 0.8) * CMD.length);
+    const typing = t < 12.25;
+    let html = `<span class="l"><span class="prompt">$ </span><span class="cmd">${CMD.slice(0, chars)}</span>${typing ? '<span class="caret"></span>' : ""}</span>`;
+    OUT.forEach(([cls, txt], i) => {
+      const at = 12.3 + i * 0.1;
+      const p = easeOut(prog(t, at, at + 0.25));
+      if (t >= at) html += `<span class="l ${cls}" style="opacity:${p};transform:translateY(${(1 - p) * 8}px)">${txt || " "}</span>`;
+    });
+    $("term").innerHTML = html;
+  }
+
+  // ===== 4. REPAIR =====
+  {
+    const el = $("s-repair");
+    sceneWindow(el, t, ...T.repair, 0.01, 0.3);
+    rise(W.rH, t, 14.05, { dur: 0.8, dy: 36 });
+    rise(W.rS, t, 14.3, { dur: 0.8, stagger: 0.05 });
+    const wp = easeOut(prog(t, 14.2, 15.0));
+    set($("rWin"), { o: wp, y: (1 - wp) * 90, rx: (1 - wp) * 14, s: 0.97 + 0.03 * wp + 0.012 * easeInOut(prog(t, 15, 17.5)) });
+    // Highlight row tracks the target line.
+    const oldLine = $("rOldLine");
+    const hl = $("rHl");
+    const hp = easeOut(prog(t, 15.0, 15.4));
+    hl.style.top = (oldLine.offsetTop - 1) + "px";
+    hl.style.height = oldLine.offsetHeight + 2 + "px";
+    hl.style.opacity = hp;
+    const toTeal = prog(t, 15.95, 16.4);
+    hl.style.background = `color-mix(in srgb, color-mix(in srgb, var(--repairo-teal) ${toTeal * 100}%, var(--repairo-warn)) 9%, transparent)`;
+    hl.style.borderLeftColor = `color-mix(in srgb, var(--repairo-teal) ${toTeal * 100}%, var(--repairo-warn))`;
+    // Strike old, then old slides out & new slides in.
+    const sp = easeInOut(prog(t, 15.3, 15.75));
+    const old = $("rOld");
+    $("rStrike").style.left = old.offsetLeft + "px";
+    $("rStrike").style.width = old.offsetWidth * sp + "px";
+    old.style.color = `color-mix(in srgb, var(--repairo-warn) ${Math.round(prog(t, 15.2, 15.6) * 100)}%, var(--repairo-muted))`;
+    const gone = easeIn(prog(t, 15.85, 16.1));
+    const swap = easeOut(prog(t, 16.08, 16.5));
+    oldLine.style.opacity = 1 - gone;
+    oldLine.style.transform = `translateY(${-gone * 16}px)`;
+    oldLine.style.filter = `blur(${gone * 6}px)`;
+    const nw = $("rNew");
+    nw.style.top = -oldLine.offsetHeight + "px";
+    nw.style.opacity = swap;
+    nw.style.transform = `translateY(${(1 - swap) * 22}px)`;
+    nw.style.filter = `blur(${(1 - swap) * 6}px)`;
+    $("rGut").style.top = hl.style.top;
+    $("rGut").style.lineHeight = hl.style.height;
+    $("rGut").innerHTML = t < 16.08 ? `<span class="warn" style="opacity:${hp}">−</span>` : `<span class="teal" style="opacity:${swap}">+</span>`;
+  }
+
+  // ===== 5. VERIFIED =====
+  {
+    const el = $("s-verify");
+    sceneWindow(el, t, ...T.verify, 0.01, 0.35);
+    rise(W.vH, t, 17.55, { dur: 0.8, dy: 36 });
+    rise(W.vS, t, 17.8, { dur: 0.8, stagger: 0.06 });
+    const wp = easeOut(prog(t, 17.7, 18.5));
+    set($("vWin"), { o: wp, y: (1 - wp) * 90, rx: (1 - wp) * 14, s: 0.97 + 0.03 * wp + 0.012 * easeInOut(prog(t, 18.5, 21)) });
+    [["pr1", "c1c", "c1p", 18.55], ["pr2", "c2c", "c2p", 18.95], ["pr3", "c3c", null, 19.35]].forEach(([row, c, p, at]) => {
+      const rp = easeOut(prog(t, at, at + 0.4));
+      set($(row), { o: rp, x: (1 - rp) * -18, blur: (1 - rp) * 4 });
+      const cc = easeInOut(prog(t, at + 0.05, at + 0.5));
+      $(c).setAttribute("stroke-dasharray", "1"); $(c).setAttribute("stroke-dashoffset", String(1 - cc));
+      $(c).setAttribute("transform", "rotate(-90 20 20)");
+      if (p) { const pp = easeOut(prog(t, at + 0.3, at + 0.6)); $(p).setAttribute("stroke-dasharray", "1"); $(p).setAttribute("stroke-dashoffset", String(1 - pp)); }
+    });
+    $("c3d").style.opacity = easeOut(prog(t, 19.7, 19.95));
+  }
+
+  // ===== 6. OUTRO =====
+  {
+    const el = $("s-outro");
+    sceneWindow(el, t, T.outro[0], 26, 0.01, 0.01);
+    const mp = easeOut(prog(t, 21.1, 22.3));
+    set($("oMark"), { o: mp, s: 1.1 - 0.1 * mp, blur: (1 - mp) * 22 });
+    $("oMark").style.textShadow = `0 0 ${40 + 40 * (1 - mp)}px rgba(247,245,240,${0.1 + 0.2 * (1 - mp)})`;
+    rise(W.oLine, t, 21.6, { dur: 0.8, stagger: 0.05 });
+    const cp = easeOut(prog(t, 22.3, 23.0));
+    set($("oCta"), { o: cp, y: (1 - cp) * 20, blur: (1 - cp) * 8 });
+    const up = easeOut(prog(t, 22.6, 23.3));
+    set($("oUrl"), { o: up, y: (1 - up) * 14 });
+  }
+
+  // Final fade to black.
+  $("black").style.opacity = easeInOut(prog(t, 24.25, 25.0));
+}
+
+window.render = render;
+window.ready = document.fonts.ready.then(() => { render(0); return true; });
+</script>
+</body>
+</html>

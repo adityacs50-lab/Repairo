@@ -1,0 +1,1 @@
+Dependabot bumps the package. Repairo fixes the call sites that break — OpenAPI-grounded detection, AST-precise repairs, typechecked before it ever becomes a PR. Try it: npx repairo-cli scan ./src → heyrepairo.in

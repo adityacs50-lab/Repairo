@@ -1,0 +1,6 @@
+node_modules
+stills/
+*.log
+video-only.mp4
+poster.png
+score.wav
