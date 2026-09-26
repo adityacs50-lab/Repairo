@@ -4,6 +4,7 @@
 | --- | --- |
 | `repairo-demo.mp4` | The 47s product film, with narration — break → AST impact → patch → compile gate → PR |
 | `repairo-demo.gif` | Silent 9.6s opening of that film, used as the autoplaying README thumbnail |
+| `repairo-showreel-15s.mp4` | 15s motion-design showreel (music, no narration) — title, five numbered beats over real CLI/app footage, stat flash, end card |
 | `demo-scan.gif` | `npx repairo-cli scan ./fixtures/consumers --vendors stripe` |
 | `demo-diff.gif` | OpenAPI diff + impact on `fixtures/breaking-api-demo` |
 | `demo-*.tape` | Optional [VHS](https://github.com/charmbracelet/vhs) tapes (Linux/macOS) |
